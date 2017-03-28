@@ -1039,6 +1039,7 @@ namespace Foreman
 			try
 			{
 				float speedBonus = 0f;
+                float productivityBonus = 0f;
 
 				LuaTable effectTable = ReadLuaLuaTable(values, "effect");
 				LuaTable speed = ReadLuaLuaTable(effectTable, "speed", true);
@@ -1047,12 +1048,20 @@ namespace Foreman
 					speedBonus = ReadLuaFloat(speed, "bonus", true, -1f);
 				}
 
+				LuaTable productivity = ReadLuaLuaTable(effectTable, "productivity", true);
+				if (productivity != null)
+				{
+					productivityBonus = ReadLuaFloat(productivity, "bonus", true, -1f);
+				}
+
+                /*
 				if (speed == null || speedBonus <= 0)
 				{
 					return;
 				}
+                */
 
-				Module newModule = new Module(name, speedBonus);
+				Module newModule = new Module(name, speedBonus, productivityBonus);
 
 				foreach (String s in Properties.Settings.Default.EnabledModules)
 				{
