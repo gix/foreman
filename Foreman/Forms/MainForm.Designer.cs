@@ -44,7 +44,6 @@
             this.loadGraphButton = new System.Windows.Forms.Button();
             this.ExportImageButton = new System.Windows.Forms.Button();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.SingleAssemblerPerRecipeCheckBox = new System.Windows.Forms.CheckBox();
             this.AssemblerDisplayCheckBox = new System.Windows.Forms.CheckBox();
             this.MinerDisplayCheckBox = new System.Windows.Forms.CheckBox();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
@@ -268,7 +267,6 @@
             // 
             this.groupBox2.AutoSize = true;
             this.groupBox2.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.groupBox2.Controls.Add(this.SingleAssemblerPerRecipeCheckBox);
             this.groupBox2.Controls.Add(this.AssemblerDisplayCheckBox);
             this.groupBox2.Controls.Add(this.MinerDisplayCheckBox);
             this.groupBox2.Location = new System.Drawing.Point(525, 3);
@@ -280,21 +278,9 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Assemblers";
             // 
-            // SingleAssemblerPerRecipeCheckBox
-            // 
-            this.SingleAssemblerPerRecipeCheckBox.AutoSize = true;
-            this.SingleAssemblerPerRecipeCheckBox.Location = new System.Drawing.Point(7, 43);
-            this.SingleAssemblerPerRecipeCheckBox.Name = "SingleAssemblerPerRecipeCheckBox";
-            this.SingleAssemblerPerRecipeCheckBox.Size = new System.Drawing.Size(169, 17);
-            this.SingleAssemblerPerRecipeCheckBox.TabIndex = 1;
-            this.SingleAssemblerPerRecipeCheckBox.Text = "One assembler type per recipe";
-            this.SingleAssemblerPerRecipeCheckBox.UseVisualStyleBackColor = true;
-            this.SingleAssemblerPerRecipeCheckBox.CheckedChanged += new System.EventHandler(this.SingleAssemblerPerRecipeCheckBox_CheckedChanged);
-            // 
             // AssemblerDisplayCheckBox
             // 
             this.AssemblerDisplayCheckBox.AutoSize = true;
-            this.AssemblerDisplayCheckBox.Enabled = false;
             this.AssemblerDisplayCheckBox.Location = new System.Drawing.Point(7, 20);
             this.AssemblerDisplayCheckBox.Name = "AssemblerDisplayCheckBox";
             this.AssemblerDisplayCheckBox.Size = new System.Drawing.Size(116, 17);
@@ -306,8 +292,7 @@
             // MinerDisplayCheckBox
             // 
             this.MinerDisplayCheckBox.AutoSize = true;
-            this.MinerDisplayCheckBox.Enabled = false;
-            this.MinerDisplayCheckBox.Location = new System.Drawing.Point(7, 65);
+			this.MinerDisplayCheckBox.Location = new System.Drawing.Point(7, 42);
             this.MinerDisplayCheckBox.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.MinerDisplayCheckBox.Name = "MinerDisplayCheckBox";
             this.MinerDisplayCheckBox.Size = new System.Drawing.Size(151, 17);
@@ -323,7 +308,7 @@
             this.flowLayoutPanel2.Controls.Add(this.ModDirectoryButton);
             this.flowLayoutPanel2.Controls.Add(this.ReloadButton);
             this.flowLayoutPanel2.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
-            this.flowLayoutPanel2.Location = new System.Drawing.Point(713, 3);
+			this.flowLayoutPanel2.Location = new System.Drawing.Point(695, 3);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(125, 90);
             this.flowLayoutPanel2.TabIndex = 13;
@@ -362,7 +347,7 @@
             // 
             this.panel1.Controls.Add(this.EnableDisableButton);
             this.panel1.Controls.Add(this.groupBox3);
-            this.panel1.Location = new System.Drawing.Point(844, 3);
+			this.panel1.Location = new System.Drawing.Point(826, 3);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(167, 90);
             this.panel1.TabIndex = 16;
@@ -683,7 +668,6 @@
 		private System.Windows.Forms.Button ClearButton;
 		private System.Windows.Forms.Button ExportImageButton;
 		private System.Windows.Forms.GroupBox groupBox2;
-		private System.Windows.Forms.CheckBox SingleAssemblerPerRecipeCheckBox;
 		private System.Windows.Forms.CheckBox AssemblerDisplayCheckBox;
 		private System.Windows.Forms.CheckBox MinerDisplayCheckBox;
 		private ProductionGraphViewer GraphViewer;
