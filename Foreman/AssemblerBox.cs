@@ -8,7 +8,7 @@ namespace Foreman
 {
 	public class AssemblerBox : GraphElement
 	{
-		public Dictionary<MachinePermutation, int> AssemblerList;
+		public Dictionary<MachinePermutation, double> AssemblerList;
 		public override Point Size
 		{
 			get
@@ -34,7 +34,7 @@ namespace Foreman
 		public AssemblerBox(ProductionGraphViewer parent)
 			: base(parent)
 		{
-			AssemblerList = new Dictionary<MachinePermutation, int>();
+			AssemblerList = new Dictionary<MachinePermutation, double>();
 		}
 
 		public void Update()
@@ -95,8 +95,8 @@ namespace Foreman
 	{
 		const int maxFontSize = 14;
 		public MachinePermutation DisplayedMachine { get; set; }
-		private int displayedNumber;
-		public int DisplayedNumber
+		private double displayedNumber;
+		public double DisplayedNumber
 		{
 			get
 			{
@@ -107,14 +107,14 @@ namespace Foreman
 				displayedNumber = value;
 				using (Graphics graphics = Parent.CreateGraphics())
 				{
-                    if (DisplayedNumber > 0)
-                    {
-                        stringWidth = graphics.MeasureString(DisplayedNumber.ToString(), Font).Width;
-                    }
-                    else
-                    {
-                        stringWidth = 0;
-                    }
+					if (DisplayedNumber > 0)
+					{
+						stringWidth = graphics.MeasureString(DisplayedNumber.ToString(DisplayNumberFormat), Font).Width;
+					}
+					else
+					{
+						stringWidth = 0;
+					}
 					UpdateSize();
 				}
 			}
@@ -123,8 +123,9 @@ namespace Foreman
 		private StringFormat centreFormat = new StringFormat();
 		public const int iconSize = 32;
 		private Font Font = new Font(FontFamily.GenericSansSerif, maxFontSize);
+		private const string DisplayNumberFormat = "F2";
 
-		public AssemblerIconElement(MachinePermutation assembler, int number, ProductionGraphViewer parent)
+		public AssemblerIconElement(MachinePermutation assembler, double number, ProductionGraphViewer parent)
 			: base(parent)
 		{
 			DisplayedMachine = assembler;
@@ -143,10 +144,10 @@ namespace Foreman
 			Point iconPoint = new Point((int)((Width + iconSize + stringWidth) / 2 - iconSize), (int)((Height - iconSize) / 2));
 
 			graphics.DrawImage(DisplayedMachine.assembler.Icon, iconPoint.X, iconPoint.Y, iconSize, iconSize);
-            if (DisplayedNumber > 0)
-            {
-                graphics.DrawString(DisplayedNumber.ToString(), Font, Brushes.Black, new Point((int)((Width - iconSize - stringWidth) / 2 + stringWidth / 2), Height / 2), centreFormat);
-            }
+			if (DisplayedNumber > 0)
+			{
+				graphics.DrawString(DisplayedNumber.ToString(DisplayNumberFormat), Font, Brushes.Black, new Point((int)((Width - iconSize - stringWidth) / 2 + stringWidth / 2), Height / 2), centreFormat);
+			}
 
 			if (DisplayedMachine.modules.Any())
 			{

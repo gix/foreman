@@ -213,7 +213,7 @@ namespace Foreman
                         var assemblers = (DisplayedNode as RecipeNode).GetAssemblers();
                         if (Parent.Graph.SelectedAmountType == AmountType.FixedAmount)
                         {
-                            assemblers = assemblers.ToDictionary(p => p.Key, p => 0);
+                            assemblers = assemblers.ToDictionary(p => p.Key, p => 0.0);
                         }
 						assemblerBox.AssemblerList = assemblers;
 					}

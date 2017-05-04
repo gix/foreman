@@ -120,7 +120,7 @@ namespace Foreman
 
         public ModuleSelector NodeModules { get; set; }
 
-        internal Dictionary<MachinePermutation, int> GetAssemblers()
+        internal Dictionary<MachinePermutation, double> GetAssemblers()
         {
             var assembler = Assembler;
 
@@ -134,11 +134,11 @@ namespace Foreman
                     .FirstOrDefault();
 			}
 
-            var ret = new Dictionary<MachinePermutation, int>();
+            var ret = new Dictionary<MachinePermutation, double>();
 
             if (assembler != null) {
                 var modules = NodeModules.For(BaseRecipe, assembler.ModuleSlots);
-                var required = (int)Math.Ceiling(actualRate / assembler.GetRate(BaseRecipe.Time, (float)SpeedBonus, modules));
+                var required = actualRate / assembler.GetRate(BaseRecipe.Time, (float)SpeedBonus, modules);
                 ret.Add(new MachinePermutation(assembler, modules.ToList()), required);
             }
 
@@ -296,9 +296,9 @@ namespace Foreman
 			get { return SuppliedItem.FriendlyName; }
 		}
 
-		public Dictionary<MachinePermutation, int> GetMinimumMiners()
+		public Dictionary<MachinePermutation, double> GetMinimumMiners()
 		{
-			Dictionary<MachinePermutation, int> results = new Dictionary<MachinePermutation, int>();
+			Dictionary<MachinePermutation, double> results = new Dictionary<MachinePermutation, double>();
 
 			Resource resource = DataCache.Resources.Values.FirstOrDefault(r => r.result == SuppliedItem.Name);
 			if (resource == null)
@@ -325,7 +325,7 @@ namespace Foreman
 				MachinePermutation permutationToAdd = sortedPermutations.LastOrDefault(a => a.GetMinerRate(resource) < requiredRate);
 				if (permutationToAdd != null)
 				{
-					int numberToAdd = Convert.ToInt32(Math.Ceiling(requiredRate / permutationToAdd.GetMinerRate(resource)));
+					double numberToAdd = requiredRate / permutationToAdd.GetMinerRate(resource);
 					results.Add(permutationToAdd, numberToAdd);
 				}
 			}
