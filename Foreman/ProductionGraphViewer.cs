@@ -581,6 +581,15 @@ namespace Foreman
 			}
 		}
 
+		public void DeleteLink(LinkElement link)
+		{
+			link.DisplayedLink.Destroy();
+			Elements.Remove(link);
+			Graph.UpdateNodeValues();
+			UpdateNodes();
+			Invalidate();
+		}
+
 		public void LimitViewToBounds()
 		{
 			Rectangle bounds = GraphBounds;
