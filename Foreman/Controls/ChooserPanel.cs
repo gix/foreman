@@ -53,6 +53,7 @@ namespace Foreman
 
 		private void ChooserPanel_Load(object sender, EventArgs e)
 		{
+			flowLayoutPanel1.SuspendLayout();
 			foreach (ChooserControl control in controls)
 			{
 				flowLayoutPanel1.Controls.Add(control);
@@ -62,6 +63,7 @@ namespace Foreman
 				RegisterKeyEvents(control);
 			}
 
+			flowLayoutPanel1.ResumeLayout();
 			Parent.PerformLayout();
 
 			UpdateControlWidth();
