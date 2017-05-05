@@ -24,34 +24,73 @@ namespace Foreman
             this.constraints = new List<Constraint>();
         }
 
+        public void PrintTo(StringBuilder buffer)
+        {
+            var objective = solver.Objective();
+
+            buffer.AppendLine("objective:");
+            buffer.AppendFormat("  {0}(", objective.Minimization() ? "min" : "max");
+
+            int i = 0;
+            foreach (var variable in variables)
+            {
+                double coefficient = objective.GetCoefficient(variable);
+                if (coefficient == 0)
+                    continue;
+
+                if (i > 0)
+                    buffer.Append(" + ");
+                buffer.Append(coefficient);
+                buffer.Append(' ');
+                buffer.Append(variable.Name());
+                ++i;
+            }
+            buffer.AppendLine(")");
+            buffer.AppendLine();
+
+            buffer.AppendLine("constraints:");
+            foreach (var constraint in constraints)
+            {
+                i = 0;
+                buffer.Append("  ");
+                foreach (var variable in variables)
+                {
+                    double coefficient = constraint.GetCoefficient(variable);
+                    if (coefficient == 0)
+                        continue;
+
+                    if (i > 0)
+                        buffer.Append(" + ");
+                    buffer.Append(coefficient);
+                    buffer.Append(' ');
+                    buffer.Append(variable.Name());
+                    ++i;
+                }
+
+                if (double.IsPositiveInfinity(constraint.Ub()))
+                    buffer.AppendFormat(" ≥ {0}", constraint.Lb());
+                else if (double.IsNegativeInfinity(constraint.Lb()))
+                    buffer.AppendFormat(" ≤ {0}", constraint.Ub());
+                else
+                    buffer.AppendFormat(" ∈ [{0}, {1}]", constraint.Lb(), constraint.Ub());
+
+                buffer.AppendLine();
+            }
+            buffer.AppendLine();
+
+            buffer.AppendLine("solution:");
+            foreach (var variable in variables)
+            {
+                buffer.AppendFormat("  {0} = {1}", variable.Name(), variable.SolutionValue());
+                buffer.AppendLine();
+            }
+        }
+
         public override string ToString()
         {
-            var desc = new StringBuilder();
-            desc.AppendLine("== Constraints");
-
-            foreach (var constraint in this.constraints)
-            {
-                var line = new List<string>();
-                foreach (var variable in this.variables)
-                {
-                    var coefficient = constraint.GetCoefficient(variable);
-                    if (coefficient != 0.0)
-                    {
-                        line.Add(coefficient + " * " + variable.Name());
-                    }
-                }
-                desc.AppendFormat("{0} → ({1}, {2})\n", string.Join(" + ", line), constraint.Lb(), constraint.Ub());
-            }
-            desc.AppendLine("");
-            desc.AppendLine("");
-            desc.AppendLine("== Variables");
-
-            foreach (var variable in this.variables)
-            {
-                desc.AppendFormat("{0} = {1}\n", variable.Name(), variable.SolutionValue());
-            }
-
-            return desc.ToString();
+            var buffer = new StringBuilder();
+            PrintTo(buffer);
+            return buffer.ToString();
         }
 
         internal Objective Objective()
