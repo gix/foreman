@@ -234,7 +234,9 @@ namespace Foreman
 
         private Variable variableFor(NodeLink inputLink, EndpointType type)
         {
-            return variableFor(Tuple.Create(inputLink, type), makeName("link", type, inputLink.Consumer.DisplayName, inputLink.Item.FriendlyName));
+            return variableFor(
+                Tuple.Create(inputLink, type),
+                key => makeName("link", type, key.Item1.Consumer.DisplayName, key.Item1.Item.FriendlyName));
         }
 
         private string makeName(params object[] components)
@@ -244,18 +246,33 @@ namespace Foreman
 
         private Variable variableFor(ProductionNode node, RateType type = RateType.ACTUAL)
         {
-            return variableFor(Tuple.Create(node, type), makeName("node", type, node.DisplayName));
+            return variableFor(
+                Tuple.Create(node, type),
+                key => makeName(GetNodePrefix(key.Item1), type, key.Item1.DisplayName));
         }
 
-        private Variable variableFor(object key, String name)
+        private Variable variableFor<T>(T key, Func<T, string> name)
         {
-            if (allVariables.ContainsKey(key))
-            {
-                return allVariables[key];
-            }
-            var newVar = solver.MakeNumVar(0.0, double.PositiveInfinity, name + ":" + GetSequence());
+            if (allVariables.TryGetValue(key, out Variable variable))
+                return variable;
+            var newVar = solver.MakeNumVar(0.0, double.PositiveInfinity, name(key) + ":" + GetSequence());
             allVariables[key] = newVar;
             return newVar;
+        }
+
+        private static string GetNodePrefix(ProductionNode node)
+        {
+            switch (node)
+            {
+                case SupplyNode _:
+                    return "supply";
+                case RecipeNode _:
+                    return "recipe";
+                case ConsumerNode _:
+                    return "demand";
+                default:
+                    return "node";
+            }
         }
 
         private double solutionFor(object key)
