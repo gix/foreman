@@ -124,6 +124,7 @@
     <Compile Include="Forms\EnableDisableItems.Designer.cs">
       <DependentUpon>EnableDisableItems.cs</DependentUpon>
     </Compile>
+    <Compile Include="GameUtils.cs" />
     <Compile Include="GhostNodeElement.cs" />
     <Compile Include="DraggedLinkElement.cs" />
     <Compile Include="ErrorLogging.cs" />
@@ -230,9 +231,6 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Licences.txt">

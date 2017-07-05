@@ -1,29 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using Newtonsoft.Json.Linq;
-using System.Linq;
-using System.Collections;
-
-namespace Foreman
+﻿namespace Foreman
 {
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.Serialization;
+    using Newtonsoft.Json.Linq;
+
     public abstract class ModuleSelector : ISerializable
     {
         public abstract void GetObjectData(SerializationInfo info, StreamingContext context);
-        public abstract String Name { get; }
+        public abstract string Name { get; }
 
-        public static ModuleSelector Fastest { get { return new ModuleSelectorFastest(); } }
-        public static ModuleSelector None { get { return new ModuleSelectorNone(); } }
-        public static ModuleSelector Productive { get { return new ModuleSelectorProductivity(); } }
+        public static ModuleSelector Fastest => new ModuleSelectorFastest();
+
+        public static ModuleSelector None => new ModuleSelectorNone();
+
+        public static ModuleSelector Productive => new ModuleSelectorProductivity();
 
         public static ModuleSelector Load(JToken token)
         {
             ModuleSelector filter = Fastest;
 
-            if (token["ModuleFilterType"] != null)
-            {
-                switch ((String)token["ModuleFilterType"])
-                {
+            if (token["ModuleFilterType"] != null) {
+                switch ((string)token["ModuleFilterType"]) {
                     case "Best":
                         filter = Fastest;
                         break;
@@ -34,11 +32,9 @@ namespace Foreman
                         filter = Productive;
                         break;
                     case "Specific":
-                        if (token["Module"] != null)
-                        {
-                            var moduleKey = (String)token["Module"];
-                            if (DataCache.Modules.ContainsKey(moduleKey))
-                            {
+                        if (token["Module"] != null) {
+                            var moduleKey = (string)token["Module"];
+                            if (DataCache.Modules.ContainsKey(moduleKey)) {
                                 filter = new ModuleSpecificFilter(DataCache.Modules[moduleKey]);
                             }
                         }
@@ -49,11 +45,11 @@ namespace Foreman
             return filter;
         }
 
-        protected abstract IEnumerable<Module> availableModules();
+        protected abstract IEnumerable<Module> AvailableModules();
 
         public IEnumerable<Module> For(Recipe recipe, int moduleSlots)
         {
-            var modules = availableModules()
+            var modules = AvailableModules()
                 .Where(m => m.Enabled)
                 .Where(m => m.AllowedIn(recipe))
                 .Take(1);
@@ -69,14 +65,14 @@ namespace Foreman
 
         private class ModuleSpecificFilter : ModuleSelector
         {
-            public Module Module { get; set; }
+            public Module Module { get; }
 
             public ModuleSpecificFilter(Module module)
             {
-                this.Module = module;
+                Module = module;
             }
-            
-            public override String Name { get { return Module.Name; } }
+
+            public override string Name => Module.Name;
 
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
@@ -84,7 +80,7 @@ namespace Foreman
                 info.AddValue("Module", Module.Name);
             }
 
-            protected override IEnumerable<Module> availableModules()
+            protected override IEnumerable<Module> AvailableModules()
             {
                 return Enumerable.Repeat(Module, 1);
             }
@@ -97,9 +93,9 @@ namespace Foreman
                 info.AddValue("ModuleFilterType", "Best");
             }
 
-            public override String Name { get { return "Fastest"; } }
+            public override string Name => "Fastest";
 
-            protected override IEnumerable<Module> availableModules()
+            protected override IEnumerable<Module> AvailableModules()
             {
                 return DataCache.Modules.Values
                     .OrderBy(m => -m.SpeedBonus);
@@ -113,9 +109,9 @@ namespace Foreman
                 info.AddValue("ModuleFilterType", "Most Productive");
             }
 
-            public override String Name { get { return "Most Productive"; } }
+            public override string Name => "Most Productive";
 
-            protected override IEnumerable<Module> availableModules()
+            protected override IEnumerable<Module> AvailableModules()
             {
                 return DataCache.Modules.Values
                     .OrderBy(m => -m.ProductivityBonus);
@@ -129,9 +125,9 @@ namespace Foreman
                 info.AddValue("ModuleFilterType", "None");
             }
 
-            public override String Name { get { return "None"; } }
+            public override string Name => "None";
 
-            protected override IEnumerable<Module> availableModules()
+            protected override IEnumerable<Module> AvailableModules()
             {
                 return Enumerable.Empty<Module>();
             }

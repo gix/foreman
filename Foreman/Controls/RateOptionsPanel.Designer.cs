@@ -1,39 +1,41 @@
 ﻿namespace Foreman
 {
-	partial class RateOptionsPanel
-	{
-		/// <summary> 
-		/// Required designer variable.
-		/// </summary>
-		private System.ComponentModel.IContainer components = null;
+    partial class RateOptionsPanel
+    {
+        /// <summary> 
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
 
-		/// <summary> 
-		/// Clean up any resources being used.
-		/// </summary>
-		/// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-		protected override void Dispose(bool disposing)
-		{
-			if (disposing && (components != null))
-			{
-				components.Dispose();
-			}
-			base.Dispose(disposing);
-		}
+        /// <summary> 
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
 
-		#region Component Designer generated code
+        #region Component Designer generated code
 
-		/// <summary> 
-		/// Required method for Designer support - do not modify 
-		/// the contents of this method with the code editor.
-		/// </summary>
-		private void InitializeComponent()
-		{
+        /// <summary> 
+        /// Required method for Designer support - do not modify 
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
             this.autoOption = new System.Windows.Forms.RadioButton();
             this.fixedOption = new System.Windows.Forms.RadioButton();
             this.fixedTextBox = new System.Windows.Forms.TextBox();
             this.unitLabel = new System.Windows.Forms.Label();
             this.ratePanel = new System.Windows.Forms.Panel();
             this.assemblerPanel = new System.Windows.Forms.Panel();
+            this.label4 = new System.Windows.Forms.Label();
+            this.speedBonusTextBox = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.productivityBonusTextBox = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
@@ -41,8 +43,6 @@
             this.modulesButton = new System.Windows.Forms.Button();
             this.assemblerButton = new System.Windows.Forms.Button();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
-            this.speedBonusTextBox = new System.Windows.Forms.TextBox();
-            this.label4 = new System.Windows.Forms.Label();
             this.ratePanel.SuspendLayout();
             this.assemblerPanel.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
@@ -118,6 +118,24 @@
             this.assemblerPanel.Size = new System.Drawing.Size(213, 97);
             this.assemblerPanel.TabIndex = 5;
             // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(29, 54);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(74, 13);
+            this.label4.TabIndex = 7;
+            this.label4.Text = "Speed Bonus:";
+            this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // speedBonusTextBox
+            // 
+            this.speedBonusTextBox.Location = new System.Drawing.Point(110, 51);
+            this.speedBonusTextBox.Name = "speedBonusTextBox";
+            this.speedBonusTextBox.Size = new System.Drawing.Size(100, 20);
+            this.speedBonusTextBox.TabIndex = 6;
+            this.speedBonusTextBox.TextChanged += new System.EventHandler(this.speedBonusTextBox_TextChanged);
+            // 
             // label3
             // 
             this.label3.AutoSize = true;
@@ -189,24 +207,6 @@
             this.flowLayoutPanel1.Size = new System.Drawing.Size(320, 103);
             this.flowLayoutPanel1.TabIndex = 8;
             // 
-            // speedBonusTextBox
-            // 
-            this.speedBonusTextBox.Location = new System.Drawing.Point(110, 51);
-            this.speedBonusTextBox.Name = "speedBonusTextBox";
-            this.speedBonusTextBox.Size = new System.Drawing.Size(100, 20);
-            this.speedBonusTextBox.TabIndex = 6;
-            this.speedBonusTextBox.TextChanged += new System.EventHandler(this.speedBonusTextBox_TextChanged);
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(29, 54);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(74, 13);
-            this.label4.TabIndex = 7;
-            this.label4.Text = "Speed Bonus:";
-            this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
             // RateOptionsPanel
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -226,24 +226,23 @@
             this.ResumeLayout(false);
             this.PerformLayout();
 
-		}
+        }
 
-		#endregion
-
-		public System.Windows.Forms.RadioButton autoOption;
-		public System.Windows.Forms.RadioButton fixedOption;
-		public System.Windows.Forms.TextBox fixedTextBox;
-		private System.Windows.Forms.Label unitLabel;
-		private System.Windows.Forms.Panel ratePanel;
-		private System.Windows.Forms.Panel assemblerPanel;
-		private System.Windows.Forms.Label label2;
-		private System.Windows.Forms.Label label1;
-		private System.Windows.Forms.Button modulesButton;
-		private System.Windows.Forms.Button assemblerButton;
-		private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        #endregion
+        private System.Windows.Forms.Label unitLabel;
+        private System.Windows.Forms.Panel ratePanel;
+        private System.Windows.Forms.Panel assemblerPanel;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button modulesButton;
+        private System.Windows.Forms.Button assemblerButton;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox productivityBonusTextBox;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox speedBonusTextBox;
+        private System.Windows.Forms.RadioButton autoOption;
+        private System.Windows.Forms.RadioButton fixedOption;
+        private System.Windows.Forms.TextBox fixedTextBox;
     }
 }

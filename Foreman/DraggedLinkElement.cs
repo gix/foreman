@@ -1,293 +1,260 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using System.Drawing;
-using System.Diagnostics;
-
-namespace Foreman
+﻿namespace Foreman
 {
-	public enum DragType { MouseDown, MouseUp }
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Drawing;
+    using System.Linq;
+    using System.Windows.Forms;
 
-	class DraggedLinkElement : GraphElement
-	{
-		public NodeElement SupplierElement { get; set; }
-		public NodeElement ConsumerElement { get; set; }
-		public Item Item { get; set; }
-		public LinkType StartConnectionType { get; private set; }
-		public DragType DragType;
+    public enum DragType
+    {
+        MouseDown,
+        MouseUp
+    }
 
-		public override Point Location
-		{
-			get { return new Point(); }
-			set { }
-		}
-		public override int X
-		{
-			get { return 0; }
-			set { }
-		}
-		public override int Y
-		{
-			get { return 0; }
-			set { }
-		}
-		public override Point Size
-		{
-			get { return new Point(); }
-			set { }
-		}
-		public override int Width
-		{
-			get { return 0; }
-			set { }
-		}
-		public override int Height
-		{
-			get { return 0; }
-			set { }
-		}
+    public class DraggedLinkElement : GraphElement
+    {
+        public NodeElement SupplierElement { get; set; }
+        public NodeElement ConsumerElement { get; set; }
+        public Item Item { get; set; }
+        public LinkType StartConnectionType { get; }
+        public DragType DragType { get; set; }
 
-		public DraggedLinkElement(ProductionGraphViewer parent, NodeElement startNode, LinkType startConnectionType, Item item)
-			: base(parent)
-		{
-			if (startConnectionType == LinkType.Input)
-			{
-				ConsumerElement = startNode;
-			}
-			else
-			{
-				SupplierElement = startNode;
-			}
-			StartConnectionType = startConnectionType;
-			Item = item;
-			if ((Control.MouseButtons & MouseButtons.Left) != 0)
-			{
-				DragType = DragType.MouseDown;
-			}
-			else
-			{
-				DragType = DragType.MouseUp;
-			}
-		}
+        public override Point Location
+        {
+            get { return new Point(); }
+            set { }
+        }
 
-		public override void Paint(System.Drawing.Graphics graphics)
-		{
-			Point pointN = Parent.ScreenToGraph(Parent.PointToClient(Cursor.Position));
-			Point pointM = pointN;
+        public override int X
+        {
+            get { return 0; }
+            set { }
+        }
 
-			if (SupplierElement != null)
-			{
-				pointN = SupplierElement.GetOutputLineConnectionPoint(Item);
-			}
-			if (ConsumerElement != null)
-			{
-				pointM = ConsumerElement.GetInputLineConnectionPoint(Item);
-			}
-			Point pointN2 = new Point(pointN.X, pointN.Y - Math.Max((int)((pointN.Y - pointM.Y) / 2), 40));
-			Point pointM2 = new Point(pointM.X, pointM.Y + Math.Max((int)((pointN.Y - pointM.Y) / 2), 40));
+        public override int Y
+        {
+            get { return 0; }
+            set { }
+        }
 
-			using (Pen pen = new Pen(DataCache.IconAverageColour(Item.Icon), 3f))
-			{
-				graphics.DrawBezier(pen, pointN, pointN2, pointM2, pointM);
-			}
-		}
+        public override Point Size
+        {
+            get { return new Point(); }
+            set { }
+        }
 
-		public override bool ContainsPoint(Point point)
-		{
-			return true;
-		}
+        public override int Width
+        {
+            get { return 0; }
+            set { }
+        }
 
-		private void EndDrag(Point location)
-		{
-			if (SupplierElement != null && ConsumerElement != null)
-			{
-				if (StartConnectionType == LinkType.Input)
-				{
-					NodeLink.Create(SupplierElement.DisplayedNode, ConsumerElement.DisplayedNode, Item);
-				}
-				else
-				{
-					NodeLink.Create(SupplierElement.DisplayedNode, ConsumerElement.DisplayedNode, Item);
-				}
-			}
-			else if (StartConnectionType == LinkType.Output && ConsumerElement == null)
-			{
-				List<ChooserControl> recipeOptionList = new List<ChooserControl>();
+        public override int Height
+        {
+            get { return 0; }
+            set { }
+        }
+
+        public DraggedLinkElement(ProductionGraphViewer parent, NodeElement startNode, LinkType startConnectionType,
+            Item item)
+            : base(parent)
+        {
+            if (startConnectionType == LinkType.Input) {
+                ConsumerElement = startNode;
+            } else {
+                SupplierElement = startNode;
+            }
+            StartConnectionType = startConnectionType;
+            Item = item;
+            if ((Control.MouseButtons & MouseButtons.Left) != 0) {
+                DragType = DragType.MouseDown;
+            } else {
+                DragType = DragType.MouseUp;
+            }
+        }
+
+        public override void Paint(Graphics graphics)
+        {
+            Point pointN = Parent.ScreenToGraph(Parent.PointToClient(Cursor.Position));
+            Point pointM = pointN;
+
+            if (SupplierElement != null) {
+                pointN = SupplierElement.GetOutputLineConnectionPoint(Item);
+            }
+            if (ConsumerElement != null) {
+                pointM = ConsumerElement.GetInputLineConnectionPoint(Item);
+            }
+            Point pointN2 = new Point(pointN.X, pointN.Y - Math.Max((pointN.Y - pointM.Y) / 2, 40));
+            Point pointM2 = new Point(pointM.X, pointM.Y + Math.Max((pointN.Y - pointM.Y) / 2, 40));
+
+            using (Pen pen = new Pen(DataCache.IconAverageColour(Item.Icon), 3f)) {
+                graphics.DrawBezier(pen, pointN, pointN2, pointM2, pointM);
+            }
+        }
+
+        public override bool ContainsPoint(Point point)
+        {
+            return true;
+        }
+
+        private void EndDrag(Point location)
+        {
+            if (SupplierElement != null && ConsumerElement != null) {
+                if (StartConnectionType == LinkType.Input) {
+                    NodeLink.Create(SupplierElement.DisplayedNode, ConsumerElement.DisplayedNode, Item);
+                } else {
+                    NodeLink.Create(SupplierElement.DisplayedNode, ConsumerElement.DisplayedNode, Item);
+                }
+            } else if (StartConnectionType == LinkType.Output && ConsumerElement == null) {
+                List<ChooserControl> recipeOptionList = new List<ChooserControl>();
 
                 var itemOutputOption = new ItemChooserControl(Item, "Create output node", Item.FriendlyName);
                 var itemPassthroughOption = new ItemChooserControl(Item, "Create pass-through node", Item.FriendlyName);
 
-				recipeOptionList.Add(itemOutputOption);
-				recipeOptionList.Add(itemPassthroughOption);
+                recipeOptionList.Add(itemOutputOption);
+                recipeOptionList.Add(itemPassthroughOption);
 
-				foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Ingredients.Keys.Contains(Item) && r.Enabled && r.Category != "incinerator" && r.Category != "incineration"))
-				{
-					recipeOptionList.Add(new RecipeChooserControl(recipe, "Use recipe " + recipe.FriendlyName, recipe.FriendlyName));
-				}
+                foreach (Recipe recipe in DataCache.Recipes.Values.Where(
+                    r => r.Ingredients.Keys.Contains(Item) && r.Enabled && r.Category != "incinerator" &&
+                         r.Category != "incineration")) {
+                    recipeOptionList.Add(new RecipeChooserControl(recipe, "Use recipe " + recipe.FriendlyName,
+                        recipe.FriendlyName));
+                }
 
-				var chooserPanel = new ChooserPanel(recipeOptionList, Parent);
-				chooserPanel.Show(c =>
-				{
-					if (c != null)
-					{
-						NodeElement newElement = null;
-						if (c is RecipeChooserControl)
-						{
-							Recipe selectedRecipe = (c as RecipeChooserControl).DisplayedRecipe;
-							newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Parent.Graph), Parent);
-						}
-						else if (c == itemOutputOption)
-						{
-							Item selectedItem = (c as ItemChooserControl).DisplayedItem;
-							newElement = new NodeElement(ConsumerNode.Create(selectedItem, Parent.Graph), Parent);
-							(newElement.DisplayedNode as ConsumerNode).rateType = RateType.Auto;
-						}
-						else if (c == itemPassthroughOption)
-						{
-							Item selectedItem = (c as ItemChooserControl).DisplayedItem;
-							newElement = new NodeElement(PassthroughNode.Create(selectedItem, Parent.Graph), Parent);
-							(newElement.DisplayedNode as PassthroughNode).rateType = RateType.Auto;
-						} else
-                        {
+                var chooserPanel = new ChooserPanel(recipeOptionList, Parent);
+                chooserPanel.Show(c => {
+                    if (c != null) {
+                        NodeElement newElement = null;
+                        if (c is RecipeChooserControl) {
+                            Recipe selectedRecipe = (c as RecipeChooserControl).DisplayedRecipe;
+                            newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Parent.Graph), Parent);
+                        } else if (c == itemOutputOption) {
+                            Item selectedItem = (c as ItemChooserControl).DisplayedItem;
+                            newElement = new NodeElement(ConsumerNode.Create(selectedItem, Parent.Graph), Parent);
+                            (newElement.DisplayedNode as ConsumerNode).RateType = RateType.Auto;
+                        } else if (c == itemPassthroughOption) {
+                            Item selectedItem = (c as ItemChooserControl).DisplayedItem;
+                            newElement = new NodeElement(PassthroughNode.Create(selectedItem, Parent.Graph), Parent);
+                            (newElement.DisplayedNode as PassthroughNode).RateType = RateType.Auto;
+                        } else {
                             Trace.Fail("Unhandled option: " + c.ToString());
                         }
 
-						newElement.Update();
-						newElement.Location = Point.Add(location, new Size(-newElement.Width / 2, -newElement.Height / 2));
-						new LinkElement(Parent, NodeLink.Create(SupplierElement.DisplayedNode, newElement.DisplayedNode, Item));
-					}
+                        newElement.Update();
+                        newElement.Location = Point.Add(location,
+                            new Size(-newElement.Width / 2, -newElement.Height / 2));
+                        new LinkElement(Parent,
+                            NodeLink.Create(SupplierElement.DisplayedNode, newElement.DisplayedNode, Item));
+                    }
 
-					Parent.Graph.UpdateNodeValues();
-					Parent.AddRemoveElements();
-					Parent.UpdateNodes();
-				});
-
-			}
-			else if (StartConnectionType == LinkType.Input && SupplierElement == null)
-			{
-				List<ChooserControl> recipeOptionList = new List<ChooserControl>();
+                    Parent.Graph.UpdateNodeValues();
+                    Parent.AddRemoveElements();
+                    Parent.UpdateNodes();
+                });
+            } else if (StartConnectionType == LinkType.Input && SupplierElement == null) {
+                List<ChooserControl> recipeOptionList = new List<ChooserControl>();
 
                 var itemSupplyOption = new ItemChooserControl(Item, "Create infinite supply node", Item.FriendlyName);
                 var itemPassthroughOption = new ItemChooserControl(Item, "Create pass-through node", Item.FriendlyName);
 
-				recipeOptionList.Add(itemSupplyOption);
-				recipeOptionList.Add(itemPassthroughOption);
+                recipeOptionList.Add(itemSupplyOption);
+                recipeOptionList.Add(itemPassthroughOption);
 
-				foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Results.Keys.Contains(Item) && r.Enabled && r.Category != "incinerator" && r.Category != "incineration"))
-				{
-					if (recipe.Category != "incinerator" && recipe.Category != "incineration")
-					{
-						recipeOptionList.Add(new RecipeChooserControl(recipe, "Use recipe " + recipe.FriendlyName, recipe.FriendlyName));
-					}
-				}
+                foreach (Recipe recipe in DataCache.Recipes.Values.Where(
+                    r => r.Results.Keys.Contains(Item) && r.Enabled && r.Category != "incinerator" &&
+                         r.Category != "incineration")) {
+                    if (recipe.Category != "incinerator" && recipe.Category != "incineration") {
+                        recipeOptionList.Add(new RecipeChooserControl(recipe, "Use recipe " + recipe.FriendlyName,
+                            recipe.FriendlyName));
+                    }
+                }
 
-				var chooserPanel = new ChooserPanel(recipeOptionList, Parent);
+                var chooserPanel = new ChooserPanel(recipeOptionList, Parent);
 
-				chooserPanel.Show(c =>
-				{
-					if (c != null)
-					{
-						NodeElement newElement = null;
-						if (c is RecipeChooserControl)
-						{
-							Recipe selectedRecipe = (c as RecipeChooserControl).DisplayedRecipe;
-							newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Parent.Graph), Parent);
-						}
-						else if (c == itemSupplyOption)
-						{
-							Item selectedItem = (c as ItemChooserControl).DisplayedItem;
-							newElement = new NodeElement(SupplyNode.Create(selectedItem, Parent.Graph), Parent);
-						}
-						else if (c == itemPassthroughOption)
-						{
-							Item selectedItem = (c as ItemChooserControl).DisplayedItem;
-							newElement = new NodeElement(PassthroughNode.Create(selectedItem, Parent.Graph), Parent);
-							(newElement.DisplayedNode as PassthroughNode).rateType = RateType.Auto;
-						} else
-                        {
+                chooserPanel.Show(c => {
+                    if (c != null) {
+                        NodeElement newElement = null;
+                        if (c is RecipeChooserControl) {
+                            Recipe selectedRecipe = (c as RecipeChooserControl).DisplayedRecipe;
+                            newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Parent.Graph), Parent);
+                        } else if (c == itemSupplyOption) {
+                            Item selectedItem = (c as ItemChooserControl).DisplayedItem;
+                            newElement = new NodeElement(SupplyNode.Create(selectedItem, Parent.Graph), Parent);
+                        } else if (c == itemPassthroughOption) {
+                            Item selectedItem = (c as ItemChooserControl).DisplayedItem;
+                            newElement = new NodeElement(PassthroughNode.Create(selectedItem, Parent.Graph), Parent);
+                            (newElement.DisplayedNode as PassthroughNode).RateType = RateType.Auto;
+                        } else {
                             Trace.Fail("Unhandled option: " + c.ToString());
                         }
-						newElement.Update();
-						newElement.Location = Point.Add(location, new Size(-newElement.Width / 2, -newElement.Height / 2));
-						new LinkElement(Parent, NodeLink.Create(newElement.DisplayedNode, ConsumerElement.DisplayedNode, Item));
-					}
+                        newElement.Update();
+                        newElement.Location = Point.Add(location,
+                            new Size(-newElement.Width / 2, -newElement.Height / 2));
+                        new LinkElement(Parent,
+                            NodeLink.Create(newElement.DisplayedNode, ConsumerElement.DisplayedNode, Item));
+                    }
 
-					Parent.Graph.UpdateNodeValues();
-					Parent.AddRemoveElements();
-					Parent.UpdateNodes();
-				});
-			}
+                    Parent.Graph.UpdateNodeValues();
+                    Parent.AddRemoveElements();
+                    Parent.UpdateNodes();
+                });
+            }
 
-			Parent.Graph.UpdateNodeValues();
-			Parent.AddRemoveElements();
-			Parent.UpdateNodes();
-			Dispose();
-		}
+            Parent.Graph.UpdateNodeValues();
+            Parent.AddRemoveElements();
+            Parent.UpdateNodes();
+            Dispose();
+        }
 
-		public override void MouseDown(Point location, MouseButtons button)
-		{
-			switch (button)
-			{
-				case MouseButtons.Left:
-					if (DragType == DragType.MouseUp)
-					{
-						EndDrag(location);
-					}
-					break;
+        public override void MouseDown(Point location, MouseButtons button)
+        {
+            switch (button) {
+                case MouseButtons.Left:
+                    if (DragType == DragType.MouseUp) {
+                        EndDrag(location);
+                    }
+                    break;
 
-				case MouseButtons.Right:
-					Dispose();
-					break;
-			}
-		}
+                case MouseButtons.Right:
+                    Dispose();
+                    break;
+            }
+        }
 
-		public override void MouseUp(Point location, MouseButtons button)
-		{
-			switch (button)
-			{
-				case MouseButtons.Left:
-					if (DragType == DragType.MouseDown)
-					{
-						EndDrag(location);
-					}
-					break;
-			}
-		}
+        public override void MouseUp(Point location, MouseButtons button)
+        {
+            switch (button) {
+                case MouseButtons.Left:
+                    if (DragType == DragType.MouseDown) {
+                        EndDrag(location);
+                    }
+                    break;
+            }
+        }
 
 
-		public override void MouseMoved(Point location)
-		{
-			NodeElement mousedElement = Parent.GetElementsAtPoint(location).OfType<NodeElement>().FirstOrDefault();
-			if (mousedElement != null)
-			{
-				if (StartConnectionType == LinkType.Input)
-				{
-					if (mousedElement.DisplayedNode.Outputs.Contains(Item))
-					{
-						SupplierElement = mousedElement;
-					}
-				}
-				else
-				{
-					if (mousedElement.DisplayedNode.Inputs.Contains(Item))
-					{
-						ConsumerElement = mousedElement;
-					}
-				}
-			}
-			else
-			{
-				if (StartConnectionType == LinkType.Input)
-				{
-					SupplierElement = null;
-				}
-				else
-				{
-					ConsumerElement = null;
-				}
-			}
-		}
-	}
+        public override void MouseMoved(Point location)
+        {
+            NodeElement mousedElement = Parent.GetElementsAtPoint(location).OfType<NodeElement>().FirstOrDefault();
+            if (mousedElement != null) {
+                if (StartConnectionType == LinkType.Input) {
+                    if (mousedElement.DisplayedNode.Outputs.Contains(Item)) {
+                        SupplierElement = mousedElement;
+                    }
+                } else {
+                    if (mousedElement.DisplayedNode.Inputs.Contains(Item)) {
+                        ConsumerElement = mousedElement;
+                    }
+                }
+            } else {
+                if (StartConnectionType == LinkType.Input) {
+                    SupplierElement = null;
+                } else {
+                    ConsumerElement = null;
+                }
+            }
+        }
+    }
 }

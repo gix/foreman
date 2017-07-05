@@ -1,21 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-
-namespace Foreman
+﻿namespace Foreman
 {
-    public static partial class GraphOptimisations
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+
+    public static class GraphOptimisations
     {
         public static void FindOptimalGraphToSatisfyFixedNodes(this ProductionGraph graph)
         {
-            foreach (ProductionNode node in graph.Nodes.Where(n => n.rateType == RateType.Auto))
-            {
+            foreach (ProductionNode node in graph.Nodes.Where(n => n.RateType == RateType.Auto)) {
                 node.ResetSolvedRate();
             }
 
-            foreach (var nodeGroup in graph.GetConnectedComponents())
-            {
+            foreach (var nodeGroup in graph.GetConnectedComponents()) {
                 OptimiseNodeGroup(nodeGroup);
             }
 
@@ -26,8 +24,7 @@ namespace Foreman
         {
             ProductionSolver solver = new ProductionSolver();
 
-            foreach (var node in nodeGroup)
-            {
+            foreach (var node in nodeGroup) {
                 node.AddConstraints(solver);
             }
 
@@ -38,13 +35,11 @@ namespace Foreman
             // TODO: Handle BIG NUMBERS
             // TODO: Return error in solution!?
             if (solution == null)
-                throw new Exception("Solver failed but that shouldn't happen.\n" + solver.ToString());
+                throw new Exception("Solver failed but that shouldn't happen.\n" + solver);
 
-            foreach (var node in nodeGroup)
-            {
+            foreach (var node in nodeGroup) {
                 node.SetSolvedRate(solution.ActualRate(node));
-                foreach (var link in node.OutputLinks.Union(node.InputLinks))
-                {
+                foreach (var link in node.OutputLinks.Union(node.InputLinks)) {
                     link.Throughput = solution.Throughput(link);
                 }
             }
@@ -57,42 +52,39 @@ namespace Foreman
     {
         internal void ResetSolvedRate()
         {
-            actualRate = 0;
+            ActualRate = 0;
         }
 
         internal virtual void SetSolvedRate(double rate)
         {
-            actualRate = (float)rate;
+            ActualRate = (float)rate;
         }
 
         internal void AddConstraints(ProductionSolver solver)
         {
             solver.AddNode(this);
 
-            if (rateType == RateType.Manual)
-            {
-                solver.AddTarget(this, desiredRate);
+            if (RateType == RateType.Manual) {
+                solver.AddTarget(this, DesiredRate);
             }
 
-            foreach (var itemInputs in InputLinks.GroupBy(x => x.Item))
-            {
+            foreach (var itemInputs in InputLinks.GroupBy(x => x.Item)) {
                 var item = itemInputs.Key;
 
-                solver.AddInputRatio(this, item, itemInputs, inputRateFor(item));
-                solver.AddInputLink(this, item, itemInputs, inputRateFor(item));
+                solver.AddInputRatio(this, item, itemInputs, InputRateFor(item));
+                solver.AddInputLink(this, item, itemInputs, InputRateFor(item));
             }
 
-            foreach (var itemOutputs in OutputLinks.GroupBy(x => x.Item))
-            {
+            foreach (var itemOutputs in OutputLinks.GroupBy(x => x.Item)) {
                 var item = itemOutputs.Key;
 
-                solver.AddOutputRatio(this, item, itemOutputs, outputRateFor(item));
+                solver.AddOutputRatio(this, item, itemOutputs, OutputRateFor(item));
                 // Output links do not need to constrained, since they are already covered by adding
                 // the input link above.
             }
         }
 
-        internal abstract double outputRateFor(Item item);
-        internal abstract double inputRateFor(Item item);
+        internal abstract double OutputRateFor(Item item);
+        internal abstract double InputRateFor(Item item);
     }
 }

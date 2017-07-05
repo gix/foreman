@@ -191,7 +191,7 @@ namespace ForemanTest
 
             GraphOptimisations.FindOptimalGraphToSatisfyFixedNodes(data.Graph);
 
-            AssertFloatsAreEqual(0, data.Graph.Nodes[0].actualRate);
+            AssertFloatsAreEqual(0, data.Graph.Nodes[0].ActualRate);
         }
 
         [TestMethod]
@@ -207,7 +207,7 @@ namespace ForemanTest
 
             GraphOptimisations.FindOptimalGraphToSatisfyFixedNodes(data.Graph);
 
-            AssertFloatsAreEqual(10, data.Graph.Nodes[0].actualRate);
+            AssertFloatsAreEqual(10, data.Graph.Nodes[0].ActualRate);
         }
 
         [TestMethod]
@@ -449,7 +449,7 @@ namespace ForemanTest
             GraphBuilder[] builders = { builderA, builderB };
             bool[] addPassthroughs = { false, true };
 
-            foreach (var tuple in builders.Zip(addPassthroughs, (a, b) => Tuple.Create(a, b)))
+            foreach (var tuple in builders.Zip(addPassthroughs, Tuple.Create))
             {
                 var builder = tuple.Item1;
                 var usePassthrough = tuple.Item2;

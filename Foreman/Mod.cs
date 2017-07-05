@@ -1,87 +1,81 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Foreman
+﻿namespace Foreman
 {
-	public class Mod
-	{
-		public String Name = "";
-		public String title = "";
-		public String version = "";
-		public Version parsedVersion;
-		public String dir = "";
-		public String description = "";
-		public String author = "";
-		public List<String> dependencies = new List<String>();
-		public List<ModDependency> parsedDependencies = new List<ModDependency>();
-		public bool Enabled = true;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
 
-		public bool SatisfiesDependency(ModDependency dep)
-		{
-			if (Name != dep.ModName)
-			{
-				return false;
-			}
-			if (dep.Version != null)
-			{
-				if (dep.VersionType == DependencyType.EqualTo
-					&& parsedVersion != dep.Version)
-				{
-					return false;
-				}
-				if (dep.VersionType == DependencyType.GreaterThan
-					&& parsedVersion <= dep.Version)
-				{
-					return false;
-				}
-				if (dep.VersionType == DependencyType.GreaterThanOrEqual
-					&& parsedVersion < dep.Version)
-				{
-					return false;
-				}
-			}
-			return true;
-		}
+    public class Mod
+    {
+        public string Name { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Version { get; set; } = "";
+        public Version ParsedVersion { get; set; }
+        public string Dir { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Author { get; set; } = "";
+        public List<string> Dependencies { get; set; } = new List<string>();
+        public List<ModDependency> ParsedDependencies { get; set; } = new List<ModDependency>();
+        public bool Enabled { get; set; } = true;
 
-		public bool DependsOn(Mod mod, bool ignoreOptional)
-		{
-			IEnumerable<ModDependency> depList;
-			if (ignoreOptional)
-			{
-				depList = parsedDependencies.Where(d => !d.Optional);
-			} else {
-				depList = parsedDependencies;
-			}
-			foreach (ModDependency dep in depList)
-			{
-				if (mod.SatisfiesDependency(dep))
-				{
-					return true;
-				}
-			}
-			return false;
-		}
+        public bool SatisfiesDependency(ModDependency dep)
+        {
+            if (Name != dep.ModName) {
+                return false;
+            }
+            if (dep.Version != null) {
+                if (dep.VersionType == DependencyType.EqualTo
+                    && ParsedVersion != dep.Version) {
+                    return false;
+                }
+                if (dep.VersionType == DependencyType.GreaterThan
+                    && ParsedVersion <= dep.Version) {
+                    return false;
+                }
+                if (dep.VersionType == DependencyType.GreaterThanOrEqual
+                    && ParsedVersion < dep.Version) {
+                    return false;
+                }
+            }
+            return true;
+        }
 
-		public override string ToString()
-		{
-			return Name;
-		}
-	}
+        public bool DependsOn(Mod mod, bool ignoreOptional)
+        {
+            IEnumerable<ModDependency> depList;
+            if (ignoreOptional)
+                depList = ParsedDependencies.Where(d => !d.Optional);
+            else
+                depList = ParsedDependencies;
 
-	public class ModDependency
-	{
-		public String ModName = "";
-		public Version Version;
-		public bool Optional = false;
-		public DependencyType VersionType = DependencyType.EqualTo;
-	}
+            return depList.Any(mod.SatisfiesDependency);
+        }
 
-	public enum DependencyType
-	{
-		EqualTo,
-		GreaterThan,
-		GreaterThanOrEqual
-	}
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
+
+    public class ModDependency
+    {
+        public ModDependency(string modName, Version version, bool optional, DependencyType versionType)
+        {
+            ModName = modName;
+            Version = version;
+            Optional = optional;
+            VersionType = versionType;
+        }
+
+        public string ModName { get; }
+        public Version Version { get; }
+        public bool Optional { get; }
+        public DependencyType VersionType { get; }
+    }
+
+    public enum DependencyType
+    {
+        EqualTo,
+        GreaterThan,
+        GreaterThanOrEqual
+    }
 }

@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Google.OrTools.LinearSolver;
-using System.Diagnostics;
-
-namespace Foreman
+﻿namespace Foreman
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using Google.OrTools.LinearSolver;
+
     // A wrapper around Google's Optimization Tools, specifically the Linear Programming library. We
     // can express a factory as a system of linear constraints, and this library takes care of
     // solving them for us.
@@ -18,14 +18,16 @@ namespace Foreman
     {
         public class Solution
         {
-            public Solution(Dictionary<ProductionNode, double> nodes, Dictionary<NodeLink, double> links)
+            public Solution(
+                IReadOnlyDictionary<ProductionNode, double> nodes,
+                IReadOnlyDictionary<NodeLink, double> links)
             {
-                this.Nodes = nodes;
-                this.Links = links;
+                Nodes = nodes;
+                Links = links;
             }
 
-            public Dictionary<ProductionNode, double> Nodes { get; private set; }
-            public Dictionary<NodeLink, double> Links { get; private set; }
+            public IReadOnlyDictionary<ProductionNode, double> Nodes { get; }
+            public IReadOnlyDictionary<NodeLink, double> Links { get; }
 
             public double ActualRate(ProductionNode node)
             {
@@ -38,39 +40,44 @@ namespace Foreman
             }
         }
 
-        private Objective objective;
+        private readonly Objective objective;
 
-        private GoogleSolver solver;
+        private readonly GoogleSolver solver;
 
         // There is no way to generate a unique string/name for nodes, so instead store a map so they
         // can be uniquely associated.
-        private Dictionary<object, Variable> allVariables;
+        private readonly Dictionary<object, Variable> allVariables;
 
         // We only keep track of constraints as we create them for debugging purposes. OrTools
         // doesn't provide a method for listing all constraints on a solver, which is unfortunate.
 
         // Keep track of nodes as they are added to ensure the solution contains all of them, even if
         // there are no links.
-        private List<ProductionNode> nodes;
+        private readonly List<ProductionNode> nodes;
 
         // Used to ensure uniqueness of variables names
         private int counter;
 
-        enum EndpointType { SUPPLY, CONSUME, ERROR }
+        enum EndpointType
+        {
+            SUPPLY,
+            CONSUME,
+            ERROR
+        }
 
         public ProductionSolver()
         {
-            this.solver = GoogleSolver.Create();
-            this.objective = solver.Objective();
-            this.allVariables = new Dictionary<object, Variable>();
-            this.nodes = new List<ProductionNode>();
+            solver = GoogleSolver.Create();
+            objective = solver.Objective();
+            allVariables = new Dictionary<object, Variable>();
+            nodes = new List<ProductionNode>();
         }
 
         public void AddNode(ProductionNode node)
         {
-            var x = variableFor(node);
+            var x = VariableFor(node);
 
-            this.nodes.Add(node);
+            nodes.Add(node);
 
             // The rate of all nodes should be minimized.
             //
@@ -97,18 +104,23 @@ namespace Foreman
                 return null;
 
             var nodeSolutions = nodes
-                .ToDictionary(x => x, x => solutionFor(Tuple.Create(x, RateType.ACTUAL)));
+                .ToDictionary(x => x, x => SolutionFor(Tuple.Create(x, RateType.ACTUAL)));
 
             // Link throughput is the maximum, i.e. the supply solution. The consumer solution may be
             // less than this if the consumer is buffering.
             var linkSolutions = nodes
                 .SelectMany(x => x.OutputLinks)
-                .ToDictionary(x => x, x => solutionFor(Tuple.Create(x, EndpointType.SUPPLY)));
+                .ToDictionary(x => x, x => SolutionFor(Tuple.Create(x, EndpointType.SUPPLY)));
 
             return new Solution(nodeSolutions, linkSolutions);
         }
 
-        public enum RateType { ACTUAL, ERROR, ABS_ERROR }
+        public enum RateType
+        {
+            ACTUAL,
+            ERROR,
+            ABS_ERROR
+        }
 
         // Ensure that the solution has a rate matching desired for this node. Typically there will
         // one of these on the ultimate output node, though multiple are supported, on any node. If
@@ -116,8 +128,8 @@ namespace Foreman
         // rates will not match the desired asked for here.
         public void AddTarget(ProductionNode node, float desiredRate)
         {
-            var nodeVar = variableFor(node, RateType.ACTUAL);
-            var errorVar = variableFor(node, RateType.ERROR);
+            var nodeVar = VariableFor(node, RateType.ACTUAL);
+            var errorVar = VariableFor(node, RateType.ERROR);
 
             // The sum of the rate for this node, plus an error variable, must be equal to
             // desiredRate. In normal scenarios, the error variable will be zero.
@@ -125,7 +137,7 @@ namespace Foreman
             constraint.SetCoefficient(nodeVar, 1);
             constraint.SetCoefficient(errorVar, 1);
 
-            minimizeError(node, errorVar);
+            MinimizeError(node, errorVar);
         }
 
         // Constrain a ratio on the output side of a node
@@ -133,7 +145,7 @@ namespace Foreman
         {
             Debug.Assert(links.All(x => x.Supplier == node));
 
-            addRatio(node, item, links, rate * node.ProductivityMultiplier(), EndpointType.SUPPLY);
+            AddRatio(node, item, links, rate * node.ProductivityMultiplier(), EndpointType.SUPPLY);
         }
 
         // Constrain a ratio on the input side of a node
@@ -141,12 +153,12 @@ namespace Foreman
         {
             Debug.Assert(links.All(x => x.Consumer == node));
 
-            addRatio(node, item, links, rate, EndpointType.CONSUME);
+            AddRatio(node, item, links, rate, EndpointType.CONSUME);
         }
 
         // Constrain input to a node for a particular item so that the node does not consume more
         // than is being produced by the supplier.
-        // 
+        //
         // Consuming less than is being produced is fine. This represents a backup.
         public void AddInputLink(ProductionNode node, Item item, IEnumerable<NodeLink> links, double inputRate)
         {
@@ -154,11 +166,10 @@ namespace Foreman
 
             // Each item input/output to a recipe has one varible per link. These variables should be
             // related to one another using one of the other Ratio methods.
-            foreach (var link in links)
-            {
-                var supplierVariable = variableFor(link, EndpointType.SUPPLY);
-                var consumerVariable = variableFor(link, EndpointType.CONSUME);
-                var errorVariable = variableFor(link, EndpointType.ERROR);
+            foreach (var link in links) {
+                var supplierVariable = VariableFor(link, EndpointType.SUPPLY);
+                var consumerVariable = VariableFor(link, EndpointType.CONSUME);
+                var errorVariable = VariableFor(link, EndpointType.ERROR);
 
                 {
                     // The consuming end of the link must be no greater than the supplying end.
@@ -194,24 +205,24 @@ namespace Foreman
         // For example, if a copper wire recipe (1 plate makes 2 wires) is connected to two different
         // consumers, then the sum of the wire rate flowing over those two links must be equal to 2
         // time the rate of the recipe.
-        private void addRatio(ProductionNode node, Item item, IEnumerable<NodeLink> links, double rate, EndpointType type)
+        private void AddRatio(ProductionNode node, Item item, IEnumerable<NodeLink> links, double rate,
+            EndpointType type)
         {
             // Ensure that the sum of all inputs for this type of item is in relation to the rate of the recipe
             // So for the steel input to a solar panel, the sum of every input variable to this node must equal 5 * rate.
             var constraint = MakeConstraint(0, 0);
-            var rateVariable = variableFor(node);
+            var rateVariable = VariableFor(node);
 
             constraint.SetCoefficient(rateVariable, rate);
-            foreach (var link in links)
-            {
-                var variable = variableFor(link, type);
+            foreach (var link in links) {
+                var variable = VariableFor(link, type);
                 constraint.SetCoefficient(variable, -1);
             }
         }
 
-        private void minimizeError(ProductionNode node, Variable errorVar)
+        private void MinimizeError(ProductionNode node, Variable errorVar)
         {
-            var absErrorVar = variableFor(node, RateType.ABS_ERROR);
+            var absErrorVar = VariableFor(node, RateType.ABS_ERROR);
 
             // These constraints translate the minimization of the absolute variable:
             //
@@ -241,26 +252,26 @@ namespace Foreman
             return solver.MakeConstraint(low, high);
         }
 
-        private Variable variableFor(NodeLink inputLink, EndpointType type)
+        private Variable VariableFor(NodeLink inputLink, EndpointType type)
         {
-            return variableFor(
+            return VariableFor(
                 Tuple.Create(inputLink, type),
-                key => makeName("link", type, key.Item1.Consumer.DisplayName, key.Item1.Item.FriendlyName));
+                key => MakeName("link", type, key.Item1.Consumer.DisplayName, key.Item1.Item.FriendlyName));
         }
 
-        private string makeName(params object[] components)
+        private string MakeName(params object[] components)
         {
             return string.Join(":", components).ToLower().Replace(" ", "-");
         }
 
-        private Variable variableFor(ProductionNode node, RateType type = RateType.ACTUAL)
+        private Variable VariableFor(ProductionNode node, RateType type = RateType.ACTUAL)
         {
-            return variableFor(
+            return VariableFor(
                 Tuple.Create(node, type),
-                key => makeName(GetNodePrefix(key.Item1), type, key.Item1.DisplayName));
+                key => MakeName(GetNodePrefix(key.Item1), type, key.Item1.DisplayName));
         }
 
-        private Variable variableFor<T>(T key, Func<T, string> name)
+        private Variable VariableFor<T>(T key, Func<T, string> name)
         {
             if (allVariables.TryGetValue(key, out Variable variable))
                 return variable;
@@ -271,8 +282,7 @@ namespace Foreman
 
         private static string GetNodePrefix(ProductionNode node)
         {
-            switch (node)
-            {
+            switch (node) {
                 case SupplyNode _:
                     return "supply";
                 case RecipeNode _:
@@ -284,20 +294,17 @@ namespace Foreman
             }
         }
 
-        private double solutionFor(object key)
+        private double SolutionFor(object key)
         {
-            if (allVariables.ContainsKey(key))
-            {
+            if (allVariables.ContainsKey(key)) {
                 return allVariables[key].SolutionValue();
-            } else
-            {
-                return 0.0;
             }
+            return 0.0;
         }
 
         private int GetSequence()
         {
-            return this.counter += 1;
+            return counter += 1;
         }
 
         // A human-readable description of the constraints. Useful for debugging.

@@ -128,11 +128,11 @@ namespace ForemanTest
 
                 if (target > 0)
                 {
-                    this.Built.desiredRate = target;
-                    this.Built.rateType = RateType.Manual;
+                    this.Built.DesiredRate = target;
+                    this.Built.RateType = RateType.Manual;
                 } else
                 {
-                    this.Built.rateType = RateType.Auto;
+                    this.Built.RateType = RateType.Auto;
                 }
             }
         }
@@ -165,11 +165,11 @@ namespace ForemanTest
 
                 if (target > 0)
                 {
-                    this.Built.desiredRate = target;
-                    this.Built.rateType = RateType.Manual;
+                    this.Built.DesiredRate = target;
+                    this.Built.RateType = RateType.Manual;
                 } else
                 {
-                    this.Built.rateType = RateType.Auto;
+                    this.Built.RateType = RateType.Auto;
                 }
             }
 
@@ -214,7 +214,7 @@ namespace ForemanTest
 
             public float SupplyRate(string itemName)
             {
-                return Suppliers(itemName).Where(x => x is SupplyNode).Select(x => x.actualRate).Sum();
+                return Suppliers(itemName).Where(x => x is SupplyNode).Select(x => x.ActualRate).Sum();
             }
 
             private IEnumerable<ProductionNode> Suppliers(string itemName)
@@ -224,7 +224,7 @@ namespace ForemanTest
 
             public float ConsumedRate(string itemName)
             {
-                return Consumers(itemName).Where(x => x is ConsumerNode).Select(x => x.actualRate).Sum();
+                return Consumers(itemName).Where(x => x is ConsumerNode).Select(x => x.ActualRate).Sum();
             }
 
             private IEnumerable<ProductionNode> Consumers(string itemName)
@@ -236,7 +236,7 @@ namespace ForemanTest
             {
                 return Graph.Nodes
                    .Where(x => x is RecipeNode && ((RecipeNode)x).BaseRecipe.Name == name)
-                   .Select(x => x.actualRate)
+                   .Select(x => x.ActualRate)
                    .Sum();
             }
 

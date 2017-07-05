@@ -1,61 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using System.Drawing;
-
-namespace Foreman
+﻿namespace Foreman
 {
-	public class ChooserControl : UserControl
-	{
-		public String DisplayText = "";
-		public String FilterText = "";
+    using System.Drawing;
+    using System.Windows.Forms;
 
-		public ChooserPanel ParentPanel = null;
+    public class ChooserControl : UserControl
+    {
+        public string DisplayText { get; }
+        public string FilterText { get; }
 
-		public ChooserControl(String text, String filterText)
-		{
-			this.DisplayText = text;
-			this.FilterText = filterText;
-		}
+        public ChooserPanel ParentPanel { get; set; }
 
-		protected void RegisterMouseEvents(Control control)
-		{
-			control.MouseMove += MouseMoved;
-			control.MouseClick += MouseClicked;
+        public ChooserControl(string text, string filterText)
+        {
+            DisplayText = text;
+            FilterText = filterText;
+        }
 
-			foreach (Control subControl in control.Controls)
-			{
-				RegisterMouseEvents(subControl);
-			}
-		}
-		
-		private void MouseMoved(object sender, MouseEventArgs e)
-		{
-			ParentPanel.SelectedControl = this;
-		}
+        protected void RegisterMouseEvents(Control control)
+        {
+            control.MouseMove += MouseMoved;
+            control.MouseClick += MouseClicked;
 
-		private void MouseClicked(object sender, MouseEventArgs e)
-		{
-			if (e.Button == MouseButtons.Left)
-			{
-				ParentPanel.CallbackMethod.Invoke(this);
-				ParentPanel.Dispose();
-			}
-		}
+            foreach (Control subControl in control.Controls) {
+                RegisterMouseEvents(subControl);
+            }
+        }
 
-		private void InitializeComponent()
-		{
-			this.SuspendLayout();
-			// 
-			// ChooserControl
-			// 
-			this.AutoSize = true;
-			this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-			this.Name = "ChooserControl";
-			this.Size = new System.Drawing.Size(0, 0);
-			this.ResumeLayout(false);
-		}
-	}
+        private void MouseMoved(object sender, MouseEventArgs e)
+        {
+            ParentPanel.SelectedControl = this;
+        }
+
+        private void MouseClicked(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left) {
+                ParentPanel.CallbackMethod.Invoke(this);
+                ParentPanel.Dispose();
+            }
+        }
+
+        private void InitializeComponent()
+        {
+            SuspendLayout();
+            //
+            // ChooserControl
+            //
+            AutoSize = true;
+            AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            Name = "ChooserControl";
+            Size = new Size(0, 0);
+            ResumeLayout(false);
+        }
+    }
 }

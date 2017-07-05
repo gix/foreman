@@ -1,32 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-
-namespace Foreman
+﻿namespace Foreman
 {
-	public partial class ItemChooserControl : ChooserControl
-	{
-		public Item DisplayedItem;
+    using System;
+    using System.Windows.Forms;
 
-		public ItemChooserControl(Item item, String text, String filterText) : base(text, filterText)
-		{
-			InitializeComponent();
+    public partial class ItemChooserControl : ChooserControl
+    {
+        public Item DisplayedItem { get; }
 
-			DisplayedItem = item;
-			TextLabel.Text = text;
-		}
+        public ItemChooserControl(Item item, string text, string filterText) : base(text, filterText)
+        {
+            InitializeComponent();
 
-		private void RecipeChooserSupplyNodeOption_Load(object sender, EventArgs e)
-		{
-			iconPictureBox.Image = DisplayedItem != null ? DisplayedItem.Icon : null;
-			iconPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
+            DisplayedItem = item;
+            TextLabel.Text = text;
+        }
 
-			RegisterMouseEvents(this);
-		}
-	}
+        private void RecipeChooserSupplyNodeOption_Load(object sender, EventArgs e)
+        {
+            iconPictureBox.Image = DisplayedItem != null ? DisplayedItem.Icon : null;
+            iconPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
+
+            RegisterMouseEvents(this);
+        }
+    }
 }

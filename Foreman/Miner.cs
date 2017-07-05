@@ -1,51 +1,48 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Drawing;
-
-namespace Foreman
+﻿namespace Foreman
 {
-	public class Resource
-	{
-		public String Name { get; private set; }
-		public String Category { get; set; }
-		public float Hardness { get; set;}
-		public float Time { get; set;}
-		public String result { get; set;}
+    using System.Collections.Generic;
+    using System.Linq;
 
-		public Resource(String name)
-		{
-			Name = name;
-		}
-	}
+    public class Resource
+    {
+        public string Name { get; }
+        public string Category { get; set; }
+        public float Hardness { get; set; }
+        public float Time { get; set; }
+        public string Result { get; set; }
 
-	public class Miner : ProductionEntity
-	{
-		public List<String> ResourceCategories { get; private set; }
-		public float MiningPower { get; set; }
+        public Resource(string name)
+        {
+            Name = name;
+        }
+    }
 
-		public Miner(String name)
-		{
-			Name = name;
-			ResourceCategories = new List<string>();
-			Enabled = true;
-		}
+    public class Miner : ProductionEntity
+    {
+        public List<string> ResourceCategories { get; }
+        public float MiningPower { get; set; }
 
-		public float GetRate(Resource resource, IEnumerable<Module> modules)
-		{
-			double finalSpeed = this.Speed;
-			foreach (Module module in modules.Where(m => m != null))
-			{
-				finalSpeed += module.SpeedBonus * this.Speed;
-			}
+        public Miner(string name)
+        {
+            Name = name;
+            ResourceCategories = new List<string>();
+            Enabled = true;
+        }
 
-			//According to http://www.factorioforums.com/wiki/index.php?title=Mining_drill
-			double timeForOneItem = resource.Time / ((MiningPower - resource.Hardness) * finalSpeed);
+        public float GetRate(Resource resource, IEnumerable<Module> modules)
+        {
+            double finalSpeed = Speed;
+            foreach (Module module in modules.Where(m => m != null)) {
+                finalSpeed += module.SpeedBonus * Speed;
+            }
 
-			timeForOneItem = Math.Ceiling(timeForOneItem * 60d) / 60d;   //Round up to the nearest tick, since mining can't start until the start of a new tick
+            // According to https://wiki.factorio.com/Mining
+            double timeForOneItem = resource.Time / ((MiningPower - resource.Hardness) * finalSpeed);
 
-			return (float)(1d / timeForOneItem);
-		}
-	}
+            // Round up to the nearest tick, since mining can't start until the start of a new tick
+            timeForOneItem = GameUtils.RoundToNearestTick(timeForOneItem);
+
+            return (float)(1d / timeForOneItem);
+        }
+    }
 }

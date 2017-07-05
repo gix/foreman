@@ -1,82 +1,76 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Drawing;
-
-namespace Foreman
+﻿namespace Foreman
 {
-	public class Item
-	{
-		public static List<String> localeCategories = new List<String> { "item-name", "fluid-name", "entity-name", "equipment-name" };
+    using System.Collections.Generic;
+    using System.Drawing;
 
-		public String Name { get; private set; }
-		public HashSet<Recipe> Recipes { get; private set; }
-		public Bitmap Icon { get; set; }
-		public String FriendlyName
-		{
-			get
-			{
-				foreach (String category in localeCategories)
-				{
-					if (DataCache.LocaleFiles.ContainsKey(category) && DataCache.LocaleFiles[category].ContainsKey(Name))
-					{
-						return DataCache.LocaleFiles[category][Name];
-					}
-				}
+    public class Item
+    {
+        public static readonly List<string> LocaleCategories =
+            new List<string> {"item-name", "fluid-name", "entity-name", "equipment-name"};
 
-				return Name;
-			}
-		}
-		public Boolean IsMissingItem = false;
+        public string Name { get; }
+        public HashSet<Recipe> Recipes { get; }
+        public Bitmap Icon { get; set; }
 
-		private Item()
-		{
-			Name = "";
-		}
+        public string FriendlyName
+        {
+            get
+            {
+                foreach (string category in LocaleCategories) {
+                    if (DataCache.LocaleFiles.ContainsKey(category) &&
+                        DataCache.LocaleFiles[category].ContainsKey(Name)) {
+                        return DataCache.LocaleFiles[category][Name];
+                    }
+                }
 
-		public Item(String name)
-		{
-			Name = name;
-			Recipes = new HashSet<Recipe>();
-		}
+                return Name;
+            }
+        }
 
-		public override int GetHashCode()
-		{
-			return Name.GetHashCode();
-		}
+        public bool IsMissingItem { get; set; } = false;
 
-		public override bool Equals(object obj)
-		{
-			if (!(obj is Item))
-			{
-				return false;
-			}
-			return this == (Item)obj;
-		}
+        private Item()
+        {
+            Name = "";
+        }
 
-		public static bool operator ==(Item item1, Item item2)
-		{
-			if (System.Object.ReferenceEquals(item1, item2))
-			{
-				return true;
-			}
-			if ((object)item1 == null || (object)item2 == null)
-			{
-				return false;
-			}
+        public Item(string name)
+        {
+            Name = name;
+            Recipes = new HashSet<Recipe>();
+        }
 
-			return item1.Name == item2.Name;
-		}
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode();
+        }
 
-		public static bool operator !=(Item item1, Item item2)
-		{
-			return !(item1 == item2);
-		}
+        public override bool Equals(object obj)
+        {
+            var item = obj as Item;
+            return item != null && this == item;
+        }
 
-		public override string ToString()
-		{
-			return String.Format("Item: {0}", Name);
-		}
-	}
+        public static bool operator ==(Item item1, Item item2)
+        {
+            if (ReferenceEquals(item1, item2)) {
+                return true;
+            }
+            if ((object)item1 == null || (object)item2 == null) {
+                return false;
+            }
+
+            return item1.Name == item2.Name;
+        }
+
+        public static bool operator !=(Item item1, Item item2)
+        {
+            return !(item1 == item2);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Item: {0}", Name);
+        }
+    }
 }

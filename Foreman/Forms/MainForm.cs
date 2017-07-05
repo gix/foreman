@@ -1,90 +1,89 @@
-﻿using System;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using System.IO;
-using System.Collections.Generic;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Drawing;
-using System.Collections.Specialized;
-
-namespace Foreman
+﻿namespace Foreman
 {
-	public partial class MainForm : Form
-	{
-		private List<ListViewItem> unfilteredItemList;
-		private List<ListViewItem> unfilteredRecipeList;
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.Specialized;
+    using System.Drawing;
+    using System.IO;
+    using System.Linq;
+    using System.Windows.Forms;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+    using Properties;
 
-		public MainForm()
-		{
-			InitializeComponent();
-			SetStyle(ControlStyles.SupportsTransparentBackColor, true);
-		}
+    public partial class MainForm : Form
+    {
+        private List<ListViewItem> unfilteredItemList;
+        private List<ListViewItem> unfilteredRecipeList;
 
-		private void Form1_Load(object sender, EventArgs e)
-		{
-			//I changed the name of the variable, so this copies the value over for people who are upgrading their Foreman version
-			if (Properties.Settings.Default.FactorioPath == "" && Properties.Settings.Default.FactorioDataPath != "")
-			{
-				Properties.Settings.Default["FactorioPath"] = Path.GetDirectoryName(Properties.Settings.Default.FactorioDataPath);
-				Properties.Settings.Default["FactorioDataPath"] = "";
-			}
+        public MainForm()
+        {
+            InitializeComponent();
+            SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+        }
 
-			if (!Directory.Exists(Properties.Settings.Default.FactorioPath))
-			{
-				foreach (String defaultPath in new String[]{
-												  Path.Combine(Environment.GetEnvironmentVariable("PROGRAMFILES(X86)"), "Factorio"),
-												  Path.Combine(Environment.GetEnvironmentVariable("ProgramW6432"), "Factorio"),
-												  Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "Applications", "factorio.app", "Contents")}) //Not actually tested on a Mac
-				{
-					if (Directory.Exists(defaultPath))
-					{
-						Properties.Settings.Default["FactorioPath"] = defaultPath;
-						Properties.Settings.Default.Save();
-						break;
-					}
-				}
-			}
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            //I changed the name of the variable, so this copies the value over for people who are upgrading their Foreman version
+            if (Settings.Default.FactorioPath == "" && Settings.Default.FactorioDataPath != "") {
+                Settings.Default["FactorioPath"] =
+                    Path.GetDirectoryName(Settings.Default.FactorioDataPath);
+                Settings.Default["FactorioDataPath"] = "";
+            }
 
-			if (!Directory.Exists(Properties.Settings.Default.FactorioPath))
-			{
-				using (DirectoryChooserForm form = new DirectoryChooserForm(""))
-				{
-					if (form.ShowDialog() == DialogResult.OK)
-					{
-						Properties.Settings.Default["FactorioPath"] = form.SelectedPath; ;
-						Properties.Settings.Default.Save();
-					}
-					else
-					{
-						Close();
-						Dispose();
-						return;
-					}
-				}
-			}
+            if (!Directory.Exists(Settings.Default.FactorioPath)) {
+                foreach (string defaultPath in new[] {
+                    Path.Combine(Environment.GetEnvironmentVariable("PROGRAMFILES(X86)"), "Factorio"),
+                    Path.Combine(Environment.GetEnvironmentVariable("ProgramW6432"), "Factorio"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "Applications",
+                        "factorio.app", "Contents")
+                }) //Not actually tested on a Mac
+                {
+                    if (Directory.Exists(defaultPath)) {
+                        Settings.Default["FactorioPath"] = defaultPath;
+                        Settings.Default.Save();
+                        break;
+                    }
+                }
+            }
 
-			if (!Directory.Exists(Properties.Settings.Default.FactorioModPath))
-			{
-				if (Directory.Exists(Path.Combine(Properties.Settings.Default.FactorioPath, "mods")))
-				{
-					Properties.Settings.Default["FactorioModPath"] = Path.Combine(Properties.Settings.Default.FactorioPath, "mods");
-				}
-				else if (Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "factorio", "mods")))
-				{
-					Properties.Settings.Default["FactorioModPath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "factorio", "mods");
-				}
-			}
+            if (!Directory.Exists(Settings.Default.FactorioPath)) {
+                using (DirectoryChooserForm form = new DirectoryChooserForm("")) {
+                    if (form.ShowDialog() == DialogResult.OK) {
+                        Settings.Default["FactorioPath"] = form.SelectedPath;
+                        ;
+                        Settings.Default.Save();
+                    } else {
+                        Close();
+                        Dispose();
+                        return;
+                    }
+                }
+            }
 
-			if (Properties.Settings.Default.EnabledMods == null) Properties.Settings.Default.EnabledMods = new StringCollection();
-			if (Properties.Settings.Default.EnabledAssemblers == null) Properties.Settings.Default.EnabledAssemblers = new StringCollection();
-			if (Properties.Settings.Default.EnabledMiners == null) Properties.Settings.Default.EnabledMiners = new StringCollection();
-			if (Properties.Settings.Default.EnabledModules == null) Properties.Settings.Default.EnabledModules = new StringCollection();
+            if (!Directory.Exists(Settings.Default.FactorioModPath)) {
+                if (Directory.Exists(Path.Combine(Settings.Default.FactorioPath, "mods"))) {
+                    Settings.Default["FactorioModPath"] =
+                        Path.Combine(Settings.Default.FactorioPath, "mods");
+                } else if (Directory.Exists(Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "factorio", "mods"))) {
+                    Settings.Default["FactorioModPath"] =
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "factorio",
+                            "mods");
+                }
+            }
+
+            if (Settings.Default.EnabledMods == null)
+                Settings.Default.EnabledMods = new StringCollection();
+            if (Settings.Default.EnabledAssemblers == null)
+                Settings.Default.EnabledAssemblers = new StringCollection();
+            if (Settings.Default.EnabledMiners == null)
+                Settings.Default.EnabledMiners = new StringCollection();
+            if (Settings.Default.EnabledModules == null)
+                Settings.Default.EnabledModules = new StringCollection();
 
 
-		    switch (Properties.Settings.Default.FactorioDifficulty)
-		    {
+            switch (Settings.Default.FactorioDifficulty) {
                 case "normal":
                     DataCache.Difficulty = "normal";
                     NormalDifficultyRadioButton.Checked = true;
@@ -94,12 +93,12 @@ namespace Foreman
                     ExpensiveDifficultyRadioButton.Checked = true;
                     break;
                 default:
-                    Properties.Settings.Default.FactorioDifficulty = "normal";
-                    Properties.Settings.Default.Save();
+                    Settings.Default.FactorioDifficulty = "normal";
+                    Settings.Default.Save();
                     DataCache.Difficulty = "normal";
                     NormalDifficultyRadioButton.Checked = true;
-		            break;
-		    }
+                    break;
+            }
 
             DataCache.LoadAllData(null);
 
@@ -108,554 +107,494 @@ namespace Foreman
             ExpensiveDifficultyRadioButton.CheckedChanged += DifficultyChanged;
 
             LanguageDropDown.Items.AddRange(DataCache.Languages.ToArray());
-			LanguageDropDown.SelectedItem = DataCache.Languages.FirstOrDefault(l => l.Name == Properties.Settings.Default.Language);
+            LanguageDropDown.SelectedItem =
+                DataCache.Languages.FirstOrDefault(l => l.Name == Settings.Default.Language);
 
-			UpdateControlValues();
-		}
+            UpdateControlValues();
+        }
 
-		public void LoadItemList()
-		{
-			//Listview
-			ItemListView.Items.Clear();
-			unfilteredItemList = new List<ListViewItem>();
-			if (DataCache.UnknownIcon != null)
-			{
-				ItemImageList.Images.Add(DataCache.UnknownIcon);
-			}
-			foreach (var item in DataCache.Items)
-			{
-				ListViewItem lvItem = new ListViewItem();
-				if (item.Value.Icon != null)
-				{
-					ItemImageList.Images.Add(item.Value.Icon);
-					lvItem.ImageIndex = ItemImageList.Images.Count - 1;
-				}
-				else
-				{
-					lvItem.ImageIndex = 0;
-				}
-				lvItem.Text = item.Value.FriendlyName;
-				lvItem.Tag = item.Value;
-				unfilteredItemList.Add(lvItem);
-				ItemListView.Items.Add(lvItem);
-			}
+        public void LoadItemList()
+        {
+            //Listview
+            ItemListView.Items.Clear();
+            unfilteredItemList = new List<ListViewItem>();
+            if (DataCache.UnknownIcon != null) {
+                ItemImageList.Images.Add(DataCache.UnknownIcon);
+            }
+            foreach (var item in DataCache.Items) {
+                ListViewItem lvItem = new ListViewItem();
+                if (item.Value.Icon != null) {
+                    ItemImageList.Images.Add(item.Value.Icon);
+                    lvItem.ImageIndex = ItemImageList.Images.Count - 1;
+                } else {
+                    lvItem.ImageIndex = 0;
+                }
+                lvItem.Text = item.Value.FriendlyName;
+                lvItem.Tag = item.Value;
+                unfilteredItemList.Add(lvItem);
+                ItemListView.Items.Add(lvItem);
+            }
 
-			ItemListView.Sorting = SortOrder.Ascending;
-			ItemListView.Sort();
-		}
+            ItemListView.Sorting = SortOrder.Ascending;
+            ItemListView.Sort();
+        }
 
-		public void LoadRecipeList()
-		{
-			RecipeListView.Items.Clear();
-			unfilteredRecipeList = new List<ListViewItem>();
-			if (DataCache.UnknownIcon != null)
-			{
-				RecipeImageList.Images.Add(DataCache.UnknownIcon);
-			}
-			foreach (var recipe in DataCache.Recipes)
-			{
-				ListViewItem lvItem = new ListViewItem();
-				if (recipe.Value.Icon != null)
-				{
-					RecipeImageList.Images.Add(recipe.Value.Icon);
-					lvItem.ImageIndex = RecipeImageList.Images.Count - 1;
-				} else
-				{
-					lvItem.ImageIndex = 0;
-				}
-				lvItem.Text = recipe.Value.FriendlyName;
-				lvItem.Tag = recipe.Value;
-				lvItem.Checked = recipe.Value.Enabled;
-				unfilteredRecipeList.Add(lvItem);
-				RecipeListView.Items.Add(lvItem);
-			}
+        public void LoadRecipeList()
+        {
+            RecipeListView.Items.Clear();
+            unfilteredRecipeList = new List<ListViewItem>();
+            if (DataCache.UnknownIcon != null) {
+                RecipeImageList.Images.Add(DataCache.UnknownIcon);
+            }
+            foreach (var recipe in DataCache.Recipes) {
+                ListViewItem lvItem = new ListViewItem();
+                if (recipe.Value.Icon != null) {
+                    RecipeImageList.Images.Add(recipe.Value.Icon);
+                    lvItem.ImageIndex = RecipeImageList.Images.Count - 1;
+                } else {
+                    lvItem.ImageIndex = 0;
+                }
+                lvItem.Text = recipe.Value.FriendlyName;
+                lvItem.Tag = recipe.Value;
+                lvItem.Checked = recipe.Value.Enabled;
+                unfilteredRecipeList.Add(lvItem);
+                RecipeListView.Items.Add(lvItem);
+            }
 
-			RecipeListView.Sorting = SortOrder.Ascending;
-			RecipeListView.Sort();
-		}
+            RecipeListView.Sorting = SortOrder.Ascending;
+            RecipeListView.Sort();
+        }
 
-		private void AddItemButton_Click(object sender, EventArgs e)
-		{
-			foreach (ListViewItem lvItem in ItemListView.SelectedItems)
-			{
-				Item item = (Item)lvItem.Tag;
-				NodeElement newElement = null;
+        private void AddItemButton_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem lvItem in ItemListView.SelectedItems) {
+                Item item = (Item)lvItem.Tag;
+                NodeElement newElement = null;
 
-				var itemSupplyOption = new ItemChooserControl(item, "Create infinite supply node", item.FriendlyName);
-				var itemOutputOption = new ItemChooserControl(item, "Create output node", item.FriendlyName);
+                var itemSupplyOption = new ItemChooserControl(item, "Create infinite supply node", item.FriendlyName);
+                var itemOutputOption = new ItemChooserControl(item, "Create output node", item.FriendlyName);
 
-				var optionList = new List<ChooserControl>();
-				optionList.Add(itemOutputOption);
-				foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Enabled))
-				{
-					if (recipe.Results.ContainsKey(item))
-					{
-						optionList.Add(new RecipeChooserControl(recipe, String.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
-					}
-				}
-				optionList.Add(itemSupplyOption);
-                
-				foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Enabled))
-				{
-					if (recipe.Ingredients.ContainsKey(item))
-					{
-						optionList.Add(new RecipeChooserControl(recipe, String.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
-					}
-				}
+                var optionList = new List<ChooserControl>();
+                optionList.Add(itemOutputOption);
+                foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Enabled)) {
+                    if (recipe.Results.ContainsKey(item)) {
+                        optionList.Add(new RecipeChooserControl(recipe,
+                            string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
+                    }
+                }
+                optionList.Add(itemSupplyOption);
 
-				var chooserPanel = new ChooserPanel(optionList, GraphViewer);
+                foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Enabled)) {
+                    if (recipe.Ingredients.ContainsKey(item)) {
+                        optionList.Add(new RecipeChooserControl(recipe,
+                            string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
+                    }
+                }
 
-				Point location = GraphViewer.ScreenToGraph(new Point(GraphViewer.Width / 2, GraphViewer.Height / 2));
+                var chooserPanel = new ChooserPanel(optionList, GraphViewer);
 
-				chooserPanel.Show(c =>
-				{
-					if (c != null)
-					{
-						if (c == itemSupplyOption)
-						{
-							newElement = new NodeElement(SupplyNode.Create(item, GraphViewer.Graph), GraphViewer);
-						}
-						else if (c is RecipeChooserControl)
-						{
-							newElement = new NodeElement(RecipeNode.Create((c as RecipeChooserControl).DisplayedRecipe, GraphViewer.Graph), GraphViewer);
-						}
-						else if (c == itemOutputOption)
-						{
-							newElement = new NodeElement(ConsumerNode.Create(item, GraphViewer.Graph), GraphViewer);
-						}
+                Point location = GraphViewer.ScreenToGraph(new Point(GraphViewer.Width / 2, GraphViewer.Height / 2));
 
-						newElement.Update();
-						newElement.Location = Point.Add(location, new Size(-newElement.Width / 2, -newElement.Height / 2));
-					}
-				});
-			}
+                chooserPanel.Show(c => {
+                    if (c != null) {
+                        if (c == itemSupplyOption) {
+                            newElement = new NodeElement(SupplyNode.Create(item, GraphViewer.Graph), GraphViewer);
+                        } else if (c is RecipeChooserControl) {
+                            newElement =
+                                new NodeElement(
+                                    RecipeNode.Create((c as RecipeChooserControl).DisplayedRecipe, GraphViewer.Graph),
+                                    GraphViewer);
+                        } else if (c == itemOutputOption) {
+                            newElement = new NodeElement(ConsumerNode.Create(item, GraphViewer.Graph), GraphViewer);
+                        }
 
-			GraphViewer.Graph.UpdateNodeValues();
-		}
+                        newElement.Update();
+                        newElement.Location = Point.Add(location,
+                            new Size(-newElement.Width / 2, -newElement.Height / 2));
+                    }
+                });
+            }
 
-		private void rateButton_CheckedChanged(object sender, EventArgs e)
-		{
-			if ((sender as RadioButton).Checked)
-			{
-				this.GraphViewer.Graph.SelectedAmountType = AmountType.Rate;
-				rateOptionsDropDown.Enabled = true;
-			}
-			else
-			{
-				rateOptionsDropDown.Enabled = false;
-			}
-			GraphViewer.Graph.UpdateNodeValues();
-			GraphViewer.UpdateNodes();
-			GraphViewer.Invalidate();
-		}
+            GraphViewer.Graph.UpdateNodeValues();
+        }
 
-		private void fixedAmountButton_CheckedChanged(object sender, EventArgs e)
-		{
-			if ((sender as RadioButton).Checked)
-			{
-				this.GraphViewer.Graph.SelectedAmountType = AmountType.FixedAmount;
-			}
+        private void rateButton_CheckedChanged(object sender, EventArgs e)
+        {
+            if ((sender as RadioButton).Checked) {
+                GraphViewer.Graph.SelectedAmountType = AmountType.Rate;
+                rateOptionsDropDown.Enabled = true;
+            } else {
+                rateOptionsDropDown.Enabled = false;
+            }
+            GraphViewer.Graph.UpdateNodeValues();
+            GraphViewer.UpdateNodes();
+            GraphViewer.Invalidate();
+        }
 
-			GraphViewer.Graph.UpdateNodeValues();
-			GraphViewer.UpdateNodes();
-			GraphViewer.Invalidate();
-		}
+        private void fixedAmountButton_CheckedChanged(object sender, EventArgs e)
+        {
+            if ((sender as RadioButton).Checked) {
+                GraphViewer.Graph.SelectedAmountType = AmountType.FixedAmount;
+            }
 
-		private void rateOptionsDropDown_SelectedIndexChanged(object sender, EventArgs e)
-		{
-			switch ((sender as ComboBox).SelectedIndex)
-			{
-				case 0:
-					GraphViewer.Graph.SelectedUnit = RateUnit.PerSecond;
-					break;
-				case 1:
-					GraphViewer.Graph.SelectedUnit = RateUnit.PerMinute;
-					break;
-			}
-			GraphViewer.Graph.UpdateNodeValues();
-			GraphViewer.Invalidate();
-			GraphViewer.UpdateNodes();
-		}
+            GraphViewer.Graph.UpdateNodeValues();
+            GraphViewer.UpdateNodes();
+            GraphViewer.Invalidate();
+        }
 
-		private void AutomaticCompleteButton_Click(object sender, EventArgs e)
-		{
-			GraphViewer.Graph.LinkUpAllInputs();
-			GraphViewer.Graph.UpdateNodeValues();
-			GraphViewer.AddRemoveElements();
+        private void rateOptionsDropDown_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            switch ((sender as ComboBox).SelectedIndex) {
+                case 0:
+                    GraphViewer.Graph.SelectedUnit = RateUnit.PerSecond;
+                    break;
+                case 1:
+                    GraphViewer.Graph.SelectedUnit = RateUnit.PerMinute;
+                    break;
+            }
+            GraphViewer.Graph.UpdateNodeValues();
+            GraphViewer.Invalidate();
+            GraphViewer.UpdateNodes();
+        }
 
-			GraphViewer.PositionNodes();
-		}
+        private void AutomaticCompleteButton_Click(object sender, EventArgs e)
+        {
+            GraphViewer.Graph.LinkUpAllInputs();
+            GraphViewer.Graph.UpdateNodeValues();
+            GraphViewer.AddRemoveElements();
 
-		private void ClearButton_Click(object sender, EventArgs e)
-		{
-			GraphViewer.Graph.Nodes.Clear();
-			GraphViewer.Elements.Clear();
-			GraphViewer.Invalidate();
-		}
+            GraphViewer.PositionNodes();
+        }
 
-		private void AssemblerDisplayCheckBox_CheckedChanged(object sender, EventArgs e)
-		{
-			GraphViewer.ShowAssemblers = (sender as CheckBox).Checked;
-			GraphViewer.ShowMiners = (sender as CheckBox).Checked;
-			GraphViewer.Graph.UpdateNodeValues();
-			GraphViewer.UpdateNodes();
-		}
+        private void ClearButton_Click(object sender, EventArgs e)
+        {
+            GraphViewer.Graph.Nodes.Clear();
+            GraphViewer.Elements.Clear();
+            GraphViewer.Invalidate();
+        }
 
-		private void ExportImageButton_Click(object sender, EventArgs e)
-		{
-			ImageExportForm form = new ImageExportForm(GraphViewer);
-			form.Show();
-		}
+        private void AssemblerDisplayCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            GraphViewer.ShowAssemblers = (sender as CheckBox).Checked;
+            GraphViewer.ShowMiners = (sender as CheckBox).Checked;
+            GraphViewer.Graph.UpdateNodeValues();
+            GraphViewer.UpdateNodes();
+        }
 
-		private void MinerDisplayCheckBox_CheckedChanged(object sender, EventArgs e)
-		{
-			GraphViewer.ShowMiners = (sender as CheckBox).Checked;
-			GraphViewer.Graph.UpdateNodeValues();
-			GraphViewer.UpdateNodes();
-		}
+        private void ExportImageButton_Click(object sender, EventArgs e)
+        {
+            ImageExportForm form = new ImageExportForm(GraphViewer);
+            form.Show();
+        }
 
-		private void ItemListView_SelectedIndexChanged(object sender, EventArgs e)
-		{
-			if (ItemListView.SelectedItems.Count == 0)
-			{
-				AddItemButton.Enabled = false;
-			}
-			else if (ItemListView.SelectedItems.Count == 1)
-			{
-				AddItemButton.Enabled = true;
-				AddItemButton.Text = "Add Item";
-			}
-			else if (ItemListView.SelectedItems.Count > 1)
-			{
-				AddItemButton.Enabled = true;
-				AddItemButton.Text = "Add Items";
-			}
-		}
+        private void MinerDisplayCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            GraphViewer.ShowMiners = (sender as CheckBox).Checked;
+            GraphViewer.Graph.UpdateNodeValues();
+            GraphViewer.UpdateNodes();
+        }
 
-		private void ItemListView_MouseDoubleClick(object sender, MouseEventArgs e)
-		{
-			AddItemButton.PerformClick();
-		}
+        private void ItemListView_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (ItemListView.SelectedItems.Count == 0) {
+                AddItemButton.Enabled = false;
+            } else if (ItemListView.SelectedItems.Count == 1) {
+                AddItemButton.Enabled = true;
+                AddItemButton.Text = "Add Item";
+            } else if (ItemListView.SelectedItems.Count > 1) {
+                AddItemButton.Enabled = true;
+                AddItemButton.Text = "Add Items";
+            }
+        }
 
-		private void ItemListView_ItemDrag(object sender, ItemDragEventArgs e)
-		{
-			HashSet<Item> draggedItems = new HashSet<Item>();
-			foreach (ListViewItem item in ItemListView.SelectedItems)
-			{
-				draggedItems.Add((Item)item.Tag);
-			}
-			DoDragDrop(draggedItems, DragDropEffects.All);
-		}
+        private void ItemListView_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            AddItemButton.PerformClick();
+        }
 
-		private void FilterTextBox_TextChanged(object sender, EventArgs e)
-		{
-			ItemListView.Items.Clear();
-			ItemListView.Items.AddRange(unfilteredItemList.Where(i => i.Text.ToLower().Contains(ItemFilterTextBox.Text.ToLower())).ToArray());
-		}
+        private void ItemListView_ItemDrag(object sender, ItemDragEventArgs e)
+        {
+            HashSet<Item> draggedItems = new HashSet<Item>();
+            foreach (ListViewItem item in ItemListView.SelectedItems) {
+                draggedItems.Add((Item)item.Tag);
+            }
+            DoDragDrop(draggedItems, DragDropEffects.All);
+        }
 
-		private void FactorioDirectoryButton_Click(object sender, EventArgs e)
-		{
-			using (DirectoryChooserForm form = new DirectoryChooserForm(Properties.Settings.Default.FactorioPath))
-			{
-				form.Text = "Locate the factorio directory";
-				if (form.ShowDialog() == DialogResult.OK)
-				{
-					Properties.Settings.Default["FactorioPath"] = form.SelectedPath;
-					Properties.Settings.Default.Save();
+        private void FilterTextBox_TextChanged(object sender, EventArgs e)
+        {
+            ItemListView.Items.Clear();
+            ItemListView.Items.AddRange(unfilteredItemList
+                .Where(i => i.Text.ToLower().Contains(ItemFilterTextBox.Text.ToLower())).ToArray());
+        }
 
-					JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewer));
-					DataCache.LoadAllData(null);
-					GraphViewer.LoadFromJson(savedGraph);
-					UpdateControlValues();
-				}
-			}
-		}
+        private void FactorioDirectoryButton_Click(object sender, EventArgs e)
+        {
+            using (DirectoryChooserForm form = new DirectoryChooserForm(Settings.Default.FactorioPath)) {
+                form.Text = "Locate the factorio directory";
+                if (form.ShowDialog() == DialogResult.OK) {
+                    Settings.Default["FactorioPath"] = form.SelectedPath;
+                    Settings.Default.Save();
 
-		private void ModDirectoryButton_Click(object sender, EventArgs e)
-		{
-			using (DirectoryChooserForm form = new DirectoryChooserForm(Properties.Settings.Default.FactorioModPath))
-			{
-				form.Text = "Locate the mods directory";
-				if (form.ShowDialog() == DialogResult.OK)
-				{
-					Properties.Settings.Default["FactorioModPath"] = form.SelectedPath;
-					Properties.Settings.Default.Save();
+                    JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewer));
+                    DataCache.LoadAllData(null);
+                    GraphViewer.LoadFromJson(savedGraph);
+                    UpdateControlValues();
+                }
+            }
+        }
 
-					JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewer));
-					DataCache.LoadAllData(null);
-					GraphViewer.LoadFromJson(savedGraph);
-					UpdateControlValues();
-				}
-			}
-		}
+        private void ModDirectoryButton_Click(object sender, EventArgs e)
+        {
+            using (DirectoryChooserForm form = new DirectoryChooserForm(Settings.Default.FactorioModPath)) {
+                form.Text = "Locate the mods directory";
+                if (form.ShowDialog() == DialogResult.OK) {
+                    Settings.Default["FactorioModPath"] = form.SelectedPath;
+                    Settings.Default.Save();
 
-		private void ReloadButton_Click(object sender, EventArgs e)
-		{
-			GraphViewer.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewer)));
-			UpdateControlValues();
-		}
+                    JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewer));
+                    DataCache.LoadAllData(null);
+                    GraphViewer.LoadFromJson(savedGraph);
+                    UpdateControlValues();
+                }
+            }
+        }
 
-		private void saveGraphButton_Click(object sender, EventArgs e)
-		{
-			SaveFileDialog dialog = new SaveFileDialog();
-			dialog.DefaultExt = ".json";
-			dialog.Filter = "JSON Files (*.json)|*.json|All files (*.*)|*.*";
-			dialog.AddExtension = true;
-			dialog.OverwritePrompt = true;
-			dialog.FileName = "Flowchart.json";
-			if (dialog.ShowDialog() != DialogResult.OK)
-			{
-				return;
-			}
+        private void ReloadButton_Click(object sender, EventArgs e)
+        {
+            GraphViewer.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewer)));
+            UpdateControlValues();
+        }
 
-			var serialiser = JsonSerializer.Create();
-			serialiser.Formatting = Formatting.Indented;
-			var writer = new JsonTextWriter(new StreamWriter(dialog.FileName));
-			try
-			{
-				serialiser.Serialize(writer, GraphViewer);
-			}
-			catch (Exception exception)
-			{
-				MessageBox.Show("Could not save this file. See log for more details");
-				ErrorLogging.LogLine(String.Format("Error saving file '{0}'. Error: '{1}'", dialog.FileName, exception.Message));
-			}
-			finally
-			{
-				writer.Close();
-			}
-		}
+        private void saveGraphButton_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.DefaultExt = ".json";
+            dialog.Filter = "JSON Files (*.json)|*.json|All files (*.*)|*.*";
+            dialog.AddExtension = true;
+            dialog.OverwritePrompt = true;
+            dialog.FileName = "Flowchart.json";
+            if (dialog.ShowDialog() != DialogResult.OK) {
+                return;
+            }
 
-		private void loadGraphButton_Click(object sender, EventArgs e)
-		{
-			OpenFileDialog dialog = new OpenFileDialog();
-			dialog.Filter = "JSON Files (*.json)|*.json|All files (*.*)|*.*";
-			dialog.CheckFileExists = true;
-			if (dialog.ShowDialog() != DialogResult.OK)
-			{
-				return;
-			}
+            var serialiser = JsonSerializer.Create();
+            serialiser.Formatting = Formatting.Indented;
+            var writer = new JsonTextWriter(new StreamWriter(dialog.FileName));
+            try {
+                serialiser.Serialize(writer, GraphViewer);
+            } catch (Exception exception) {
+                MessageBox.Show("Could not save this file. See log for more details");
+                ErrorLogging.LogLine(string.Format("Error saving file '{0}'. Error: '{1}'", dialog.FileName,
+                    exception.Message));
+            } finally {
+                writer.Close();
+            }
+        }
 
-			try
-			{
-				GraphViewer.LoadFromJson(JObject.Parse(File.ReadAllText(dialog.FileName)));
-			}
-			catch (Exception exception)
-			{
-				MessageBox.Show("Could not load this file. See log for more details");
-				ErrorLogging.LogLine(String.Format("Error loading file '{0}'. Error: '{1}'", dialog.FileName, exception.Message));
-			}
+        private void loadGraphButton_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Filter = "JSON Files (*.json)|*.json|All files (*.*)|*.*";
+            dialog.CheckFileExists = true;
+            if (dialog.ShowDialog() != DialogResult.OK) {
+                return;
+            }
 
-			UpdateControlValues();
-			GraphViewer.Invalidate();
-		}
+            try {
+                GraphViewer.LoadFromJson(JObject.Parse(File.ReadAllText(dialog.FileName)));
+            } catch (Exception exception) {
+                MessageBox.Show("Could not load this file. See log for more details");
+                ErrorLogging.LogLine(string.Format("Error loading file '{0}'. Error: '{1}'", dialog.FileName,
+                    exception.Message));
+            }
 
-		private void EnableDisableButton_Click(object sender, EventArgs e)
-		{
-			EnableDisableItemsForm form = new EnableDisableItemsForm();
-			form.ShowDialog();
-			SaveEnabledObjects();
+            UpdateControlValues();
+            GraphViewer.Invalidate();
+        }
 
-			if (form.ModsChanged)
-			{
-				GraphViewer.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewer)));
-				UpdateControlValues();
-			}
-		}
+        private void EnableDisableButton_Click(object sender, EventArgs e)
+        {
+            EnableDisableItemsForm form = new EnableDisableItemsForm();
+            form.ShowDialog();
+            SaveEnabledObjects();
 
-		private void SaveEnabledObjects()
-		{
-			Properties.Settings.Default.EnabledMods.Clear();
-			Properties.Settings.Default.EnabledAssemblers.Clear();
-			Properties.Settings.Default.EnabledMiners.Clear();
-			Properties.Settings.Default.EnabledModules.Clear();
+            if (form.ModsChanged) {
+                GraphViewer.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewer)));
+                UpdateControlValues();
+            }
+        }
 
-			Properties.Settings.Default.EnabledMods.AddRange(DataCache.Mods.Select<Mod, string>(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
-			Properties.Settings.Default.EnabledAssemblers.AddRange(DataCache.Assemblers.Values.Select<Assembler, string>(a => a.Name + "|" + a.Enabled.ToString()).ToArray());
-			Properties.Settings.Default.EnabledMiners.AddRange(DataCache.Miners.Values.Select<Miner, string>(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
-			Properties.Settings.Default.EnabledModules.AddRange(DataCache.Modules.Values.Select<Module, string>(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
+        private void SaveEnabledObjects()
+        {
+            Settings.Default.EnabledMods.Clear();
+            Settings.Default.EnabledAssemblers.Clear();
+            Settings.Default.EnabledMiners.Clear();
+            Settings.Default.EnabledModules.Clear();
 
-			Properties.Settings.Default.Save();
-		}
+            Settings.Default.EnabledMods.AddRange(DataCache.Mods
+                .Select(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
+            Settings.Default.EnabledAssemblers.AddRange(DataCache.Assemblers.Values
+                .Select(a => a.Name + "|" + a.Enabled.ToString()).ToArray());
+            Settings.Default.EnabledMiners.AddRange(DataCache.Miners.Values
+                .Select(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
+            Settings.Default.EnabledModules.AddRange(DataCache.Modules.Values
+                .Select(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
 
-		private void ItemListView_KeyDown(object sender, KeyEventArgs e)
-		{
-			if (e.KeyCode == Keys.Enter)
-			{
-				AddItemButton.PerformClick();
-				e.Handled = true;
-			}
-		}
+            Settings.Default.Save();
+        }
 
-		private void FilterTextBox_KeyDown(object sender, KeyEventArgs e)
-		{
-			if (ItemListView.Items.Count == 0)
-			{
-				return;
-			}
-			int currentSelection;
-			if (ItemListView.SelectedIndices.Count == 0)
-			{
-				currentSelection = -1;
-			}
-			else
-			{
-				currentSelection = ItemListView.SelectedIndices[0];
-			}
-			if (e.KeyCode == Keys.Down)
-			{
-				int newSelection = currentSelection + 1;
-				if (newSelection >= ItemListView.Items.Count) newSelection = ItemListView.Items.Count - 1;
-				if (newSelection <= 0) newSelection = 0;
-				ItemListView.SelectedIndices.Clear();
-				ItemListView.SelectedIndices.Add(newSelection);
-				e.Handled = true;
-			}
-			else if (e.KeyCode == Keys.Up)
-			{
-				int newSelection = currentSelection - 1;
-				if (newSelection == -1) newSelection = 0;
-				ItemListView.SelectedIndices.Clear();
-				ItemListView.SelectedIndices.Add(newSelection);
-				e.Handled = true;
-			}
-			else if (e.KeyCode == Keys.Enter)
-			{
-				AddItemButton.PerformClick();
-			}
-		}
+        private void ItemListView_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter) {
+                AddItemButton.PerformClick();
+                e.Handled = true;
+            }
+        }
 
-		private void LanguageDropDown_SelectedIndexChanged(object sender, EventArgs e)
-		{
-			String newLocale = (LanguageDropDown.SelectedItem as Language).Name;
+        private void FilterTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (ItemListView.Items.Count == 0) {
+                return;
+            }
+            int currentSelection;
+            if (ItemListView.SelectedIndices.Count == 0) {
+                currentSelection = -1;
+            } else {
+                currentSelection = ItemListView.SelectedIndices[0];
+            }
+            if (e.KeyCode == Keys.Down) {
+                int newSelection = currentSelection + 1;
+                if (newSelection >= ItemListView.Items.Count) newSelection = ItemListView.Items.Count - 1;
+                if (newSelection <= 0) newSelection = 0;
+                ItemListView.SelectedIndices.Clear();
+                ItemListView.SelectedIndices.Add(newSelection);
+                e.Handled = true;
+            } else if (e.KeyCode == Keys.Up) {
+                int newSelection = currentSelection - 1;
+                if (newSelection == -1) newSelection = 0;
+                ItemListView.SelectedIndices.Clear();
+                ItemListView.SelectedIndices.Add(newSelection);
+                e.Handled = true;
+            } else if (e.KeyCode == Keys.Enter) {
+                AddItemButton.PerformClick();
+            }
+        }
 
-			DataCache.LocaleFiles.Clear();
-			DataCache.LoadLocaleFiles(newLocale);
+        private void LanguageDropDown_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string newLocale = (LanguageDropDown.SelectedItem as Language).Name;
 
-			GraphViewer.UpdateNodes();
-			UpdateControlValues();
+            DataCache.LocaleFiles.Clear();
+            DataCache.LoadLocaleFiles(newLocale);
 
-			Properties.Settings.Default["Language"] = newLocale;
-			Properties.Settings.Default.Save();
-		}
+            GraphViewer.UpdateNodes();
+            UpdateControlValues();
 
-		private void UpdateControlValues()
-		{
-			fixedAmountButton.Checked = GraphViewer.Graph.SelectedAmountType == AmountType.FixedAmount;
-			rateButton.Checked = GraphViewer.Graph.SelectedAmountType == AmountType.Rate;
-			if (GraphViewer.Graph.SelectedUnit == RateUnit.PerSecond)
-			{
-				rateOptionsDropDown.SelectedIndex = 0;
-			}
-			else
-			{
-				rateOptionsDropDown.SelectedIndex = 1;
-			}
+            Settings.Default["Language"] = newLocale;
+            Settings.Default.Save();
+        }
+
+        private void UpdateControlValues()
+        {
+            fixedAmountButton.Checked = GraphViewer.Graph.SelectedAmountType == AmountType.FixedAmount;
+            rateButton.Checked = GraphViewer.Graph.SelectedAmountType == AmountType.Rate;
+            if (GraphViewer.Graph.SelectedUnit == RateUnit.PerSecond) {
+                rateOptionsDropDown.SelectedIndex = 0;
+            } else {
+                rateOptionsDropDown.SelectedIndex = 1;
+            }
 
             AssemblerDisplayCheckBox.Checked = GraphViewer.ShowAssemblers;
-			MinerDisplayCheckBox.Checked = GraphViewer.ShowMiners;
+            MinerDisplayCheckBox.Checked = GraphViewer.ShowMiners;
 
-			LoadItemList();
-			LoadRecipeList();
+            LoadItemList();
+            LoadRecipeList();
 
-			GraphViewer.Invalidate();
-		}
+            GraphViewer.Invalidate();
+        }
 
-		private void ArrangeNodesButton_Click(object sender, EventArgs e)
-		{
-			GraphViewer.PositionNodes();
-		}
+        private void ArrangeNodesButton_Click(object sender, EventArgs e)
+        {
+            GraphViewer.PositionNodes();
+        }
 
-		private void RecipeFilterTextBox_TextChanged(object sender, EventArgs e)
-		{
-			RecipeListView.Items.Clear();
-			RecipeListView.Items.AddRange(unfilteredRecipeList.Where(r => r.Text.ToLower().Contains(RecipeFilterTextBox.Text.ToLower())).ToArray());
-		}
+        private void RecipeFilterTextBox_TextChanged(object sender, EventArgs e)
+        {
+            RecipeListView.Items.Clear();
+            RecipeListView.Items.AddRange(unfilteredRecipeList
+                .Where(r => r.Text.ToLower().Contains(RecipeFilterTextBox.Text.ToLower())).ToArray());
+        }
 
-		private void RecipeFilterTextBox_KeyDown(object sender, KeyEventArgs e)
-		{
-			if (RecipeListView.Items.Count == 0)
-			{
-				return;
-			}
-			int currentSelection;
-			if (RecipeListView.SelectedIndices.Count == 0)
-			{
-				currentSelection = -1;
-			}
-			else
-			{
-				currentSelection = RecipeListView.SelectedIndices[0];
-			}
-			if (e.KeyCode == Keys.Down)
-			{
-				int newSelection = currentSelection + 1;
-				if (newSelection >= RecipeListView.Items.Count) newSelection = RecipeListView.Items.Count - 1;
-				if (newSelection <= 0) newSelection = 0;
-				RecipeListView.SelectedIndices.Clear();
-				RecipeListView.SelectedIndices.Add(newSelection);
-				e.Handled = true;
-			}
-			else if (e.KeyCode == Keys.Up)
-			{
-				int newSelection = currentSelection - 1;
-				if (newSelection == -1) newSelection = 0;
-				RecipeListView.SelectedIndices.Clear();
-				RecipeListView.SelectedIndices.Add(newSelection);
-				e.Handled = true;
-			}
-			else if (e.KeyCode == Keys.Enter)
-			{
-				AddRecipeButton.PerformClick();
-			}
-		}
+        private void RecipeFilterTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (RecipeListView.Items.Count == 0) {
+                return;
+            }
+            int currentSelection;
+            if (RecipeListView.SelectedIndices.Count == 0) {
+                currentSelection = -1;
+            } else {
+                currentSelection = RecipeListView.SelectedIndices[0];
+            }
+            if (e.KeyCode == Keys.Down) {
+                int newSelection = currentSelection + 1;
+                if (newSelection >= RecipeListView.Items.Count) newSelection = RecipeListView.Items.Count - 1;
+                if (newSelection <= 0) newSelection = 0;
+                RecipeListView.SelectedIndices.Clear();
+                RecipeListView.SelectedIndices.Add(newSelection);
+                e.Handled = true;
+            } else if (e.KeyCode == Keys.Up) {
+                int newSelection = currentSelection - 1;
+                if (newSelection == -1) newSelection = 0;
+                RecipeListView.SelectedIndices.Clear();
+                RecipeListView.SelectedIndices.Add(newSelection);
+                e.Handled = true;
+            } else if (e.KeyCode == Keys.Enter) {
+                AddRecipeButton.PerformClick();
+            }
+        }
 
-		private void RecipeListView_ItemChecked(object sender, ItemCheckedEventArgs e)
-		{
-			((Recipe)e.Item.Tag).Enabled = e.Item.Checked;
-		}
+        private void RecipeListView_ItemChecked(object sender, ItemCheckedEventArgs e)
+        {
+            ((Recipe)e.Item.Tag).Enabled = e.Item.Checked;
+        }
 
-		private void AddRecipeButton_Click(object sender, EventArgs e)
-		{
-			foreach (ListViewItem lvItem in RecipeListView.SelectedItems)
-			{				
-				Point location = GraphViewer.ScreenToGraph(new Point(GraphViewer.Width / 2, GraphViewer.Height / 2));
+        private void AddRecipeButton_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem lvItem in RecipeListView.SelectedItems) {
+                Point location = GraphViewer.ScreenToGraph(new Point(GraphViewer.Width / 2, GraphViewer.Height / 2));
 
-				NodeElement newElement = new NodeElement(RecipeNode.Create((Recipe)lvItem.Tag, GraphViewer.Graph), GraphViewer);
-				newElement.Update();
-				newElement.Location = Point.Add(location, new Size(-newElement.Width / 2, -newElement.Height / 2));
-			}
+                NodeElement newElement = new NodeElement(RecipeNode.Create((Recipe)lvItem.Tag, GraphViewer.Graph),
+                    GraphViewer);
+                newElement.Update();
+                newElement.Location = Point.Add(location, new Size(-newElement.Width / 2, -newElement.Height / 2));
+            }
 
-			GraphViewer.Graph.UpdateNodeValues();
-		}
-		
-		private void RecipeListView_ItemDrag(object sender, ItemDragEventArgs e)
-		{
-			HashSet<Recipe> draggedRecipes = new HashSet<Recipe>();
-			foreach (ListViewItem recipe in RecipeListView.SelectedItems)
-			{
-				draggedRecipes.Add((Recipe)recipe.Tag);
-			}
-			DoDragDrop(draggedRecipes, DragDropEffects.All);
-		}
+            GraphViewer.Graph.UpdateNodeValues();
+        }
 
-		private void RecipeListView_SelectedIndexChanged(object sender, EventArgs e)
-		{
-			if (RecipeListView.SelectedItems.Count == 0)
-			{
-				AddRecipeButton.Enabled = false;
-			}
-			else if (RecipeListView.SelectedItems.Count == 1)
-			{
-				AddRecipeButton.Enabled = true;
-				AddRecipeButton.Text = "Add Recipe";
-			}
-			else if (RecipeListView.SelectedItems.Count > 1)
-			{
-				AddRecipeButton.Enabled = true;
-				AddRecipeButton.Text = "Add Recipes";
-			}
-		}
+        private void RecipeListView_ItemDrag(object sender, ItemDragEventArgs e)
+        {
+            HashSet<Recipe> draggedRecipes = new HashSet<Recipe>();
+            foreach (ListViewItem recipe in RecipeListView.SelectedItems) {
+                draggedRecipes.Add((Recipe)recipe.Tag);
+            }
+            DoDragDrop(draggedRecipes, DragDropEffects.All);
+        }
+
+        private void RecipeListView_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (RecipeListView.SelectedItems.Count == 0) {
+                AddRecipeButton.Enabled = false;
+            } else if (RecipeListView.SelectedItems.Count == 1) {
+                AddRecipeButton.Enabled = true;
+                AddRecipeButton.Text = "Add Recipe";
+            } else if (RecipeListView.SelectedItems.Count > 1) {
+                AddRecipeButton.Enabled = true;
+                AddRecipeButton.Text = "Add Recipes";
+            }
+        }
 
         private void DifficultyChanged(object sender, EventArgs e)
         {
@@ -669,8 +608,8 @@ namespace Foreman
             if (currentDifficulty == DataCache.Difficulty)
                 return;
 
-            Properties.Settings.Default.FactorioDifficulty = DataCache.Difficulty;
-            Properties.Settings.Default.Save();
+            Settings.Default.FactorioDifficulty = DataCache.Difficulty;
+            Settings.Default.Save();
 
             JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewer));
             DataCache.LoadAllData(null);

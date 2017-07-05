@@ -1,33 +1,33 @@
 ﻿namespace Foreman
 {
-	partial class MainForm
-	{
-		/// <summary>
-		/// Required designer variable.
-		/// </summary>
-		private System.ComponentModel.IContainer components = null;
+    partial class MainForm
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
 
-		/// <summary>
-		/// Clean up any resources being used.
-		/// </summary>
-		/// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-		protected override void Dispose(bool disposing)
-		{
-			if (disposing && (components != null))
-			{
-				components.Dispose();
-			}
-			base.Dispose(disposing);
-		}
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
 
-		#region Windows Form Designer generated code
+        #region Windows Form Designer generated code
 
-		/// <summary>
-		/// Required method for Designer support - do not modify
-		/// the contents of this method with the code editor.
-		/// </summary>
-		private void InitializeComponent()
-		{
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
             this.components = new System.ComponentModel.Container();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.MainToolbar = new System.Windows.Forms.FlowLayoutPanel();
@@ -292,7 +292,7 @@
             // MinerDisplayCheckBox
             // 
             this.MinerDisplayCheckBox.AutoSize = true;
-			this.MinerDisplayCheckBox.Location = new System.Drawing.Point(7, 42);
+            this.MinerDisplayCheckBox.Location = new System.Drawing.Point(7, 42);
             this.MinerDisplayCheckBox.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.MinerDisplayCheckBox.Name = "MinerDisplayCheckBox";
             this.MinerDisplayCheckBox.Size = new System.Drawing.Size(151, 17);
@@ -308,7 +308,7 @@
             this.flowLayoutPanel2.Controls.Add(this.ModDirectoryButton);
             this.flowLayoutPanel2.Controls.Add(this.ReloadButton);
             this.flowLayoutPanel2.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
-			this.flowLayoutPanel2.Location = new System.Drawing.Point(695, 3);
+            this.flowLayoutPanel2.Location = new System.Drawing.Point(695, 3);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(125, 90);
             this.flowLayoutPanel2.TabIndex = 13;
@@ -347,7 +347,7 @@
             // 
             this.panel1.Controls.Add(this.EnableDisableButton);
             this.panel1.Controls.Add(this.groupBox3);
-			this.panel1.Location = new System.Drawing.Point(826, 3);
+            this.panel1.Location = new System.Drawing.Point(826, 3);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(167, 90);
             this.panel1.TabIndex = 16;
@@ -652,51 +652,51 @@
             this.groupBox4.PerformLayout();
             this.ResumeLayout(false);
 
-		}
+        }
 
-		#endregion
+        #endregion
 
-		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-		private System.Windows.Forms.ImageList ItemImageList;
-		private System.Windows.Forms.FlowLayoutPanel MainToolbar;
-		private System.Windows.Forms.GroupBox groupBox1;
-		private System.Windows.Forms.ComboBox rateOptionsDropDown;
-		private System.Windows.Forms.RadioButton rateButton;
-		private System.Windows.Forms.RadioButton fixedAmountButton;
-		private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
-		private System.Windows.Forms.Button AutomaticCompleteButton;
-		private System.Windows.Forms.Button ClearButton;
-		private System.Windows.Forms.Button ExportImageButton;
-		private System.Windows.Forms.GroupBox groupBox2;
-		private System.Windows.Forms.CheckBox AssemblerDisplayCheckBox;
-		private System.Windows.Forms.CheckBox MinerDisplayCheckBox;
-		private ProductionGraphViewer GraphViewer;
-		private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
-		private System.Windows.Forms.Button FactorioDirectoryButton;
-		private System.Windows.Forms.Button ModDirectoryButton;
-		private System.Windows.Forms.Button ReloadButton;
-		private System.Windows.Forms.Button saveGraphButton;
-		private System.Windows.Forms.Button loadGraphButton;
-		private System.Windows.Forms.Button EnableDisableButton;
-		private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
-		private System.Windows.Forms.GroupBox groupBox3;
-		private System.Windows.Forms.ComboBox LanguageDropDown;
-		private System.Windows.Forms.Button ArrangeNodesButton;
-		private System.Windows.Forms.Panel panel1;
-		private System.Windows.Forms.TabControl ListTabControl;
-		private System.Windows.Forms.TabPage ItemTabPage;
-		private System.Windows.Forms.ListView ItemListView;
-		private System.Windows.Forms.ColumnHeader h_Name;
-		private System.Windows.Forms.TabPage RecipeTabPage;
-		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
-		private System.Windows.Forms.TextBox ItemFilterTextBox;
-		private System.Windows.Forms.Button AddItemButton;
-		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
-		private System.Windows.Forms.TextBox RecipeFilterTextBox;
-		private System.Windows.Forms.Button AddRecipeButton;
-		private System.Windows.Forms.ListView RecipeListView;
-		private System.Windows.Forms.ColumnHeader columnHeader1;
-		private System.Windows.Forms.ImageList RecipeImageList;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.ImageList ItemImageList;
+        private System.Windows.Forms.FlowLayoutPanel MainToolbar;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.ComboBox rateOptionsDropDown;
+        private System.Windows.Forms.RadioButton rateButton;
+        private System.Windows.Forms.RadioButton fixedAmountButton;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private System.Windows.Forms.Button AutomaticCompleteButton;
+        private System.Windows.Forms.Button ClearButton;
+        private System.Windows.Forms.Button ExportImageButton;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.CheckBox AssemblerDisplayCheckBox;
+        private System.Windows.Forms.CheckBox MinerDisplayCheckBox;
+        private ProductionGraphViewer GraphViewer;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
+        private System.Windows.Forms.Button FactorioDirectoryButton;
+        private System.Windows.Forms.Button ModDirectoryButton;
+        private System.Windows.Forms.Button ReloadButton;
+        private System.Windows.Forms.Button saveGraphButton;
+        private System.Windows.Forms.Button loadGraphButton;
+        private System.Windows.Forms.Button EnableDisableButton;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
+        private System.Windows.Forms.GroupBox groupBox3;
+        private System.Windows.Forms.ComboBox LanguageDropDown;
+        private System.Windows.Forms.Button ArrangeNodesButton;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.TabControl ListTabControl;
+        private System.Windows.Forms.TabPage ItemTabPage;
+        private System.Windows.Forms.ListView ItemListView;
+        private System.Windows.Forms.ColumnHeader h_Name;
+        private System.Windows.Forms.TabPage RecipeTabPage;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
+        private System.Windows.Forms.TextBox ItemFilterTextBox;
+        private System.Windows.Forms.Button AddItemButton;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
+        private System.Windows.Forms.TextBox RecipeFilterTextBox;
+        private System.Windows.Forms.Button AddRecipeButton;
+        private System.Windows.Forms.ListView RecipeListView;
+        private System.Windows.Forms.ColumnHeader columnHeader1;
+        private System.Windows.Forms.ImageList RecipeImageList;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.RadioButton ExpensiveDifficultyRadioButton;
         private System.Windows.Forms.RadioButton NormalDifficultyRadioButton;

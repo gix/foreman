@@ -1,39 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Drawing;
-
-namespace Foreman
+﻿namespace Foreman
 {
-	class Inserter
-	{
-		public String Name { get; private set; }
-		public float RotationSpeed { get; set; }
-		public Bitmap Icon { get; set; }
-		private String friendlyName;
-		public String FriendlyName
-		{
-			get
-			{
-				if (!String.IsNullOrWhiteSpace(friendlyName))
-				{
-					return friendlyName;
-				}
-				else
-				{
-					return Name;
-				}
-			}
-			set
-			{
-				friendlyName = value;
-			}
-		}
+    using System.Drawing;
 
-		public Inserter(String name)
-		{
-			Name = name;
-		}
-	}
+    public class Inserter
+    {
+        public string Name { get; }
+        public float RotationSpeed { get; set; }
+        public Bitmap Icon { get; set; }
+        private string friendlyName;
+
+        public string FriendlyName
+        {
+            get => !string.IsNullOrWhiteSpace(friendlyName) ? friendlyName : Name;
+            set => friendlyName = value;
+        }
+
+        public Inserter(string name)
+        {
+            Name = name;
+        }
+    }
 }

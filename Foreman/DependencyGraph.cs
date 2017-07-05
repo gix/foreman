@@ -1,142 +1,110 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Foreman;
-
-namespace Foreman
+﻿namespace Foreman
 {
-	class DependencyGraph
-	{
-		private List<Mod> mods = new List<Mod>();
-		public int[,] adjacencyMatrix;
+    using System.Collections.Generic;
+    using System.Linq;
 
-		public DependencyGraph(List<Mod> mods)
-		{
-			this.mods = mods;
-		}
+    public class DependencyGraph
+    {
+        private readonly List<Mod> mods = new List<Mod>();
+        private int[,] adjacencyMatrix;
 
-		public void DisableUnsatisfiedMods()
-		{
-			bool changeMade = true;
-			while (changeMade)
-			{
-				changeMade = false;
-				foreach (Mod mod in mods)
-				{
-					foreach (ModDependency dep in mod.parsedDependencies)
-					{
-						if (!DependencySatisfied(dep))
-						{
-							if (mod.Enabled)
-							{
-								changeMade = true;
-								mod.Enabled = false;
-							}
-						}
-					}
-				}
-			}
-		}
+        public DependencyGraph(List<Mod> mods)
+        {
+            this.mods = mods;
+        }
 
-		//Assumes no dependency cycles
-		public List<Mod> SortMods()
-		{
-			UpdateAdjacency();
+        public void DisableUnsatisfiedMods()
+        {
+            bool changeMade = true;
+            while (changeMade) {
+                changeMade = false;
+                foreach (Mod mod in mods) {
+                    foreach (ModDependency dep in mod.ParsedDependencies) {
+                        if (!DependencySatisfied(dep)) {
+                            if (mod.Enabled) {
+                                changeMade = true;
+                                mod.Enabled = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-			List<Mod> L = new List<Mod>();
-			HashSet<Mod> S = new HashSet<Mod>();
+        //Assumes no dependency cycles
+        public List<Mod> SortMods()
+        {
+            UpdateAdjacency();
 
-			// Get all mods with no incoming dependencies
-			for (int i = 0; i < mods.Count; i++)
-			{
-				bool dependency = false;
-				for (int j = 0; j < mods.Count(); j++)
-				{
-					if (adjacencyMatrix[j, i] == 1)
-					{
-						dependency = true;
-						break;
-					}
-				}
-				if (!dependency)
-				{
-					S.Add(mods[i]);
-				}
-			}
+            List<Mod> L = new List<Mod>();
+            HashSet<Mod> S = new HashSet<Mod>();
 
-			while (S.Any())
-			{
-				Mod n = S.First();
-				S.Remove(n);
+            // Get all mods with no incoming dependencies
+            for (int i = 0; i < mods.Count; i++) {
+                bool dependency = false;
+                for (int j = 0; j < mods.Count; j++) {
+                    if (adjacencyMatrix[j, i] == 1) {
+                        dependency = true;
+                        break;
+                    }
+                }
+                if (!dependency) {
+                    S.Add(mods[i]);
+                }
+            }
 
-				L.Add(n);
-				int nIndex = mods.IndexOf(n);
+            while (S.Any()) {
+                Mod n = S.First();
+                S.Remove(n);
 
-				for (int m = 0; m < mods.Count; m++)
-				{
-					if (adjacencyMatrix[nIndex, m] == 1)
-					{
-						adjacencyMatrix[nIndex, m] = 0;
-						
-						bool incoming = false;
-						for (int i = 0; i < mods.Count; i++)
-						{
-							if (adjacencyMatrix[i, m] == 1)
-							{
-								incoming = true;
-								break;
-							}
-						}
-						if (!incoming)
-						{
-							S.Add(mods[m]);
-						}
-					}
-				}
-			}
+                L.Add(n);
+                int nIndex = mods.IndexOf(n);
 
-			//Should be no edges (dependencies) left by here
+                for (int m = 0; m < mods.Count; m++) {
+                    if (adjacencyMatrix[nIndex, m] == 1) {
+                        adjacencyMatrix[nIndex, m] = 0;
 
-			L.Reverse();
-			return L;
-		}
+                        bool incoming = false;
+                        for (int i = 0; i < mods.Count; i++) {
+                            if (adjacencyMatrix[i, m] == 1) {
+                                incoming = true;
+                                break;
+                            }
+                        }
+                        if (!incoming) {
+                            S.Add(mods[m]);
+                        }
+                    }
+                }
+            }
 
-		public void UpdateAdjacency()
-		{
-			adjacencyMatrix = new int[mods.Count(), mods.Count()];
+            //Should be no edges (dependencies) left by here
 
-			for (int i = 0; i < mods.Count; i++)
-			{
-				for (int j = 0; j < mods.Count; j++)
-				{
-					if (mods[i].DependsOn(mods[j], false))
-					{
-						adjacencyMatrix[i, j] = 1;
-					}
-					else
-					{
-						adjacencyMatrix[i, j] = 0;
-					}
-				}
-			}
-		}
+            L.Reverse();
+            return L;
+        }
 
-		public bool DependencySatisfied(ModDependency dep)
-		{
-			if (dep.Optional)
-			{
-				return true;
-			}
+        public void UpdateAdjacency()
+        {
+            adjacencyMatrix = new int[mods.Count, mods.Count];
 
-			foreach (Mod mod in mods.Where(m => m.Enabled))
-			{
-				if (mod.SatisfiesDependency(dep))
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-	}
+            for (int i = 0; i < mods.Count; i++) {
+                for (int j = 0; j < mods.Count; j++) {
+                    if (mods[i].DependsOn(mods[j], false)) {
+                        adjacencyMatrix[i, j] = 1;
+                    } else {
+                        adjacencyMatrix[i, j] = 0;
+                    }
+                }
+            }
+        }
+
+        public bool DependencySatisfied(ModDependency dep)
+        {
+            if (dep.Optional)
+                return true;
+
+            return mods.Where(m => m.Enabled).Any(mod => mod.SatisfiesDependency(dep));
+        }
+    }
 }
