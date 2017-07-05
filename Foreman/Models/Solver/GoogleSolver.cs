@@ -1,10 +1,11 @@
-﻿using System;
-using Google.OrTools.LinearSolver;
+﻿using Google.OrTools.LinearSolver;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Foreman
 {
+    using System.Globalization;
+
     // A super thin wrapper around OrTools.LinearSolver to make up for its deficiences as a generated class.
     public class GoogleSolver
     {
@@ -27,9 +28,10 @@ namespace Foreman
         public void PrintTo(StringBuilder buffer)
         {
             var objective = solver.Objective();
+            var culture = CultureInfo.InvariantCulture;
 
             buffer.AppendLine("objective:");
-            buffer.AppendFormat("  {0}(", objective.Minimization() ? "min" : "max");
+            buffer.AppendFormat(culture, "  {0}(", objective.Minimization() ? "min" : "max");
 
             int i = 0;
             foreach (var variable in variables)
@@ -40,9 +42,7 @@ namespace Foreman
 
                 if (i > 0)
                     buffer.Append(" + ");
-                buffer.Append(coefficient);
-                buffer.Append(' ');
-                buffer.Append(variable.Name());
+                buffer.AppendFormat(culture, "{0} {1}", coefficient, variable.Name());
                 ++i;
             }
             buffer.AppendLine(")");
@@ -61,18 +61,16 @@ namespace Foreman
 
                     if (i > 0)
                         buffer.Append(" + ");
-                    buffer.Append(coefficient);
-                    buffer.Append(' ');
-                    buffer.Append(variable.Name());
+                    buffer.AppendFormat(culture, "{0} {1}", coefficient, variable.Name());
                     ++i;
                 }
 
                 if (double.IsPositiveInfinity(constraint.Ub()))
-                    buffer.AppendFormat(" ≥ {0}", constraint.Lb());
+                    buffer.AppendFormat(culture, " ≥ {0}", constraint.Lb());
                 else if (double.IsNegativeInfinity(constraint.Lb()))
-                    buffer.AppendFormat(" ≤ {0}", constraint.Ub());
+                    buffer.AppendFormat(culture, " ≤ {0}", constraint.Ub());
                 else
-                    buffer.AppendFormat(" ∈ [{0}, {1}]", constraint.Lb(), constraint.Ub());
+                    buffer.AppendFormat(culture, " ∈ [{0}, {1}]", constraint.Lb(), constraint.Ub());
 
                 buffer.AppendLine();
             }
@@ -81,7 +79,7 @@ namespace Foreman
             buffer.AppendLine("solution:");
             foreach (var variable in variables)
             {
-                buffer.AppendFormat("  {0} = {1}", variable.Name(), variable.SolutionValue());
+                buffer.AppendFormat(culture, "  {0} = {1}", variable.Name(), variable.SolutionValue());
                 buffer.AppendLine();
             }
         }
