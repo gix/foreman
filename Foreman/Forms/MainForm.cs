@@ -100,6 +100,9 @@
                     break;
             }
 
+            GraphViewer.ShowAssemblers = Settings.Default.ShowAssemblers;
+            GraphViewer.ShowMiners = Settings.Default.ShowMiners;
+
             DataCache.LoadAllData(null);
 
             // Register after loading settings to prevent an unnessecary data reload.
@@ -275,8 +278,10 @@
 
         private void AssemblerDisplayCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            GraphViewer.ShowAssemblers = (sender as CheckBox).Checked;
-            GraphViewer.ShowMiners = (sender as CheckBox).Checked;
+            var checkBox = (CheckBox)sender;
+            Settings.Default.ShowAssemblers = checkBox.Checked;
+            Settings.Default.Save();
+            GraphViewer.ShowAssemblers = checkBox.Checked;
             GraphViewer.Graph.UpdateNodeValues();
             GraphViewer.UpdateNodes();
         }
@@ -289,7 +294,10 @@
 
         private void MinerDisplayCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            GraphViewer.ShowMiners = (sender as CheckBox).Checked;
+            var checkBox = (CheckBox)sender;
+            Settings.Default.ShowMiners = checkBox.Checked;
+            Settings.Default.Save();
+            GraphViewer.ShowMiners = checkBox.Checked;
             GraphViewer.Graph.UpdateNodeValues();
             GraphViewer.UpdateNodes();
         }
