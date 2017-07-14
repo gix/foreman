@@ -48,7 +48,7 @@
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(7, 32);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(0, 0);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // flowLayoutPanel1
@@ -81,12 +81,15 @@
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.ClientSize = new System.Drawing.Size(0, 0);
+            this.ControlBox = false;
             this.Controls.Add(this.tableLayoutPanel1);
             this.DoubleBuffered = true;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximumSize = new System.Drawing.Size(999999, 600);
             this.Name = "ChooserPanel";
-            this.Size = new System.Drawing.Size(7, 32);
+            this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Load += new System.EventHandler(this.ChooserPanel_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.ChooserPanel_KeyDown);
             this.Leave += new System.EventHandler(this.ChooserPanel_Leave);

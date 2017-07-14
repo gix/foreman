@@ -656,7 +656,7 @@
 
                         Point location = GhostDragElement.Location;
 
-                        chooserPanel.Show(c => {
+                        chooserPanel.Show(PointToScreen(GraphToScreen(location)), c => {
                             if (c != null) {
                                 if (c == itemSupplyOption) {
                                     newElement = new NodeElement(SupplyNode.Create(item, Graph), this);

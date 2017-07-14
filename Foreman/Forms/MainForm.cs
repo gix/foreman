@@ -198,7 +198,7 @@
 
                 Point location = GraphViewer.ScreenToGraph(new Point(GraphViewer.Width / 2, GraphViewer.Height / 2));
 
-                chooserPanel.Show(c => {
+                chooserPanel.Show(AddItemButton, Direction.Right, c => {
                     if (c != null) {
                         if (c == itemSupplyOption) {
                             newElement = new NodeElement(SupplyNode.Create(item, GraphViewer.Graph), GraphViewer);

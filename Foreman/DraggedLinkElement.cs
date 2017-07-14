@@ -124,7 +124,7 @@
                 }
 
                 var chooserPanel = new ChooserPanel(recipeOptionList, Parent);
-                chooserPanel.Show(c => {
+                chooserPanel.Show(Parent.PointToScreen(Parent.GraphToScreen(location)), c => {
                     if (c != null) {
                         NodeElement newElement = null;
                         if (c is RecipeChooserControl) {
@@ -173,7 +173,7 @@
 
                 var chooserPanel = new ChooserPanel(recipeOptionList, Parent);
 
-                chooserPanel.Show(c => {
+                chooserPanel.Show(Parent.PointToScreen(Parent.GraphToScreen(location)), c => {
                     if (c != null) {
                         NodeElement newElement = null;
                         if (c is RecipeChooserControl) {

@@ -6,7 +6,7 @@
     using System.Linq;
     using System.Windows.Forms;
 
-    public partial class ChooserPanel : UserControl
+    public partial class ChooserPanel : Form
     {
         public Action<ChooserControl> CallbackMethod { get; set; }
 
@@ -33,13 +33,6 @@
         {
             InitializeComponent();
             this.controls = controls.ToList();
-
-            parent.Controls.Add(this);
-            Location = new Point(parent.Width / 2 - Width / 2, parent.Height / 2 - Height / 2);
-            Anchor = AnchorStyles.None;
-            BringToFront();
-            parent.PerformLayout();
-
             FilterTextBox.Focus();
         }
 
@@ -55,9 +48,18 @@
             }
 
             flowLayoutPanel1.ResumeLayout();
-            Parent.PerformLayout();
 
             UpdateControlWidth();
+
+            var location = Location;
+            var screen = Screen.FromPoint(location);
+            var bottomY = location.Y + Height;
+
+            if (bottomY > screen.WorkingArea.Bottom)
+                location.Y -= bottomY - screen.WorkingArea.Bottom;
+
+            if (Location != location)
+                Location = location;
         }
 
         private void UpdateControlWidth()
@@ -70,9 +72,41 @@
             }
         }
 
-        public void Show(Action<ChooserControl> callback)
+        public void Show(Control placementTarget, Direction direction, Action<ChooserControl> callback)
         {
+            Show(ComputeLocation(placementTarget, direction), callback);
+        }
+
+        public void Show(Point location, Action<ChooserControl> callback)
+        {
+            Location = location;
+            Show();
             CallbackMethod = callback;
+        }
+
+        private Point ComputeLocation(Control placementTarget, Direction direction)
+        {
+            var location = new Point();
+            switch (direction) {
+                case Direction.Left:
+                    location = new Point(-Width, 0);
+                    location = placementTarget.PointToScreen(location);
+                    break;
+                case Direction.Right:
+                    location = new Point(placementTarget.Width, 0);
+                    location = placementTarget.PointToScreen(location);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
+            }
+
+            return location;
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            Hide();
         }
 
         private void RegisterKeyEvents(Control control)
