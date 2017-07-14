@@ -123,7 +123,7 @@
         // as a proxy since "best" can have varying definitions.
         public Assembler Assembler { get; set; }
 
-        public ModuleSelector NodeModules { get; set; }
+        public ModuleSelector Modules { get; set; }
 
         internal Dictionary<MachinePermutation, double> GetAssemblers()
         {
@@ -141,7 +141,7 @@
             var ret = new Dictionary<MachinePermutation, double>();
 
             if (assembler != null) {
-                var modules = NodeModules.For(BaseRecipe, assembler.ModuleSlots);
+                var modules = Modules.For(BaseRecipe, assembler.ModuleSlots);
                 var required = ActualRate / assembler.GetRate(BaseRecipe.Time, (float)SpeedBonus, modules);
                 ret.Add(new MachinePermutation(assembler, modules.ToList()), required);
             }
@@ -153,7 +153,7 @@
             : base(graph)
         {
             BaseRecipe = baseRecipe;
-            NodeModules = ModuleSelector.Fastest;
+            Modules = ModuleSelector.Fastest;
         }
 
         public override IEnumerable<Item> Inputs => BaseRecipe.Ingredients.Keys;
@@ -200,7 +200,7 @@
             if (Assembler != null) {
                 info.AddValue("Assembler", Assembler.Name);
             }
-            NodeModules.GetObjectData(info, context);
+            Modules.GetObjectData(info, context);
         }
 
         public override float GetConsumeRate(Item item)

@@ -8,12 +8,17 @@
 
     public partial class RateOptionsPanel : UserControl
     {
+        private readonly Button[] moduleButtons;
+
         public ProductionNode BaseNode { get; }
         public ProductionGraphViewer GraphViewer { get; }
 
         public RateOptionsPanel(ProductionNode baseNode, ProductionGraphViewer graphViewer)
         {
             InitializeComponent();
+            moduleButtons = new[] {
+                moduleButton1, moduleButton2, moduleButton3, moduleButton4
+            };
 
             BaseNode = baseNode;
             GraphViewer = graphViewer;
@@ -64,7 +69,20 @@
                 assemblerButton.Text = assembler.FriendlyName;
             }
 
-            modulesButton.Text = recipeNode.NodeModules.Name;
+            modulesButton.Text = recipeNode.Modules.Name;
+
+            var moduleSet = recipeNode.Modules as ModuleSet;
+            var moduleSlots = assembler != null && moduleSet != null ? assembler.ModuleSlots : 0;
+            for (int i = 0; i < moduleButtons.Length; ++i) {
+                var button = moduleButtons[i];
+                if (i < moduleSlots) {
+                    button.Enabled = true;
+                    button.Image = moduleSet[i]?.SmallIcon;
+                } else {
+                    button.Enabled = false;
+                    button.Image = null;
+                }
+            }
         }
 
         private void fixedOption_CheckedChanged(object sender, EventArgs e)
@@ -121,10 +139,7 @@
             }
 
             var chooserPanel = new ChooserPanel(optionList, GraphViewer);
-
-            Point location = GraphViewer.ScreenToGraph(new Point(GraphViewer.Width / 2, GraphViewer.Height / 2));
-
-            chooserPanel.Show(c => {
+            chooserPanel.Show(assemblerButton, Direction.Right, c => {
                 if (c != null) {
                     if (c == bestOption) {
                         recipeNode.Assembler = null;
@@ -151,6 +166,9 @@
             var productivityOption = new ItemChooserControl(null, "Most Productive", "Most Productive");
             optionList.Add(productivityOption);
 
+            var setOption = new ItemChooserControl(null, "Manual Set", "Manual Set");
+            optionList.Add(setOption);
+
             var recipeNode = (RecipeNode)BaseNode;
             var recipe = recipeNode.BaseRecipe;
 
@@ -164,21 +182,61 @@
             }
 
             var chooserPanel = new ChooserPanel(optionList, GraphViewer);
-
-            Point location = GraphViewer.ScreenToGraph(new Point(GraphViewer.Width / 2, GraphViewer.Height / 2));
-
-            chooserPanel.Show(c => {
+            chooserPanel.Show(modulesButton, Direction.Right, c => {
                 if (c != null) {
                     if (c == fastestOption) {
-                        recipeNode.NodeModules = ModuleSelector.Fastest;
+                        recipeNode.Modules = ModuleSelector.Fastest;
                     } else if (c == noneOption) {
-                        recipeNode.NodeModules = ModuleSelector.None;
+                        recipeNode.Modules = ModuleSelector.None;
                     } else if (c == productivityOption) {
-                        recipeNode.NodeModules = ModuleSelector.Productive;
+                        recipeNode.Modules = ModuleSelector.Productive;
+                    } else if (c == setOption) {
+                        recipeNode.Modules = new ModuleSet();
                     } else {
                         var module = DataCache.Modules.Single(a => a.Key == c.DisplayText).Value;
-                        recipeNode.NodeModules = ModuleSelector.Specific(module);
+                        recipeNode.Modules = ModuleSelector.Specific(module);
                     }
+                    UpdateAssemblerButtons();
+                    GraphViewer.Graph.UpdateNodeValues();
+                    GraphViewer.UpdateNodes();
+                }
+            });
+        }
+
+        private void moduleButton_Click(object sender, EventArgs e)
+        {
+            var button = (Button)sender;
+            var recipeNode = (RecipeNode)BaseNode;
+
+            var assembler = recipeNode.Assembler;
+            var modules = recipeNode.Modules as ModuleSet;
+            int moduleIndex = Array.IndexOf(moduleButtons, button);
+
+            if (modules == null || assembler == null || moduleIndex == -1)
+                return;
+
+            var optionList = new List<ChooserControl>();
+
+            var noneOption = new ItemChooserControl(null, "None", "None");
+            optionList.Add(noneOption);
+
+            var allowedModules = DataCache.Modules.Values
+                .Where(x => x.Enabled)
+                .Where(x => x.AllowedIn(recipeNode.BaseRecipe));
+
+            foreach (var module in allowedModules.OrderBy(a => a.FriendlyName)) {
+                var item = DataCache.Items.Values.SingleOrDefault(i => i.Name == module.Name);
+                optionList.Add(new ItemChooserControl(item, module.FriendlyName, module.FriendlyName));
+            }
+
+            var chooserPanel = new ChooserPanel(optionList, GraphViewer);
+            chooserPanel.Show(button, Direction.Right, c => {
+                if (c != null) {
+                    if (c == noneOption)
+                        modules[moduleIndex] = null;
+                    else
+                        modules[moduleIndex] = DataCache.Modules.Single(a => a.Key == c.DisplayText).Value;
+
                     UpdateAssemblerButtons();
                     GraphViewer.Graph.UpdateNodeValues();
                     GraphViewer.UpdateNodes();

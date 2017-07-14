@@ -72,7 +72,6 @@
     {
         public HashSet<GraphElement> Elements { get; } = new HashSet<GraphElement>();
         public ProductionGraph Graph { get; } = new ProductionGraph();
-        private List<Item> Demands = new List<Item>();
         public bool IsBeingDragged { get; private set; }
         private Point lastMouseDragPoint;
         private Point viewOffset;
@@ -793,11 +792,11 @@
                             if (node["Assembler"] != null) {
                                 var assemblerKey = (string)node["Assembler"];
                                 if (DataCache.Assemblers.ContainsKey(assemblerKey)) {
-                                    (newNode as RecipeNode).Assembler = DataCache.Assemblers[assemblerKey];
+                                    ((RecipeNode)newNode).Assembler = DataCache.Assemblers[assemblerKey];
                                 }
                             }
 
-                        (newNode as RecipeNode).NodeModules = ModuleSelector.Load(node);
+                            ((RecipeNode)newNode).Modules = ModuleSelector.Load(node);
                             break;
                         }
                     default: {

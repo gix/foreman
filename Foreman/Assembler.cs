@@ -110,9 +110,10 @@
     public class Module
     {
         public Bitmap Icon => DataCache.Items[Name].Icon; // For each module there should be a corresponding item with the icon already loaded.
+        public Bitmap SmallIcon => DataCache.Items[Name].SmallIcon;
 
         public bool Enabled { get; set; }
-        public float SpeedBonus { get; set; }
+        public float SpeedBonus { get; }
         public float ProductivityBonus { get; }
         public string Name { get; }
         private string friendlyName;
@@ -123,6 +124,7 @@
             get => !string.IsNullOrWhiteSpace(friendlyName) ? friendlyName : Name;
             set => friendlyName = value;
         }
+
 
         public Module(string name, float speedBonus, float productivityBonus, List<string> allowedIn)
         {

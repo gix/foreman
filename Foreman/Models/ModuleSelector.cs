@@ -1,5 +1,6 @@
 ﻿namespace Foreman
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
@@ -20,8 +21,9 @@
         {
             ModuleSelector filter = Fastest;
 
-            if (token["ModuleFilterType"] != null) {
-                switch ((string)token["ModuleFilterType"]) {
+            var filterType = (string)token["ModuleFilterType"];
+            if (filterType != null) {
+                switch (filterType) {
                     case "Best":
                         filter = Fastest;
                         break;
@@ -39,6 +41,15 @@
                             }
                         }
                         break;
+                    case "Set":
+                        if (token["Modules"] != null) {
+                            var moduleKeys = token["Modules"].Value<string[]>();
+                            filter = new ModuleSet(
+                                moduleKeys
+                                .Where(x => DataCache.Modules.ContainsKey(x))
+                                .Select(x => DataCache.Modules[x]));
+                        }
+                        break;
                 }
             }
 
@@ -47,7 +58,7 @@
 
         protected abstract IEnumerable<Module> AvailableModules();
 
-        public IEnumerable<Module> For(Recipe recipe, int moduleSlots)
+        public virtual IEnumerable<Module> For(Recipe recipe, int moduleSlots)
         {
             var modules = AvailableModules()
                 .Where(m => m.Enabled)
@@ -131,6 +142,71 @@
             {
                 return Enumerable.Empty<Module>();
             }
+        }
+    }
+
+    public class ModuleSet : ModuleSelector, IReadOnlyList<Module>
+    {
+        private readonly List<Module> modules;
+
+        public ModuleSet()
+        {
+            modules = new List<Module>();
+        }
+
+        public ModuleSet(IEnumerable<Module> modules)
+        {
+            this.modules = new List<Module>(modules);
+        }
+
+        public override string Name => "Set";
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("ModuleFilterType", "Set");
+            info.AddValue("Modules", modules.Select(x => x.Name).ToArray());
+        }
+
+        protected override IEnumerable<Module> AvailableModules()
+        {
+            return Enumerable.Empty<Module>();
+        }
+
+        public override IEnumerable<Module> For(Recipe recipe, int moduleSlots)
+        {
+            return modules.Where(x => x != null && x.AllowedIn(recipe)).Take(moduleSlots);
+        }
+
+        public int Count => modules.Count;
+
+        public Module this[int index]
+        {
+            get => index >= 0 && index < Count ? modules[index] : null;
+            set
+            {
+                if (index >= Count)
+                    Resize(index + 1);
+                modules[index] = value;
+            }
+        }
+
+        public void Resize(int size)
+        {
+            if (size > modules.Count)
+                modules.AddRange(
+                    Enumerable.Repeat<Module>(null, size - modules.Count));
+            else if (size < modules.Count)
+                modules.RemoveRange(size, modules.Count - size);
+        }
+
+        public IEnumerator<Module> GetEnumerator()
+        {
+            return modules.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)modules).GetEnumerator();
         }
     }
 }

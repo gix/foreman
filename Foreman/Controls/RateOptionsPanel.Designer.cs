@@ -34,6 +34,10 @@
             this.unitLabel = new System.Windows.Forms.Label();
             this.ratePanel = new System.Windows.Forms.Panel();
             this.assemblerPanel = new System.Windows.Forms.Panel();
+            this.moduleButton4 = new System.Windows.Forms.Button();
+            this.moduleButton3 = new System.Windows.Forms.Button();
+            this.moduleButton2 = new System.Windows.Forms.Button();
+            this.moduleButton1 = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();
             this.speedBonusTextBox = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
@@ -105,6 +109,10 @@
             // assemblerPanel
             // 
             this.assemblerPanel.AutoSize = true;
+            this.assemblerPanel.Controls.Add(this.moduleButton4);
+            this.assemblerPanel.Controls.Add(this.moduleButton3);
+            this.assemblerPanel.Controls.Add(this.moduleButton2);
+            this.assemblerPanel.Controls.Add(this.moduleButton1);
             this.assemblerPanel.Controls.Add(this.label4);
             this.assemblerPanel.Controls.Add(this.speedBonusTextBox);
             this.assemblerPanel.Controls.Add(this.label3);
@@ -115,13 +123,53 @@
             this.assemblerPanel.Controls.Add(this.assemblerButton);
             this.assemblerPanel.Location = new System.Drawing.Point(104, 3);
             this.assemblerPanel.Name = "assemblerPanel";
-            this.assemblerPanel.Size = new System.Drawing.Size(213, 97);
+            this.assemblerPanel.Size = new System.Drawing.Size(213, 120);
             this.assemblerPanel.TabIndex = 5;
+            // 
+            // moduleButton4
+            // 
+            this.moduleButton4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.moduleButton4.Location = new System.Drawing.Point(186, 50);
+            this.moduleButton4.Name = "moduleButton4";
+            this.moduleButton4.Size = new System.Drawing.Size(23, 23);
+            this.moduleButton4.TabIndex = 11;
+            this.moduleButton4.UseVisualStyleBackColor = true;
+            this.moduleButton4.Click += new System.EventHandler(this.moduleButton_Click);
+            // 
+            // moduleButton3
+            // 
+            this.moduleButton3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.moduleButton3.Location = new System.Drawing.Point(161, 50);
+            this.moduleButton3.Name = "moduleButton3";
+            this.moduleButton3.Size = new System.Drawing.Size(23, 23);
+            this.moduleButton3.TabIndex = 10;
+            this.moduleButton3.UseVisualStyleBackColor = true;
+            this.moduleButton3.Click += new System.EventHandler(this.moduleButton_Click);
+            // 
+            // moduleButton2
+            // 
+            this.moduleButton2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.moduleButton2.Location = new System.Drawing.Point(136, 50);
+            this.moduleButton2.Name = "moduleButton2";
+            this.moduleButton2.Size = new System.Drawing.Size(23, 23);
+            this.moduleButton2.TabIndex = 9;
+            this.moduleButton2.UseVisualStyleBackColor = true;
+            this.moduleButton2.Click += new System.EventHandler(this.moduleButton_Click);
+            // 
+            // moduleButton1
+            // 
+            this.moduleButton1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.moduleButton1.Location = new System.Drawing.Point(111, 50);
+            this.moduleButton1.Name = "moduleButton1";
+            this.moduleButton1.Size = new System.Drawing.Size(23, 23);
+            this.moduleButton1.TabIndex = 8;
+            this.moduleButton1.UseVisualStyleBackColor = true;
+            this.moduleButton1.Click += new System.EventHandler(this.moduleButton_Click);
             // 
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(29, 54);
+            this.label4.Location = new System.Drawing.Point(29, 77);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(74, 13);
             this.label4.TabIndex = 7;
@@ -130,7 +178,7 @@
             // 
             // speedBonusTextBox
             // 
-            this.speedBonusTextBox.Location = new System.Drawing.Point(110, 51);
+            this.speedBonusTextBox.Location = new System.Drawing.Point(110, 75);
             this.speedBonusTextBox.Name = "speedBonusTextBox";
             this.speedBonusTextBox.Size = new System.Drawing.Size(100, 20);
             this.speedBonusTextBox.TabIndex = 6;
@@ -139,7 +187,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(5, 77);
+            this.label3.Location = new System.Drawing.Point(5, 100);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(98, 13);
             this.label3.TabIndex = 5;
@@ -148,7 +196,7 @@
             // 
             // productivityBonusTextBox
             // 
-            this.productivityBonusTextBox.Location = new System.Drawing.Point(110, 74);
+            this.productivityBonusTextBox.Location = new System.Drawing.Point(110, 97);
             this.productivityBonusTextBox.Name = "productivityBonusTextBox";
             this.productivityBonusTextBox.Size = new System.Drawing.Size(100, 20);
             this.productivityBonusTextBox.TabIndex = 4;
@@ -204,7 +252,7 @@
             this.flowLayoutPanel1.Controls.Add(this.assemblerPanel);
             this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(320, 103);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(320, 126);
             this.flowLayoutPanel1.TabIndex = 8;
             // 
             // RateOptionsPanel
@@ -215,7 +263,7 @@
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.Controls.Add(this.flowLayoutPanel1);
             this.Name = "RateOptionsPanel";
-            this.Size = new System.Drawing.Size(326, 109);
+            this.Size = new System.Drawing.Size(326, 132);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.KeyPressed);
             this.ratePanel.ResumeLayout(false);
             this.ratePanel.PerformLayout();
@@ -244,5 +292,9 @@
         private System.Windows.Forms.RadioButton autoOption;
         private System.Windows.Forms.RadioButton fixedOption;
         private System.Windows.Forms.TextBox fixedTextBox;
+        private System.Windows.Forms.Button moduleButton1;
+        private System.Windows.Forms.Button moduleButton4;
+        private System.Windows.Forms.Button moduleButton3;
+        private System.Windows.Forms.Button moduleButton2;
     }
 }
