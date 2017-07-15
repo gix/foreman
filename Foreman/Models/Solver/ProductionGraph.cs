@@ -132,6 +132,8 @@
             */
         }
 
+        public event EventHandler NodeValuesUpdated;
+
         public void UpdateNodeValues()
         {
             try {
@@ -141,6 +143,7 @@
                 //At least this way it doesn't crash...
             }
             UpdateLinkThroughputs();
+            NodeValuesUpdated?.Invoke(this, EventArgs.Empty);
         }
 
         public void CreateAllPossibleInputLinks()

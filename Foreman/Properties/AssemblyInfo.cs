@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
+using System.Resources;
 using System.Runtime.InteropServices;
+using System.Windows;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
@@ -33,3 +35,9 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("0.0.1.1")]
 [assembly: AssemblyFileVersion("0.0.0.0")]
+
+
+[assembly: NeutralResourcesLanguage("en-US")]
+[assembly: ThemeInfo(
+    ResourceDictionaryLocation.None,
+    ResourceDictionaryLocation.SourceAssembly)]

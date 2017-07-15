@@ -1,12 +1,12 @@
 ﻿namespace Foreman
 {
-    using System.Drawing;
+    using System.Windows.Media.Imaging;
 
     public class Inserter
     {
         public string Name { get; }
         public float RotationSpeed { get; set; }
-        public Bitmap Icon { get; set; }
+        public BitmapSource Icon { get; set; }
         private string friendlyName;
 
         public string FriendlyName

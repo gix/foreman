@@ -53,6 +53,16 @@
             Graph = graph;
         }
 
+        public bool Supplies(Item item)
+        {
+            return item != null && Outputs.Contains(item);
+        }
+
+        public bool Consumes(Item item)
+        {
+            return item != null && Inputs.Contains(item);
+        }
+
         public bool CanUltimatelyTakeFrom(ProductionNode node)
         {
             Queue<ProductionNode> Q = new Queue<ProductionNode>();
@@ -250,7 +260,7 @@
             SuppliedItem = item;
         }
 
-        public override IEnumerable<Item> Inputs => new List<Item>();
+        public override IEnumerable<Item> Inputs { get; } = new List<Item>();
 
         public override IEnumerable<Item> Outputs
         {
@@ -351,7 +361,7 @@
             get { yield return ConsumedItem; }
         }
 
-        public override IEnumerable<Item> Outputs => new List<Item>();
+        public override IEnumerable<Item> Outputs { get; } = new List<Item>();
 
         protected ConsumerNode(Item item, ProductionGraph graph)
             : base(graph)

@@ -1,8 +1,8 @@
 ﻿namespace Foreman
 {
     using System.Collections.Generic;
-    using System.Drawing;
     using System.Linq;
+    using System.Windows.Media.Imaging;
 
     public class Recipe
     {
@@ -13,9 +13,9 @@
         public Dictionary<Item, float> Ingredients { get; }
         public bool IsMissingRecipe { get; set; } = false;
         public bool IsCyclic { get; set; }
-        private Bitmap uniqueIcon;
+        private BitmapSource uniqueIcon;
 
-        public Bitmap Icon
+        public BitmapSource Icon
         {
             get
             {

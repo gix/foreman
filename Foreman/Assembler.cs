@@ -1,8 +1,8 @@
 ﻿namespace Foreman
 {
     using System.Collections.Generic;
-    using System.Drawing;
     using System.Linq;
+    using System.Windows.Media.Imaging;
 
     public class MachinePermutation
     {
@@ -37,7 +37,7 @@
     {
         public string Name { get; protected set; }
         public bool Enabled { get; set; }
-        public Bitmap Icon { get; set; }
+        public BitmapSource Icon { get; set; }
         public int ModuleSlots { get; set; }
         public float Speed { get; set; }
         private string friendlyName;
@@ -109,8 +109,7 @@
 
     public class Module
     {
-        public Bitmap Icon => DataCache.Items[Name].Icon; // For each module there should be a corresponding item with the icon already loaded.
-        public Bitmap SmallIcon => DataCache.Items[Name].SmallIcon;
+        public BitmapSource Icon => DataCache.Items[Name].Icon; // For each module there should be a corresponding item with the icon already loaded.
 
         public bool Enabled { get; set; }
         public float SpeedBonus { get; }

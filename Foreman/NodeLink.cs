@@ -20,12 +20,21 @@
             Item = item;
         }
 
+        public static bool CanLink(ProductionNode supplier, ProductionNode consumer, Item item)
+        {
+            return supplier.Supplies(item) && consumer.Consumes(item);
+        }
+
         public static NodeLink Create(ProductionNode supplier, ProductionNode consumer, Item item,
             float maxAmount = float.PositiveInfinity)
         {
-            if (supplier.OutputLinks.Any(l => l.Item == item && l.Consumer == consumer)) {
+            if (!supplier.Supplies(item) || !consumer.Consumes(item))
+                throw new InvalidOperationException($"Cannot connect {supplier} to {consumer} using item {item}");
+
+            if (consumer.InputLinks.Any(l => l.Item == item && l.Supplier == supplier))
                 return null;
-            }
+            if (supplier.OutputLinks.Any(l => l.Item == item && l.Consumer == consumer))
+                return null;
             NodeLink link = new NodeLink(supplier, consumer, item, maxAmount);
             supplier.OutputLinks.Add(link);
             consumer.InputLinks.Add(link);

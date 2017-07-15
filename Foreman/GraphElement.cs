@@ -1,96 +1,52 @@
 ﻿namespace Foreman
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Drawing;
-    using System.Windows.Forms;
+    using System.Windows;
+    using Controls;
 
-    public abstract class GraphElement : IDisposable
+    public abstract class GraphElement : ViewModel, IInteractiveElement
     {
-        public HashSet<GraphElement> SubElements { get; }
-        public virtual Point Location { get; set; }
+        private bool isSelected;
 
-        public virtual int X
+        protected GraphElement()
         {
-            get => Location.X;
-            set => Location = new Point(value, Location.Y);
         }
 
-        public virtual int Y
-        {
-            get => Location.Y;
-            set => Location = new Point(Location.X, value);
-        }
-
-        public virtual Point Size { get; set; }
-
-        public virtual int Width
-        {
-            get => Size.X;
-            set => Size = new Point(value, Size.Y);
-        }
-
-        public virtual int Height
-        {
-            get => Size.Y;
-            set => Size = new Point(Size.X, value);
-        }
-
-        public Rectangle Bounds
-        {
-            get => new Rectangle(X, Y, Width, Height);
-            set
-            {
-                X = value.X;
-                Y = value.Y;
-                Width = value.Width;
-                Height = value.Height;
-            }
-        }
-
-        public ProductionGraphViewer Parent { get; }
-
-        public GraphElement(ProductionGraphViewer parent)
+        protected GraphElement(ProductionGraphViewModel parent)
         {
             Parent = parent;
-            Parent.Elements.Add(this);
-            SubElements = new HashSet<GraphElement>();
         }
 
-        public virtual bool ContainsPoint(Point point)
+        public ProductionGraphViewModel Parent { get; }
+
+        public bool IsSelected
         {
-            return false;
+            get => isSelected;
+            set => SetProperty(ref isSelected, value);
         }
 
-        public virtual void Paint(Graphics graphics)
+        public abstract bool IsDraggable { get; }
+        public abstract bool IsSelectable { get; }
+
+        public HorizontalAlignment HorizontalAlignment { get; protected set; } = HorizontalAlignment.Stretch;
+        public VerticalAlignment VerticalAlignment { get; protected set; } = VerticalAlignment.Stretch;
+
+        public GraphElement Clone()
         {
-            foreach (GraphElement element in SubElements) {
-                graphics.TranslateTransform(element.X, element.Y);
-                element.Paint(graphics);
-                graphics.TranslateTransform(-element.X, -element.Y);
-            }
+            GraphElement cloned = CreateInstanceCore();
+            cloned.CloneCore(this);
+            return cloned;
         }
 
-        public virtual void MouseMoved(Point location)
+        protected virtual GraphElement CreateInstanceCore()
         {
+            return null;
         }
 
-        public virtual void MouseDown(Point location, MouseButtons button)
+        protected virtual void CloneCore(GraphElement source)
         {
-        }
-
-        public virtual void MouseUp(Point location, MouseButtons button)
-        {
-        }
-
-        public virtual void Dragged(Point location)
-        {
-        }
-
-        public virtual void Dispose()
-        {
-            Parent.Elements.Remove(this);
-            Parent.Invalidate();
+            IsSelected = source.IsSelected;
+            HorizontalAlignment = source.HorizontalAlignment;
+            VerticalAlignment = source.VerticalAlignment;
         }
     }
 }

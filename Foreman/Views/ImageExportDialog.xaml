@@ -1,0 +1,49 @@
+﻿<Window x:Class="Foreman.Views.ImageExportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:e="clr-namespace:Foreman.Extensions"
+        mc:Ignorable="d"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        Title="Export an Image"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        Width="360"
+        SizeToContent="Height"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        e:WindowExtensions.ShowIcon="False">
+  <Grid Margin="3">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <TextBox x:Name="fileTextBox" Margin="3"/>
+      <Button Grid.Column="1" Margin="3" Content="Browse…" Click="button1_Click"/>
+    </Grid>
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition/>
+      </Grid.ColumnDefinitions>
+      <GroupBox Header="Scale" Margin="3">
+        <StackPanel Orientation="Horizontal">
+          <RadioButton x:Name="Scale1xCheckBox" Margin="3" Content="1x" IsChecked="True"/>
+          <RadioButton x:Name="Scale2xCheckBox" Margin="3" Content="2x"/>
+          <RadioButton x:Name="Scale3xCheckBox" Margin="3" Content="3x"/>
+        </StackPanel>
+      </GroupBox>
+      <CheckBox Grid.Column="1" Margin="6" x:Name="TransparencyCheckBox"
+                Content="Transparent Background"/>
+    </Grid>
+    <Button Grid.Row="2" Margin="3" Content="Export" HorizontalAlignment="Right"
+            Click="ExportButton_Click"/>
+  </Grid>
+</Window>

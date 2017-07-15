@@ -1,0 +1,107 @@
+﻿<Window x:Class="Foreman.Views.EnableDisableItemsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:f="clr-namespace:Foreman"
+        xmlns:e="clr-namespace:Foreman.Extensions"
+        xmlns:v="clr-namespace:Foreman.Views"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance {x:Type v:EnableDisableItemsDialog}}"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        Title="Enable/Disable Objects"
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        Width="440"
+        Height="575"
+        MinWidth="300"
+        MinHeight="300"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        e:WindowExtensions.ShowIcon="False">
+  <Window.Resources>
+    <Style x:Key="GroupBoxStyle" TargetType="GroupBox">
+      <Setter Property="Margin" Value="3"/>
+      <Setter Property="Padding" Value="0,2,0,0"/>
+    </Style>
+    <DataTemplate x:Key="AssemblerTemplate" DataType="{x:Type f:Module}">
+      <CheckBox IsChecked="{Binding Enabled}" Padding="2,0,2,2"
+                HorizontalAlignment="Stretch">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition/>
+          </Grid.ColumnDefinitions>
+          <Image Source="{Binding Icon}" Style="{StaticResource SmallIconStyle}" Margin="0,0,2,0"/>
+          <TextBlock Grid.Column="1" Text="{Binding FriendlyName}"/>
+        </Grid>
+      </CheckBox>
+    </DataTemplate>
+    <DataTemplate x:Key="MinerTemplate" DataType="{x:Type f:Miner}">
+      <CheckBox IsChecked="{Binding Enabled}" Padding="2,0,2,2"
+                HorizontalAlignment="Stretch">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition/>
+          </Grid.ColumnDefinitions>
+          <Image Source="{Binding Icon}" Style="{StaticResource SmallIconStyle}" Margin="0,0,2,0"/>
+          <TextBlock Grid.Column="1" Text="{Binding FriendlyName}"/>
+        </Grid>
+      </CheckBox>
+    </DataTemplate>
+    <DataTemplate x:Key="ModuleTemplate" DataType="{x:Type f:Module}">
+      <CheckBox IsChecked="{Binding Enabled}" Padding="2,0,2,2"
+                HorizontalAlignment="Stretch">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition/>
+          </Grid.ColumnDefinitions>
+          <Image Source="{Binding Icon}" Style="{StaticResource SmallIconStyle}" Margin="0,0,2,0"/>
+          <TextBlock Grid.Column="1" Text="{Binding FriendlyName}"/>
+        </Grid>
+      </CheckBox>
+    </DataTemplate>
+    <DataTemplate x:Key="ModTemplate" DataType="{x:Type f:Module}">
+      <CheckBox IsChecked="{Binding Enabled}" Content="{Binding Name}" Padding="2,0,2,2"
+                HorizontalAlignment="Stretch"
+                Checked="OnModChecked" Unchecked="OnModChecked"/>
+    </DataTemplate>
+  </Window.Resources>
+  <Grid Margin="3">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition/>
+      <ColumnDefinition/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition/>
+      <RowDefinition/>
+      <RowDefinition/>
+    </Grid.RowDefinitions>
+    <GroupBox Header="Assemblers/Smelters"
+              Style="{StaticResource GroupBoxStyle}">
+      <ItemsControl ItemsSource="{Binding Assemblers}"
+                    ItemTemplate="{StaticResource AssemblerTemplate}"
+                    Style="{StaticResource ScrollableSimpleListBox}"/>
+    </GroupBox>
+    <GroupBox Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Header="Mods"
+              Style="{StaticResource GroupBoxStyle}">
+      <ItemsControl ItemsSource="{Binding Mods}"
+                    ItemTemplate="{StaticResource ModTemplate}"
+                    Style="{StaticResource ScrollableSimpleListBox}"/>
+    </GroupBox>
+    <GroupBox Grid.Row="1" Grid.Column="0" Header="Miners/Pumpjacks"
+              Style="{StaticResource GroupBoxStyle}">
+      <ItemsControl ItemsSource="{Binding Miners}"
+                    ItemTemplate="{StaticResource MinerTemplate}"
+                    Style="{StaticResource ScrollableSimpleListBox}"/>
+    </GroupBox>
+    <GroupBox Grid.Row="2" Grid.Column="0" Header="Modules"
+              Style="{StaticResource GroupBoxStyle}">
+      <ItemsControl ItemsSource="{Binding Modules}"
+                    ItemTemplate="{StaticResource ModuleTemplate}"
+                    Style="{StaticResource ScrollableSimpleListBox}"/>
+    </GroupBox>
+  </Grid>
+</Window>

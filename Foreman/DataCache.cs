@@ -2,13 +2,14 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Drawing;
-    using System.Drawing.Drawing2D;
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
     using System.Security.Cryptography;
     using System.Windows.Forms;
+    using System.Windows.Media;
+    using System.Windows.Media.Imaging;
+    using Extensions;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using NLua;
@@ -64,8 +65,8 @@
         public static Dictionary<string, Inserter> Inserters { get; } = new Dictionary<string, Inserter>();
 
         private const float defaultRecipeTime = 0.5f;
-        private static readonly Dictionary<Bitmap, Color> colourCache = new Dictionary<Bitmap, Color>();
-        public static Bitmap UnknownIcon;
+        private static readonly Dictionary<BitmapSource, Color> colourCache = new Dictionary<BitmapSource, Color>();
+        public static BitmapSource UnknownIcon;
 
         public static Dictionary<string, Dictionary<string, string>> LocaleFiles { get; } =
             new Dictionary<string, Dictionary<string, string>>();
@@ -219,10 +220,12 @@
 
                 UnknownIcon = LoadImage("UnknownIcon.png");
                 if (UnknownIcon == null) {
-                    UnknownIcon = new Bitmap(32, 32);
-                    using (Graphics g = Graphics.FromImage(UnknownIcon)) {
-                        g.FillRectangle(Brushes.White, 0, 0, 32, 32);
-                    }
+                    var pixels = new uint[32 * 32];
+                    for (int i = 0; i < pixels.Length; ++i)
+                        pixels[i] = 0xFFFFFFFF;
+                    UnknownIcon = BitmapSource.Create(
+                        32, 32, 96, 96, PixelFormats.Pbgra32, null, pixels, 32);
+                    UnknownIcon.Freeze();
                 }
 
                 LoadAllLanguages();
@@ -596,7 +599,7 @@
             }
         }
 
-        private static Bitmap LoadImage(string fileName)
+        private static BitmapSource LoadImage(string fileName)
         {
             if (string.IsNullOrEmpty(fileName)) {
                 return null;
@@ -626,37 +629,42 @@
             }
 
             try {
-                using (Bitmap image = new Bitmap(fullPath)
-                ) //If you don't do this, the file is locked for the lifetime of the bitmap
-                {
-                    return new Bitmap(image);
-                }
+                using (var stream = File.OpenRead(fullPath))
+                    return LoadImage(stream);
             } catch (Exception) {
                 return null;
             }
         }
 
-        public static Color IconAverageColour(Bitmap icon)
+        private static BitmapSource LoadImage(Stream source)
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.StreamSource = source;
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+
+        public static Color IconAverageColour(BitmapSource icon)
         {
             if (icon == null) {
-                return Color.LightGray;
+                return Colors.LightGray;
             }
 
             Color result;
             if (colourCache.ContainsKey(icon)) {
                 result = colourCache[icon];
             } else {
-                using (Bitmap pixel = new Bitmap(1, 1))
-                using (Graphics g = Graphics.FromImage(pixel)) {
-                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    g.DrawImage(icon,
-                        new Rectangle(0, 0, 1,
-                            1)); //Scale the icon down to a 1-pixel image, which does the averaging for us
-                    result = pixel.GetPixel(0, 0);
-                }
-                //Set alpha to 255, also lighten the colours to make them more pastel-y
-                result = Color.FromArgb(255, result.R + (255 - result.R) / 2, result.G + (255 - result.G) / 2,
-                    result.B + (255 - result.B) / 2);
+                result = icon.ComputeAvgColor();
+
+                // Set alpha to 255, also lighten the colours to make them more pastel-y
+                result = Color.FromArgb(
+                    255,
+                    (byte)(result.R + (255 - result.R) / 2),
+                    (byte)(result.G + (255 - result.G) / 2),
+                    (byte)(result.B + (255 - result.B) / 2));
                 colourCache.Add(icon, result);
             }
 
@@ -719,7 +727,7 @@
 
                 string iconFile = ReadLuaString(values, "icon", true);
                 if (iconFile != null) {
-                    Bitmap icon = LoadImage(iconFile);
+                    BitmapSource icon = LoadImage(iconFile);
                     newRecipe.Icon = icon;
                 }
 

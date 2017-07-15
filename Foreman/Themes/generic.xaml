@@ -1,0 +1,97 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:c="clr-namespace:Foreman.Controls"
+                    xmlns:e="clr-namespace:Foreman.Extensions">
+  <Style TargetType="{x:Type c:InteractiveCanvasView}">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderBrush" Value="{x:Null}"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="ClipToBounds" Value="True"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type c:InteractiveCanvasView}">
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}">
+            <c:ScrollViewerEx
+                Focusable="False"
+                CanContentScroll="True"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Disabled">
+              <c:ZoomableCanvas x:Name="PART_Panel" IsItemsHost="True"
+                                Scale="{Binding Scale, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                Offset="{Binding Offset, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                Viewbox="{Binding Viewbox, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                <e:PushBindings.Bindings>
+                  <e:PushBinding Path="ActualViewbox" TargetProperty="ActualViewbox"/>
+                </e:PushBindings.Bindings>
+              </c:ZoomableCanvas>
+            </c:ScrollViewerEx>
+          </Border>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="{x:Type c:InteractiveCanvasItem}">
+    <Setter Property="HorizontalAlignment" Value="{Binding HorizontalAlignment, FallbackValue=Stretch}"/>
+    <Setter Property="VerticalAlignment" Value="{Binding VerticalAlignment, FallbackValue=Stretch}"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type c:InteractiveCanvasItem}">
+          <ContentPresenter/>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="{x:Type c:PinHandle}">
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type c:PinHandle}">
+          <Rectangle Width="3" Height="3" Fill="Transparent"/>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="{x:Type c:BalloonToolTip}">
+    <Setter Property="Background" Value="#FF808080"/>
+    <Setter Property="BorderBrush" Value="#FF808080"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Foreground" Value="#FFEEEEEE"/>
+    <Setter Property="FontSize" Value="10pt"/>
+    <Setter Property="Padding" Value="3"/>
+    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="{x:Type c:BalloonToolTip}">
+          <c:BalloonBorder Background="{TemplateBinding Background}"
+                           BorderBrush="{TemplateBinding BorderBrush}"
+                           BorderThickness="{TemplateBinding BorderThickness}"
+                           SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                           Padding="3"
+                           CornerRadius="3"
+                           RenderOptions.ClearTypeHint="Enabled"
+                           ArrowDirection="{TemplateBinding ArrowDirection}"
+                           ArrowHeadLength="{TemplateBinding ArrowHeadLength}"
+                           ArrowHeadWidth="{TemplateBinding ArrowHeadWidth}">
+            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+          </c:BalloonBorder>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="Content" Value="{x:Null}">
+        <Setter Property="Visibility" Value="Collapsed"/>
+      </Trigger>
+      <Trigger Property="Content" Value="{x:Static sys:String.Empty}">
+        <Setter Property="Visibility" Value="Collapsed"/>
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+</ResourceDictionary>

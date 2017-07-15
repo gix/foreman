@@ -2,272 +2,264 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Drawing;
+    using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.Linq;
-    using System.Windows.Forms;
+    using System.Text;
+    using System.Windows;
+    using System.Windows.Controls.Primitives;
+    using System.Windows.Media;
+    using Controls;
+    using Views;
 
-    public enum LinkType
+    public class NodeElement : GraphElement, IPlacedElement, IContextElement
     {
-        Input,
-        Output
-    }
+        private static Color RecipeColor => Color.FromArgb(0xFF, 0xBE, 0xD9, 0xD4);
+        private static Color PassthroughColor => Color.FromArgb(0xFF, 0xBE, 0xD9, 0xD4);
+        private static Color SupplyColor => Color.FromArgb(0xFF, 0xF9, 0xED, 0xC3);
+        private static Color ConsumerColor => Color.FromArgb(0xFF, 0xE7, 0xD6, 0xE0);
+        private static Color MissingColor => Color.FromArgb(0xFF, 0xFF, 0x7F, 0x6B);
 
-    public class NodeElement : GraphElement
-    {
-        public int DragOffsetX { get; private set; }
-        public int DragOffsetY { get; private set; }
-        
-        private readonly Color recipeColour = Color.FromArgb(190, 217, 212);
-        private readonly Color passthroughColour = Color.FromArgb(190, 217, 212);
-        private readonly Color supplyColour = Color.FromArgb(249, 237, 195);
-        private readonly Color consumerColour = Color.FromArgb(231, 214, 224);
-        private readonly Color missingColour = Color.FromArgb(0xff, 0x7f, 0x6b);
-        private readonly Color backgroundColour;
-        
-        private const int tabPadding = 8;
+        private static Popup nodeRatePopup;
 
-        private string text = "";
+        private Point position;
+        private Size renderSize;
+        private ImageSource icon;
+        private string displayedNumber;
+        private string text;
+        private string balloonText;
+        private Color backgroundColor;
+        private bool showText = true;
+        private bool showNumber;
+        private bool showIcon;
 
-        private readonly AssemblerBox assemblerBox;
-        private List<ItemTab> inputTabs = new List<ItemTab>();
-        private List<ItemTab> outputTabs = new List<ItemTab>();
+        public NodeElement(ProductionNode displayedNode, ProductionGraphViewModel parent)
+            : base(parent)
+        {
+            HorizontalAlignment = HorizontalAlignment.Center;
+            VerticalAlignment = VerticalAlignment.Center;
+            DisplayedNode = displayedNode;
+            Initialize(displayedNode);
 
-        private readonly ContextMenu rightClickMenu = new ContextMenu();
-
-        private readonly Brush backgroundBrush;
-        private readonly Font size10Font = new Font(FontFamily.GenericSansSerif, 10);
-        private readonly StringFormat centreFormat = new StringFormat();
+            if (DisplayedNode is ConsumerNode consumer)
+                BackgroundColor = consumer.ConsumedItem.IsMissingItem ? MissingColor : SupplyColor;
+            else if (DisplayedNode is SupplyNode supplier)
+                BackgroundColor = supplier.SuppliedItem.IsMissingItem ? MissingColor : ConsumerColor;
+            else if (DisplayedNode is RecipeNode recipe)
+                BackgroundColor = recipe.BaseRecipe.IsMissingRecipe ? MissingColor : RecipeColor;
+            else if (DisplayedNode is PassthroughNode passthrough)
+                BackgroundColor = passthrough.PassedItem.IsMissingItem ? MissingColor : PassthroughColor;
+            else
+                throw new ArgumentException("No branch for node: " + DisplayedNode);
+        }
 
         public ProductionNode DisplayedNode { get; }
 
-        private bool tooltipsEnabled = true;
-
-        public NodeElement(ProductionNode node, ProductionGraphViewer parent) : base(parent)
+        public Point Position
         {
-            Width = 100;
-            Height = 90;
-
-            DisplayedNode = node;
-
-            if (DisplayedNode is ConsumerNode) {
-                backgroundColour = supplyColour;
-                if (((ConsumerNode)DisplayedNode).ConsumedItem.IsMissingItem) {
-                    backgroundColour = missingColour;
-                }
-            } else if (DisplayedNode is SupplyNode) {
-                backgroundColour = consumerColour;
-                if (((SupplyNode)DisplayedNode).SuppliedItem.IsMissingItem) {
-                    backgroundColour = missingColour;
-                }
-            } else if (DisplayedNode is RecipeNode) {
-                backgroundColour = recipeColour;
-                if (((RecipeNode)DisplayedNode).BaseRecipe.IsMissingRecipe) {
-                    backgroundColour = missingColour;
-                }
-            } else if (DisplayedNode is PassthroughNode) {
-                backgroundColour = passthroughColour;
-                if (((PassthroughNode)DisplayedNode).PassedItem.IsMissingItem) {
-                    backgroundColour = missingColour;
-                }
-            } else {
-                Trace.Fail("No branch for node: " + DisplayedNode);
+            get => position;
+            set
+            {
+                if (SetProperty(ref position, value))
+                    OnPositionChanged();
             }
-            backgroundBrush = new SolidBrush(backgroundColour);
-
-            foreach (Item item in node.Inputs) {
-                ItemTab newTab = new ItemTab(item, LinkType.Input, Parent);
-                SubElements.Add(newTab);
-                inputTabs.Add(newTab);
-            }
-            foreach (Item item in node.Outputs) {
-                ItemTab newTab = new ItemTab(item, LinkType.Output, Parent);
-                SubElements.Add(newTab);
-                outputTabs.Add(newTab);
-            }
-
-            if (DisplayedNode is RecipeNode || DisplayedNode is SupplyNode) {
-                assemblerBox = new AssemblerBox(Parent);
-                SubElements.Add(assemblerBox);
-                assemblerBox.Height = assemblerBox.Width = 50;
-            }
-
-            centreFormat.Alignment = centreFormat.LineAlignment = StringAlignment.Center;
         }
 
-        private int GetIconWidths()
+        public Size RenderSize
         {
-            return Math.Max(GetInputIconWidths(), GetOutputIconWidths());
+            get => renderSize;
+            set => SetProperty(ref renderSize, value);
         }
 
-        private int GetInputIconWidths()
+        public double RenderWidth
         {
-            return tabPadding + inputTabs.Sum(tab => tab.Width + tabPadding);
+            get => RenderSize.Width;
+            set => RenderSize = new Size(value, RenderSize.Height);
         }
 
-        private int GetOutputIconWidths()
+        public double RenderHeight
         {
-            return tabPadding + outputTabs.Sum(tab => tab.Width + tabPadding);
+            get => RenderSize.Height;
+            set => RenderSize = new Size(RenderSize.Width, value);
+        }
+
+        public ImageSource Icon
+        {
+            get => icon;
+            set => SetProperty(ref icon, value);
+        }
+
+        public string DisplayedNumber
+        {
+            get => displayedNumber;
+            set => SetProperty(ref displayedNumber, value);
+        }
+
+        public string Text
+        {
+            get => text;
+            set => SetProperty(ref text, value);
+        }
+
+        public string BalloonText
+        {
+            get => balloonText;
+            set => SetProperty(ref balloonText, value);
+        }
+
+        public Color BackgroundColor
+        {
+            get => backgroundColor;
+            set => SetProperty(ref backgroundColor, value);
+        }
+
+        public bool ShowText
+        {
+            get => showText;
+            set => SetProperty(ref showText, value);
+        }
+
+        public bool ShowNumber
+        {
+            get => showNumber;
+            set => SetProperty(ref showNumber, value);
+        }
+
+        public bool ShowIcon
+        {
+            get => showIcon;
+            set => SetProperty(ref showIcon, value);
+        }
+
+        public override bool IsDraggable => true;
+        public override bool IsSelectable => true;
+
+        public ObservableCollection<Pin> Inputs { get; } = new ObservableCollection<Pin>();
+        public ObservableCollection<Pin> Outputs { get; } = new ObservableCollection<Pin>();
+
+        public IEnumerable<Pin> Pins => Inputs.Union(Outputs);
+
+        private void Initialize(ProductionNode node)
+        {
+            foreach (var input in node.Inputs)
+                Inputs.Add(new Pin(PinKind.Input, input, this));
+            foreach (var output in node.Outputs)
+                Outputs.Add(new Pin(PinKind.Output, output, this));
+
+            foreach (var pin in Pins)
+                pin.ConnectionChanged += (s, e) => UpdatePinOrder();
+        }
+
+        private void OnPositionChanged()
+        {
+            UpdatePinOrder();
+            foreach (var pin in Pins)
+                GetConnectedNode(pin)?.UpdatePinOrder();
         }
 
         public void Update()
         {
-            UpdateTabOrder();
-
-            if (DisplayedNode is SupplyNode) {
-                SupplyNode node = (SupplyNode)DisplayedNode;
+            if (DisplayedNode is SupplyNode supplyNode) {
                 if (!Parent.ShowMiners) {
-                    if (node.SuppliedItem.IsMissingItem) {
-                        text = string.Format("Item not loaded! ({0})", node.DisplayName);
+                    if (supplyNode.SuppliedItem.IsMissingItem)
+                        Text = $"Item not loaded! ({supplyNode.DisplayName})";
+                    else
+                        Text = "Input: " + supplyNode.SuppliedItem.FriendlyName;
+                } else {
+                    Text = "";
+                }
+                ShowText = !Parent.ShowMiners;
+                ShowIcon = Parent.ShowMiners;
+                if (ShowIcon) {
+                    var permutation = supplyNode.GetMinimumMiners().FirstOrDefault();
+                    if (permutation.Key != null) {
+                        Icon = CreateIcon(permutation.Key);
+                        DisplayedNumber = permutation.Value.ToString("F2");
                     } else {
-                        text = "Input: " + node.SuppliedItem.FriendlyName;
+                        Icon = null;
+                        DisplayedNumber = string.Empty;
                     }
-                } else {
-                    text = "";
                 }
-            } else if (DisplayedNode is ConsumerNode) {
-                ConsumerNode node = (ConsumerNode)DisplayedNode;
-                if (node.ConsumedItem.IsMissingItem) {
-                    text = string.Format("Item not loaded! ({0})", node.DisplayName);
-                } else {
-                    text = "Output: " + node.ConsumedItem.FriendlyName;
-                }
-            } else if (DisplayedNode is RecipeNode) {
-                RecipeNode node = (RecipeNode)DisplayedNode;
+            } else if (DisplayedNode is ConsumerNode consumerNode) {
+                if (consumerNode.ConsumedItem.IsMissingItem)
+                    Text = $"Item not loaded! ({consumerNode.DisplayName})";
+                else
+                    Text = "Output: " + consumerNode.ConsumedItem.FriendlyName;
+                ShowText = !string.IsNullOrEmpty(Text);
+                ShowIcon = false;
+            } else if (DisplayedNode is RecipeNode recipeNode) {
                 if (!Parent.ShowAssemblers) {
-                    if (node.BaseRecipe.IsMissingRecipe) {
-                        text = string.Format("Recipe not loaded! ({0})", node.DisplayName);
+                    if (recipeNode.BaseRecipe.IsMissingRecipe)
+                        Text = $"Recipe not loaded! ({recipeNode.DisplayName})";
+                    else
+                        Text = "Recipe: " + recipeNode.BaseRecipe.FriendlyName;
+                } else {
+                    Text = "";
+                }
+                ShowText = !Parent.ShowAssemblers;
+                ShowIcon = Parent.ShowAssemblers;
+                if (ShowIcon) {
+                    var permutations = recipeNode.GetAssemblers();
+                    var permutation = permutations.FirstOrDefault();
+                    if (permutation.Key != null) {
+                        Icon = CreateIcon(permutation.Key);
+                        if (permutation.Value > 0)
+                            DisplayedNumber = permutation.Value.ToString("F2", CultureInfo.CurrentCulture);
+                        else
+                            DisplayedNumber = string.Empty;
                     } else {
-                        text = "Recipe: " + node.BaseRecipe.FriendlyName;
+                        Icon = null;
+                        DisplayedNumber = string.Empty;
                     }
-                } else {
-                    text = "";
+
+                    BalloonText = CreateDetails(recipeNode, permutations);
                 }
             }
 
-            Graphics graphics = Parent.CreateGraphics();
-            int minWidth = (int)graphics.MeasureString(text, size10Font).Width;
+            ShowNumber = ShowIcon;
 
-            Width = Math.Max(75, GetIconWidths());
-            Width = Math.Max(Width, minWidth);
-
-            if (assemblerBox != null) {
-                if ((DisplayedNode is RecipeNode && Parent.ShowAssemblers)
-                    || (DisplayedNode is SupplyNode && Parent.ShowMiners)) {
-                    Height = 120;
-                    if (DisplayedNode is RecipeNode) {
-                        var assemblers = (DisplayedNode as RecipeNode).GetAssemblers();
-                        if (Parent.Graph.SelectedAmountType == AmountType.FixedAmount) {
-                            assemblers = assemblers.ToDictionary(p => p.Key, p => 0.0);
-                        }
-                        assemblerBox.AssemblerList = assemblers;
-                    } else if (DisplayedNode is SupplyNode) {
-                        assemblerBox.AssemblerList = (DisplayedNode as SupplyNode).GetMinimumMiners();
-                    }
-                    assemblerBox.Update();
-                    Width = Math.Max(Width, assemblerBox.Width + 20);
-                    Height = assemblerBox.Height + 80;
-                    assemblerBox.X = (Width - assemblerBox.Width) / 2 + 2;
-                    assemblerBox.Y = (Height - assemblerBox.Height) / 2 + 2;
-                } else {
-                    assemblerBox.AssemblerList.Clear();
-                    Width = Math.Max(100, Width);
-                    Height = 90;
-                    assemblerBox.Update();
-                }
-            } else {
-                Height = 90;
-            }
-
-            foreach (ItemTab tab in inputTabs.Union(outputTabs)) {
-                tab.FillColour = ChooseIconColour(tab.Item, tab.Type);
-                tab.Text = GetIconString(tab.Item, tab.Type);
-            }
-
-            UpdateTabOrder();
-        }
-
-        public void UpdateTabOrder()
-        {
-            inputTabs = inputTabs.OrderBy(GetItemTabXHeuristic).ToList();
-            outputTabs = outputTabs.OrderBy(GetItemTabXHeuristic).ToList();
-
-            int x = (Width - GetOutputIconWidths()) / 2;
-            foreach (ItemTab tab in outputTabs) {
-                x += tabPadding;
-                tab.X = x;
-                tab.Y = -tab.Height / 2;
-                x += tab.Width;
-            }
-            x = (Width - GetInputIconWidths()) / 2;
-            foreach (ItemTab tab in inputTabs) {
-                x += tabPadding;
-                tab.X = x;
-                tab.Y = Height - tab.Height / 2;
-                x += tab.Width;
+            foreach (Pin pin in Pins) {
+                pin.Label = GetIconString(pin.Item, pin.Kind);
+                pin.FillColor = ChooseIconColor(pin.Item, pin.Kind);
             }
         }
 
-        public int GetItemTabXHeuristic(ItemTab tab)
+        private static ImageSource CreateIcon(MachinePermutation permutation)
         {
-            int total = 0;
-            if (tab.Type == LinkType.Input) {
-                foreach (NodeLink link in DisplayedNode.InputLinks.Where(l => l.Item == tab.Item)) {
-                    NodeElement node = Parent.GetElementForNode(link.Supplier);
-                    Point diff =
-                        Point.Subtract(new Point(node.Location.X + node.Width / 2, node.Location.Y + node.Height / 2),
-                            new Size(Location.X + Width / 2, Location.Y + Height / 2));
-                    diff.Y = Math.Max(0, diff.Y);
-                    total += Convert.ToInt32(Math.Atan2(diff.X, diff.Y) * 1000);
-                }
-            } else {
-                foreach (NodeLink link in DisplayedNode.OutputLinks.Where(l => l.Item == tab.Item)) {
-                    NodeElement node = Parent.GetElementForNode(link.Consumer);
-                    if (node == null) {
-                        continue;
-                    }
-                    Point diff =
-                        Point.Subtract(new Point(node.Location.X + node.Width / 2, -node.Location.Y + -node.Height / 2),
-                            new Size(Location.X + Width / 2, -Location.Y + -Height / 2));
-                    diff.Y = Math.Max(0, diff.Y);
-                    total += Convert.ToInt32(Math.Atan2(diff.X, diff.Y) * 1000);
+            var assemblerIcon = permutation.Assembler.Icon;
+            var iconSize = Math.Min(assemblerIcon.Width, assemblerIcon.Height);
+
+            var dg = new DrawingGroup();
+            dg.Children.Add(
+                new ImageDrawing(assemblerIcon, new Rect(new Size(assemblerIcon.Width, assemblerIcon.Height))));
+
+            int moduleCount = permutation.Modules.Count;
+            int moduleRows = (int)Math.Ceiling(moduleCount / 2d);
+            int moduleSize = (int)Math.Min(iconSize / moduleRows, iconSize / (2 - moduleCount % 2)) - 2;
+
+            double x;
+            if (moduleCount == 1)
+                x = (iconSize - moduleSize) / 2;
+            else
+                x = (iconSize - moduleSize - moduleSize) / 2;
+            double y = (iconSize - (moduleSize * moduleRows)) / 2;
+
+            for (int i = 0, r = 0; r < moduleRows; ++r) {
+                dg.Children.Add(new ImageDrawing(
+                    permutation.Modules[i].Icon, new Rect(x, y + (r * moduleSize), moduleSize, moduleSize)));
+
+                ++i;
+                if (i < permutation.Modules.Count && permutation.Modules[i] != null) {
+                    dg.Children.Add(new ImageDrawing(
+                        permutation.Modules[i].Icon, new Rect(x + moduleSize, y + (r * moduleSize), moduleSize, moduleSize)));
+                    ++i;
                 }
             }
-            return total;
+
+            return new DrawingImage(dg);
         }
 
-        public Point GetOutputLineConnectionPoint(Item item)
-        {
-            if (!outputTabs.Any()) {
-                return new Point(X + Width / 2, Y);
-            }
-            ItemTab tab = outputTabs.First(it => it.Item == item);
-            return new Point(X + tab.X + tab.Width / 2, Y + tab.Y);
-        }
-
-        public Point GetInputLineConnectionPoint(Item item)
-        {
-            if (!inputTabs.Any()) {
-                return new Point(X + Width / 2, Y + Height);
-            }
-            ItemTab tab = inputTabs.First(it => it.Item == item);
-            return new Point(X + tab.X + tab.Width / 2, Y + tab.Y + tab.Height);
-        }
-
-        public override void Paint(Graphics graphics)
-        {
-            if ((DisplayedNode is RecipeNode && !((RecipeNode)DisplayedNode).BaseRecipe.Enabled) ||
-                DisplayedNode.ManualRateNotMet()) {
-                GraphicsStuff.FillRoundRect(-5, -5, Width + 10, Height + 10, 13, graphics, Brushes.DarkRed);
-            }
-
-            GraphicsStuff.FillRoundRect(0, 0, Width, Height, 8, graphics, backgroundBrush);
-            graphics.DrawString(text, size10Font, Brushes.White, Width / 2, Height / 2, centreFormat);
-
-            base.Paint(graphics);
-        }
-
-        private string GetIconString(Item item, LinkType linkType)
+        private string GetIconString(Item item, PinKind linkType)
         {
             string line1Format = "{0:0.##}{1}";
             string line2Format = "\n({0:0.##}{1})";
@@ -278,7 +270,7 @@
             var actualAmount = 0.0;
             var suppliedAmount = 0.0;
 
-            if (linkType == LinkType.Input) {
+            if (linkType == PinKind.Input) {
                 actualAmount = DisplayedNode.GetConsumeRate(item);
                 suppliedAmount = DisplayedNode.GetSuppliedRate(item);
             } else {
@@ -293,7 +285,7 @@
                 suppliedAmount *= 60;
             }
 
-            if (linkType == LinkType.Input) {
+            if (linkType == PinKind.Input) {
                 finalString = string.Format(line1Format, actualAmount, unit);
                 if (DisplayedNode.OverSupplied(item)) {
                     finalString += string.Format(line2Format, suppliedAmount, unit);
@@ -305,169 +297,121 @@
             return finalString;
         }
 
-        private Color ChooseIconColour(Item item, LinkType linkType)
+        private Color ChooseIconColor(Item item, PinKind linkType)
         {
-            Color enough = Color.White;
-            Color tooMuch = Color.FromArgb(255, 214, 226, 230);
+            var enough = Colors.White;
+            var tooMuch = Color.FromArgb(255, 214, 226, 230);
 
-            if (linkType == LinkType.Input) {
-                if (DisplayedNode.OverSupplied(item)) {
+            if (linkType == PinKind.Input) {
+                if (DisplayedNode.OverSupplied(item))
                     return tooMuch;
-                }
             }
 
             return enough;
         }
 
-        public override void MouseUp(Point location, MouseButtons button)
+        private void UpdatePinOrder()
         {
-            if (Parent.DraggedElement == this && !Parent.ClickHasBecomeDrag) {
-                if (button == MouseButtons.Left) {
-                    BeginEditingNodeRate();
+            Inputs.StableSortBy(GetPinXHeuristic);
+            Outputs.StableSortBy(GetPinXHeuristic);
+        }
+
+        private static NodeElement GetConnectedNode(Pin pin)
+        {
+            if (pin.Kind == PinKind.Input)
+                return pin.Connectors.FirstOrDefault()?.Source?.Node;
+            else
+                return pin.Connectors.FirstOrDefault()?.Destination?.Node;
+        }
+
+        private int GetPinXHeuristic(Pin pin)
+        {
+            NodeElement node = GetConnectedNode(pin);
+            double factorY = pin.Kind == PinKind.Input ? 1 : -1;
+
+            if (node == null)
+                return 0;
+
+            var p1 = node.Position + (Vector)node.RenderSize / 2;
+            var p2 = Position + (Vector)RenderSize / 2;
+            Vector diff = p1 - p2;
+            diff.Y = Math.Max(0, factorY * diff.Y);
+            return Convert.ToInt32(Math.Atan2(diff.X, diff.Y) * 1000);
+        }
+
+        void IContextElement.HandleRightClick(UIElement container)
+        {
+            BeginEditingNodeRate(container);
+        }
+
+        public void BeginEditingNodeRate(UIElement container)
+        {
+            if (nodeRatePopup != null) {
+                nodeRatePopup.IsOpen = false;
+                nodeRatePopup = null;
+            }
+
+            var popup = PopupUtils.CreatePopup(
+                new RateOptionsControl(DisplayedNode, Parent));
+            popup.Placement = PlacementMode.Left;
+            popup.PlacementTarget = container;
+            nodeRatePopup = popup;
+
+            popup.IsOpen = true;
+        }
+
+        private string CreateDetails(
+            RecipeNode recipeNode, Dictionary<MachinePermutation, double> permutations)
+        {
+            var buffer = new StringBuilder();
+            buffer.AppendFormat("Recipe: {0}", recipeNode.BaseRecipe.FriendlyName);
+            buffer.AppendFormat("\n--Base Time: {0}s", recipeNode.BaseRecipe.Time);
+
+            buffer.Append("\n--Base Ingredients:");
+            foreach (var kvp in recipeNode.BaseRecipe.Ingredients)
+                buffer.AppendFormat("\n----{0} ({1})", kvp.Key.FriendlyName, kvp.Value);
+
+            buffer.Append("\n--Base Results:");
+            foreach (var kvp in recipeNode.BaseRecipe.Results)
+                buffer.AppendFormat("\n----{0} ({1})", kvp.Key.FriendlyName, kvp.Value);
+
+            if (Parent.ShowAssemblers) {
+                buffer.Append("\n\nAssemblers:");
+                foreach (var kvp in permutations) {
+                    buffer.AppendFormat("\n----{0} ({1})", kvp.Key.Assembler.FriendlyName, kvp.Value);
+                    foreach (var module in kvp.Key.Modules.Where(m => m != null))
+                        buffer.AppendFormat("\n------{0}", module.FriendlyName);
                 }
             }
 
-            if (button == MouseButtons.Right) {
-                rightClickMenu.MenuItems.Clear();
-                rightClickMenu.MenuItems.Add(new MenuItem("Delete node",
-                    (o, e) => { Parent.DeleteNode(this); }));
-                rightClickMenu.Show(Parent, Parent.GraphToScreen(Point.Add(location, new Size(X, Y))));
-            }
-        }
-
-        public void BeginEditingNodeRate()
-        {
-            RateOptionsPanel newPanel = new RateOptionsPanel(DisplayedNode, Parent);
-            new FloatingTooltipControl(newPanel, Direction.Right, new Point(Location.X, Location.Y + Height / 2),
-                Parent);
-        }
-
-        public override void MouseMoved(Point location)
-        {
-            ItemTab mousedTab = null;
-            foreach (ItemTab tab in SubElements.OfType<ItemTab>()) {
-                if (tab.Bounds.Contains(location)) {
-                    mousedTab = tab;
-                }
-            }
-
-            if (tooltipsEnabled) {
-                TooltipInfo tti = new TooltipInfo();
-                if (mousedTab != null) {
-                    tti.Text = mousedTab.Item.FriendlyName;
-                    if (mousedTab.Type == LinkType.Input) {
-                        tti.Text += "\nDrag to create a new connection";
-                        tti.Direction = Direction.Up;
-                        tti.ScreenLocation = Parent.GraphToScreen(GetInputLineConnectionPoint(mousedTab.Item));
-                    } else {
-                        tti.Text = mousedTab.Item.FriendlyName;
-                        tti.Text += "\nDrag to create a new connection";
-                        tti.Direction = Direction.Down;
-                        tti.ScreenLocation = Parent.GraphToScreen(GetOutputLineConnectionPoint(mousedTab.Item));
-                    }
-                    Parent.AddTooltip(tti);
-                } else if (DisplayedNode is RecipeNode) {
-                    tti.Direction = Direction.Left;
-                    tti.ScreenLocation = Parent.GraphToScreen(Point.Add(Location, new Size(Width, Height / 2)));
-                    tti.Text = string.Format("Recipe: {0}", (DisplayedNode as RecipeNode).BaseRecipe.FriendlyName);
-                    tti.Text += string.Format("\n--Base Time: {0}s", (DisplayedNode as RecipeNode).BaseRecipe.Time);
-                    tti.Text += "\n--Base Ingredients:";
-                    foreach (var kvp in (DisplayedNode as RecipeNode).BaseRecipe.Ingredients) {
-                        tti.Text += string.Format("\n----{0} ({1})", kvp.Key.FriendlyName, kvp.Value);
-                    }
-                    tti.Text += "\n--Base Results:";
-                    foreach (var kvp in (DisplayedNode as RecipeNode).BaseRecipe.Results) {
-                        tti.Text += string.Format("\n----{0} ({1})", kvp.Key.FriendlyName, kvp.Value);
-                    }
-                    if (Parent.ShowAssemblers) {
-                        tti.Text += "\n\nAssemblers:";
-                        foreach (var kvp in assemblerBox.AssemblerList) {
-                            tti.Text += string.Format("\n----{0} ({1})", kvp.Key.Assembler.FriendlyName,
-                                kvp.Value);
-                            foreach (var Module in kvp.Key.Modules.Where(m => m != null)) {
-                                tti.Text += string.Format("\n------{0}", Module.FriendlyName);
-                            }
-                        }
-                    }
-
-                    if (Parent.Graph.SelectedAmountType == AmountType.FixedAmount) {
-                        tti.Text += string.Format("\n\nCurrent iterations: {0}", DisplayedNode.ActualRate);
-                    } else {
-                        tti.Text += string.Format("\n\nCurrent Rate: {0}/{1}",
-                            Parent.Graph.SelectedUnit == RateUnit.PerMinute
-                                ? DisplayedNode.ActualRate / 60
-                                : DisplayedNode.ActualRate,
-                            Parent.Graph.SelectedUnit == RateUnit.PerMinute ? "m" : "s");
-                    }
-                    Parent.AddTooltip(tti);
-                }
-
-                TooltipInfo helpToolTipInfo = new TooltipInfo();
-                helpToolTipInfo.Text = "Left click on this node to edit how fast it runs\nRight click to delete it";
-                helpToolTipInfo.Direction = Direction.None;
-                helpToolTipInfo.ScreenLocation = new Point(10, 10);
-                Parent.AddTooltip(helpToolTipInfo);
-            }
-        }
-
-        public override bool ContainsPoint(Point point)
-        {
-            if (new Rectangle(0, 0, Width, Height).Contains(point.X, point.Y))
-                return true;
-
-            return SubElements.OfType<ItemTab>().Any(tab => tab.Bounds.Contains(point));
-        }
-
-        public override void MouseDown(Point location, MouseButtons button)
-        {
-            if (button == MouseButtons.Left) {
-                Parent.DraggedElement = this;
-                DragOffsetX = location.X;
-                DragOffsetY = location.Y;
-            }
-        }
-
-        public override void Dragged(Point location)
-        {
-            ItemTab draggedTab = null;
-
-            foreach (ItemTab tab in SubElements.OfType<ItemTab>()) {
-                if (tab.Bounds.Contains(new Point(DragOffsetX, DragOffsetY))) {
-                    draggedTab = tab;
-                }
-            }
-
-            if (draggedTab != null) {
-                DraggedLinkElement newLink = new DraggedLinkElement(Parent, this, draggedTab.Type, draggedTab.Item);
-                if (draggedTab.Type == LinkType.Input) {
-                    newLink.ConsumerElement = this;
-                } else {
-                    newLink.SupplierElement = this;
-                }
-                Parent.DraggedElement = newLink;
+            if (Parent.Graph.SelectedAmountType == AmountType.FixedAmount) {
+                buffer.AppendFormat("\n\nCurrent iterations: {0}", DisplayedNode.ActualRate);
             } else {
-                X += location.X - DragOffsetX;
-                Y += location.Y - DragOffsetY;
-
-                foreach (ProductionNode node in DisplayedNode.InputLinks.Select(l => l
-                    .Supplier)) {
-                    Parent.GetElementForNode(node).UpdateTabOrder();
-                }
-                foreach (ProductionNode node in DisplayedNode.OutputLinks.Select(l => l
-                    .Consumer)) {
-                    Parent.GetElementForNode(node).UpdateTabOrder();
-                }
+                buffer.AppendFormat("\n\nCurrent Rate: {0}/{1}",
+                    Parent.Graph.SelectedUnit == RateUnit.PerMinute
+                        ? DisplayedNode.ActualRate / 60
+                        : DisplayedNode.ActualRate,
+                    Parent.Graph.SelectedUnit == RateUnit.PerMinute ? "m" : "s");
             }
+
+            return buffer.ToString();
         }
 
-        public override void Dispose()
+        protected override GraphElement CreateInstanceCore()
         {
-            size10Font.Dispose();
-            centreFormat.Dispose();
-            backgroundBrush.Dispose();
-            assemblerBox?.Dispose();
-            rightClickMenu.Dispose();
-            base.Dispose();
+            return new NodeElement(DisplayedNode, Parent);
+        }
+
+        protected override void CloneCore(GraphElement source)
+        {
+            var s = (NodeElement)source;
+            Position = s.Position;
+            Icon = s.Icon;
+            DisplayedNumber = s.DisplayedNumber;
+            ShowText = s.ShowText;
+            ShowIcon = s.ShowIcon;
+            ShowNumber = s.ShowNumber;
+            base.CloneCore(source);
         }
     }
 }

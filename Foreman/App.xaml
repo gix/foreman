@@ -1,0 +1,164 @@
+﻿<Application x:Class="Foreman.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:f="clr-namespace:Foreman">
+  <Application.Resources>
+    <Style TargetType="{x:Type Button}">
+      <Setter Property="MinWidth" Value="75"/>
+      <Setter Property="MinHeight" Value="23"/>
+      <Setter Property="Margin" Value="0"/>
+      <Setter Property="Padding" Value="6,1"/>
+    </Style>
+
+    <Style x:Key="IconStyle" TargetType="{x:Type Image}">
+      <Setter Property="Width" Value="32"/>
+      <Setter Property="Height" Value="32"/>
+      <Setter Property="Stretch" Value="Uniform"/>
+      <Setter Property="RenderOptions.BitmapScalingMode" Value="Fant"/>
+    </Style>
+
+    <Style x:Key="SmallIconStyle" TargetType="{x:Type Image}">
+      <Setter Property="Width" Value="16"/>
+      <Setter Property="Height" Value="16"/>
+      <Setter Property="Stretch" Value="Uniform"/>
+      <Setter Property="RenderOptions.BitmapScalingMode" Value="Fant"/>
+    </Style>
+
+    <DataTemplate DataType="{x:Type f:GhostElement}">
+      <Border HorizontalAlignment="Center" VerticalAlignment="Center">
+        <ItemsControl ItemsSource="{Binding Icons}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="{x:Type ImageSource}">
+              <Image x:Name="Image" Source="{Binding}" Style="{StaticResource IconStyle}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"/>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </Border>
+    </DataTemplate>
+
+    <Style x:Key="SimpleListBox" TargetType="{x:Type ItemsControl}">
+      <Setter Property="Foreground" Value="Black"/>
+      <Setter Property="Background" Value="White"/>
+      <Setter Property="BorderBrush" Value="#FF828790"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="ItemContainerStyle">
+        <Setter.Value>
+          <Style>
+            <Setter Property="FrameworkElement.Margin" Value="2"/>
+          </Style>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="ScrollableSimpleListBox" TargetType="{x:Type ItemsControl}">
+      <Setter Property="Foreground" Value="Black"/>
+      <Setter Property="Background" Value="White"/>
+      <Setter Property="BorderBrush" Value="#FF828790"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="ItemContainerStyle">
+        <Setter.Value>
+          <Style>
+            <Setter Property="FrameworkElement.Margin" Value="2"/>
+          </Style>
+        </Setter.Value>
+      </Setter>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate>
+            <Border x:Name="Border"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    SnapsToDevicePixels="True"
+                    Padding="{TemplateBinding Padding}">
+              <ScrollViewer Focusable="False">
+                <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+              </ScrollViewer>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <DataTemplate DataType="{x:Type f:ItemChoice}">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Image Source="{Binding Item.Icon}" Style="{StaticResource IconStyle}" Margin="3"/>
+        <TextBlock Grid.Column="1" Text="{Binding DisplayText}" Margin="3" TextWrapping="Wrap"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type f:RecipeChoice}">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition/>
+          <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Image Grid.RowSpan="2" Source="{Binding Recipe.Icon}"
+               Style="{StaticResource IconStyle}" Margin="3"/>
+        <TextBlock Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                   Text="{Binding DisplayText}" Margin="3" TextWrapping="Wrap"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <ItemsControl Grid.Row="1" Grid.Column="1" Style="{StaticResource SimpleListBox}"
+                      Margin="3" ItemsSource="{Binding Inputs}"/>
+        <ItemsControl Grid.Row="1" Grid.Column="2" Style="{StaticResource SimpleListBox}"
+                      Margin="3" ItemsSource="{Binding Outputs}"/>
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type f:ChooserViewModel}">
+      <Grid Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+            FocusManager.IsFocusScope="True"
+            FocusManager.FocusedElement="{Binding ElementName=textBox}">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition/>
+        </Grid.RowDefinitions>
+        <TextBox x:Name="textBox" Margin="3,3,3,0" Focusable="True"
+                 Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"/>
+        <ListBox Grid.Row="1" Margin="3,0,3,3" ItemsSource="{Binding Choices}"
+                 SelectedItem="{Binding SelectedChoice}" Background="{x:Null}"
+                 BorderThickness="0">
+          <ListBox.ItemContainerStyle>
+            <Style TargetType="{x:Type ListBoxItem}">
+              <Setter Property="Margin" Value="0,3,0,0"/>
+              <Setter Property="Padding" Value="0"/>
+              <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+              <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+              <Setter Property="Background" Value="White"/>
+              <Setter Property="BorderBrush" Value="Transparent"/>
+              <Setter Property="BorderThickness" Value="0"/>
+              <EventSetter Event="MouseUp" Handler="OnChooserChoiceMouseUp"/>
+              <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="Foreground" Value="#FF000000"/>
+                  <Setter Property="Background" Value="#FFAEC6CF"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                  <Setter Property="Foreground" Value="#FF000000"/>
+                  <Setter Property="Background" Value="#FFAEC6CF"/>
+                </Trigger>
+              </Style.Triggers>
+            </Style>
+          </ListBox.ItemContainerStyle>
+        </ListBox>
+      </Grid>
+    </DataTemplate>
+  </Application.Resources>
+</Application>
