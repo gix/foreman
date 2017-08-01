@@ -254,7 +254,7 @@ namespace Foreman
                         }
                     }
 
-                    Choice c = await ChooserViewModel.ChooseAsync(optionList, screenPosition);
+                    Choice c = await optionList.ChooseAsync(screenPosition);
                     if (c != null) {
                         if (c == itemSupplyOption) {
                             newElement = new NodeElement(SupplyNode.Create(item, Graph), this);
@@ -347,14 +347,12 @@ namespace Foreman
             Graph.UpdateNodeValues();
         }
 
-        public Task SuggestConnect(Pin pin, Point canvasPosition, Point screenPosition)
+        public async Task SuggestConnect(Pin pin, Point canvasPosition, Point screenPosition)
         {
             var startConnectionType = pin.Kind;
             NodeElement supplierElement = pin.Kind == PinKind.Output ? pin.Node : null;
             NodeElement consumerElement = pin.Kind == PinKind.Input ? pin.Node : null;
             Item item = pin.Item;
-
-            var tcs = new TaskCompletionSource<bool>();
 
             if (startConnectionType == PinKind.Output && consumerElement == null) {
                 var recipeOptionList = new List<Choice>();
@@ -372,40 +370,37 @@ namespace Foreman
                         recipe.FriendlyName));
                 }
 
-                var chooserPanel = new ChooserViewModel(recipeOptionList);
-                chooserPanel.Show(screenPosition, c => {
-                    if (c != null) {
-                        NodeElement newElement = null;
-                        if (c is RecipeChoice rc) {
-                            Recipe selectedRecipe = rc.Recipe;
-                            newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Graph), this);
-                        } else if (c == itemOutputOption) {
-                            Item selectedItem = ((ItemChoice)c).Item;
-                            newElement = new NodeElement(ConsumerNode.Create(selectedItem, Graph), this);
-                            ((ConsumerNode)newElement.DisplayedNode).RateType = RateType.Auto;
-                        } else if (c == itemPassthroughOption) {
-                            Item selectedItem = ((ItemChoice)c).Item;
-                            newElement = new NodeElement(PassthroughNode.Create(selectedItem, Graph), this);
-                            ((PassthroughNode)newElement.DisplayedNode).RateType = RateType.Auto;
-                        } else {
-                            Trace.Fail("Unhandled option: " + c.ToString());
-                        }
-
-                        newElement.Update();
-                        newElement.Position = canvasPosition;
-                        //new Vector(-newElement.Width / 2, -newElement.Height / 2));
-
-                        var link = NodeLink.Create(supplierElement.DisplayedNode, newElement.DisplayedNode, item);
-                        var source = supplierElement.Outputs.First(x => x.Item == item);
-                        var destination = newElement.Inputs.First(x => x.Item == item);
-                        var connector = new Connector(link, source, destination);
-                        Elements.Add(newElement);
-                        Elements.Add(connector);
+                var c = await recipeOptionList.ChooseAsync(screenPosition);
+                if (c != null) {
+                    NodeElement newElement = null;
+                    if (c is RecipeChoice rc) {
+                        Recipe selectedRecipe = rc.Recipe;
+                        newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Graph), this);
+                    } else if (c == itemOutputOption) {
+                        Item selectedItem = ((ItemChoice)c).Item;
+                        newElement = new NodeElement(ConsumerNode.Create(selectedItem, Graph), this);
+                        ((ConsumerNode)newElement.DisplayedNode).RateType = RateType.Auto;
+                    } else if (c == itemPassthroughOption) {
+                        Item selectedItem = ((ItemChoice)c).Item;
+                        newElement = new NodeElement(PassthroughNode.Create(selectedItem, Graph), this);
+                        ((PassthroughNode)newElement.DisplayedNode).RateType = RateType.Auto;
+                    } else {
+                        Trace.Fail("Unhandled option: " + c.ToString());
                     }
 
-                    Graph.UpdateNodeValues();
-                    tcs.SetResult(true);
-                });
+                    newElement.Update();
+                    newElement.Position = canvasPosition;
+                    //new Vector(-newElement.Width / 2, -newElement.Height / 2));
+
+                    var link = NodeLink.Create(supplierElement.DisplayedNode, newElement.DisplayedNode, item);
+                    var source = supplierElement.Outputs.First(x => x.Item == item);
+                    var destination = newElement.Inputs.First(x => x.Item == item);
+                    var connector = new Connector(link, source, destination);
+                    Elements.Add(newElement);
+                    Elements.Add(connector);
+                }
+
+                Graph.UpdateNodeValues();
             } else if (startConnectionType == PinKind.Input && supplierElement == null) {
                 var recipeOptionList = new List<Choice>();
 
@@ -424,44 +419,36 @@ namespace Foreman
                     }
                 }
 
-                var chooserViewModel = new ChooserViewModel(recipeOptionList);
-
-                chooserViewModel.Show(screenPosition, c => {
-                    if (c != null) {
-                        NodeElement newElement = null;
-                        if (c is RecipeChoice rc) {
-                            Recipe selectedRecipe = rc.Recipe;
-                            newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Graph), this);
-                        } else if (c == itemSupplyOption) {
-                            Item selectedItem = ((ItemChoice)c).Item;
-                            newElement = new NodeElement(SupplyNode.Create(selectedItem, Graph), this);
-                        } else if (c == itemPassthroughOption) {
-                            Item selectedItem = ((ItemChoice)c).Item;
-                            newElement = new NodeElement(PassthroughNode.Create(selectedItem, Graph), this);
-                            ((PassthroughNode)newElement.DisplayedNode).RateType = RateType.Auto;
-                        } else {
-                            Trace.Fail("Unhandled option: " + c.ToString());
-                        }
-                        newElement.Update();
-                        newElement.Position = canvasPosition;
-                        //new Vector(-newElement.Width / 2, -newElement.Height / 2));
-
-                        var link = NodeLink.Create(newElement.DisplayedNode, consumerElement.DisplayedNode, item);
-                        var source = newElement.Outputs.First(x => x.Item == item);
-                        var destination = consumerElement.Inputs.First(x => x.Item == item);
-                        var connector = new Connector(link, source, destination);
-                        Elements.Add(newElement);
-                        Elements.Add(connector);
+                var c = await recipeOptionList.ChooseAsync(screenPosition);
+                if (c != null) {
+                    NodeElement newElement = null;
+                    if (c is RecipeChoice rc) {
+                        Recipe selectedRecipe = rc.Recipe;
+                        newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Graph), this);
+                    } else if (c == itemSupplyOption) {
+                        Item selectedItem = ((ItemChoice)c).Item;
+                        newElement = new NodeElement(SupplyNode.Create(selectedItem, Graph), this);
+                    } else if (c == itemPassthroughOption) {
+                        Item selectedItem = ((ItemChoice)c).Item;
+                        newElement = new NodeElement(PassthroughNode.Create(selectedItem, Graph), this);
+                        ((PassthroughNode)newElement.DisplayedNode).RateType = RateType.Auto;
+                    } else {
+                        Trace.Fail("Unhandled option: " + c.ToString());
                     }
+                    newElement.Update();
+                    newElement.Position = canvasPosition;
+                    //new Vector(-newElement.Width / 2, -newElement.Height / 2));
 
-                    Graph.UpdateNodeValues();
-                    tcs.SetResult(true);
-                });
-            } else {
-                tcs.SetResult(true);
+                    var link = NodeLink.Create(newElement.DisplayedNode, consumerElement.DisplayedNode, item);
+                    var source = newElement.Outputs.First(x => x.Item == item);
+                    var destination = consumerElement.Inputs.First(x => x.Item == item);
+                    var connector = new Connector(link, source, destination);
+                    Elements.Add(newElement);
+                    Elements.Add(connector);
+                }
+
+                Graph.UpdateNodeValues();
             }
-
-            return tcs.Task;
         }
 
         public ProductionGraphViewModel(SerializationInfo info, StreamingContext context)

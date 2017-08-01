@@ -131,7 +131,7 @@
                 graph.UpdateNodeValues();
         }
 
-        private void assemblerButton_Click(object sender, EventArgs e)
+        private async void assemblerButton_Click(object sender, EventArgs e)
         {
             var optionList = new List<Choice>();
             var bestOption = new ItemChoice(null, "Best", "Best");
@@ -149,22 +149,20 @@
                 optionList.Add(new ItemChoice(item, assembler.FriendlyName, assembler.FriendlyName));
             }
 
-            var chooserPanel = new ChooserViewModel(optionList);
-            chooserPanel.Show(assemblerButton, PlacementMode.Right, c => {
-                if (c != null) {
-                    if (c == bestOption) {
-                        recipeNode.Assembler = null;
-                    } else {
-                        var assembler = DataCache.Assemblers.Single(a => a.Key == c.DisplayText).Value;
-                        recipeNode.Assembler = assembler;
-                    }
-                    UpdateAssemblerButtons();
-                    graph.UpdateNodeValues();
+            var c = await optionList.ChooseAsync(assemblerButton, PlacementMode.Right);
+            if (c != null) {
+                if (c == bestOption) {
+                    recipeNode.Assembler = null;
+                } else {
+                    var assembler = DataCache.Assemblers.Single(a => a.Key == c.DisplayText).Value;
+                    recipeNode.Assembler = assembler;
                 }
-            });
+                UpdateAssemblerButtons();
+                graph.UpdateNodeValues();
+            }
         }
 
-        private void modulesButton_Click(object sender, EventArgs e)
+        private async void modulesButton_Click(object sender, EventArgs e)
         {
             var optionList = new List<Choice>();
             var fastestOption = new ItemChoice(null, "Best", "Best");
@@ -191,28 +189,26 @@
                 optionList.Add(new ItemChoice(item, module.FriendlyName, module.FriendlyName));
             }
 
-            var chooserPanel = new ChooserViewModel(optionList);
-            chooserPanel.Show(modulesButton, PlacementMode.Right, c => {
-                if (c != null) {
-                    if (c == fastestOption) {
-                        recipeNode.Modules = ModuleSelector.Fastest;
-                    } else if (c == noneOption) {
-                        recipeNode.Modules = ModuleSelector.None;
-                    } else if (c == productivityOption) {
-                        recipeNode.Modules = ModuleSelector.Productive;
-                    } else if (c == setOption) {
-                        recipeNode.Modules = new ModuleSet();
-                    } else {
-                        var module = DataCache.Modules.Single(a => a.Key == c.DisplayText).Value;
-                        recipeNode.Modules = ModuleSelector.Specific(module);
-                    }
-                    UpdateAssemblerButtons();
-                    graph.UpdateNodeValues();
+            var c = await optionList.ChooseAsync(modulesButton, PlacementMode.Right);
+            if (c != null) {
+                if (c == fastestOption) {
+                    recipeNode.Modules = ModuleSelector.Fastest;
+                } else if (c == noneOption) {
+                    recipeNode.Modules = ModuleSelector.None;
+                } else if (c == productivityOption) {
+                    recipeNode.Modules = ModuleSelector.Productive;
+                } else if (c == setOption) {
+                    recipeNode.Modules = new ModuleSet();
+                } else {
+                    var module = DataCache.Modules.Single(a => a.Key == c.DisplayText).Value;
+                    recipeNode.Modules = ModuleSelector.Specific(module);
                 }
-            });
+                UpdateAssemblerButtons();
+                graph.UpdateNodeValues();
+            }
         }
 
-        private void moduleButton_Click(object sender, EventArgs e)
+        private async void moduleButton_Click(object sender, EventArgs e)
         {
             var button = (Button)sender;
             var recipeNode = (RecipeNode)BaseNode;
@@ -238,18 +234,16 @@
                 optionList.Add(new ItemChoice(item, module.FriendlyName, module.FriendlyName));
             }
 
-            var chooserPanel = new ChooserViewModel(optionList);
-            chooserPanel.Show(button, PlacementMode.Right, c => {
-                if (c != null) {
-                    if (c == noneOption)
-                        modules[moduleIndex] = null;
-                    else
-                        modules[moduleIndex] = DataCache.Modules.Single(a => a.Key == c.DisplayText).Value;
+            var c = await optionList.ChooseAsync(button, PlacementMode.Right);
+            if (c != null) {
+                if (c == noneOption)
+                    modules[moduleIndex] = null;
+                else
+                    modules[moduleIndex] = DataCache.Modules.Single(a => a.Key == c.DisplayText).Value;
 
-                    UpdateAssemblerButtons();
-                    graph.UpdateNodeValues();
-                }
-            });
+                UpdateAssemblerButtons();
+                graph.UpdateNodeValues();
+            }
         }
 
         private void productivityBonusTextBox_TextChanged(object sender, EventArgs e)

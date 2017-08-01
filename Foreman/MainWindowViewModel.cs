@@ -270,7 +270,7 @@ namespace Foreman
             return SelectedItem != null;
         }
 
-        private Task AddItems(UIElement source)
+        private async Task AddItems(UIElement source)
         {
             foreach (Item item in new[] { SelectedItem }) {
                 NodeElement newElement = null;
@@ -295,29 +295,25 @@ namespace Foreman
                     }
                 }
 
-                var chooserPanel = new ChooserViewModel(optionList);
-
-                chooserPanel.Show(source, PlacementMode.Right, c => {
-                    if (c != null) {
-                        if (c == itemSupplyOption) {
-                            newElement = new NodeElement(SupplyNode.Create(item, GraphViewModel.Graph), GraphViewModel);
-                        } else if (c is RecipeChoice rc) {
-                            newElement = new NodeElement(
-                                RecipeNode.Create(rc.Recipe, GraphViewModel.Graph), GraphViewModel);
-                        } else if (c == itemOutputOption) {
-                            newElement = new NodeElement(ConsumerNode.Create(item, GraphViewModel.Graph), GraphViewModel);
-                        }
-
-                        newElement.Update();
-                        newElement.Position = GraphViewModel.ActualViewbox.GetCenter();
-
-                        GraphViewModel.Elements.Add(newElement);
+                var c = await optionList.ChooseAsync(source, PlacementMode.Right);
+                if (c != null) {
+                    if (c == itemSupplyOption) {
+                        newElement = new NodeElement(SupplyNode.Create(item, GraphViewModel.Graph), GraphViewModel);
+                    } else if (c is RecipeChoice rc) {
+                        newElement = new NodeElement(
+                            RecipeNode.Create(rc.Recipe, GraphViewModel.Graph), GraphViewModel);
+                    } else if (c == itemOutputOption) {
+                        newElement = new NodeElement(ConsumerNode.Create(item, GraphViewModel.Graph), GraphViewModel);
                     }
-                });
+
+                    newElement.Update();
+                    newElement.Position = GraphViewModel.ActualViewbox.GetCenter();
+
+                    GraphViewModel.Elements.Add(newElement);
+                }
             }
 
             GraphViewModel.Graph.UpdateNodeValues();
-            return Task.CompletedTask;
         }
 
         private void OnAmountTypeChanged()

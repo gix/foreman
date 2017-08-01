@@ -9,6 +9,28 @@
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
 
+    public static class Chooser
+    {
+        public static Task<Choice> ChooseAsync(
+            this IReadOnlyList<Choice> choices, Point screenPoint)
+        {
+            var model = new ChooserViewModel(choices);
+            var tcs = new TaskCompletionSource<Choice>();
+            model.Show(screenPoint, c => tcs.SetResult(c));
+            return tcs.Task;
+        }
+
+        public static Task<Choice> ChooseAsync(
+            this IReadOnlyList<Choice> choices, UIElement placementTarget,
+            PlacementMode placementMode)
+        {
+            var model = new ChooserViewModel(choices);
+            var tcs = new TaskCompletionSource<Choice>();
+            model.Show(placementTarget, placementMode, c => tcs.SetResult(c));
+            return tcs.Task;
+        }
+    }
+
     public class ChooserViewModel : ViewModel
     {
         private readonly IReadOnlyList<Choice> allChoices;
@@ -69,14 +91,6 @@
             popup.IsOpen = true;
         }
 
-        public static Task<Choice> ChooseAsync(IReadOnlyList<Choice> choices, Point location)
-        {
-            var model = new ChooserViewModel(choices);
-            var tcs = new TaskCompletionSource<Choice>();
-            model.Show(location, c => tcs.SetResult(c));
-            return tcs.Task;
-        }
-
         public void Hide()
         {
             if (popup != null) {
@@ -117,20 +131,22 @@
 
     public abstract class Choice : ViewModel
     {
-        protected Choice(string displayText, string filterText)
+        protected Choice(string displayText, string filterText, object value)
         {
             DisplayText = displayText;
             FilterText = filterText;
+            Value = value;
         }
 
         public string DisplayText { get; }
         public string FilterText { get; }
+        public object Value { get; }
     }
 
     public class ItemChoice : Choice
     {
-        public ItemChoice(Item item, string displayText, string filterText)
-            : base(displayText, filterText)
+        public ItemChoice(Item item, string displayText, string filterText, object value = null)
+            : base(displayText, filterText, value)
         {
             Item = item;
         }
@@ -140,8 +156,8 @@
 
     public class RecipeChoice : Choice
     {
-        public RecipeChoice(Recipe recipe, string text, string filterText)
-            : base(string.Format(text, recipe.FriendlyName), filterText)
+        public RecipeChoice(Recipe recipe, string text, string filterText, object value = null)
+            : base(string.Format(text, recipe.FriendlyName), filterText, value)
         {
             Recipe = recipe;
             Inputs = Recipe.Ingredients.Keys.Select(
