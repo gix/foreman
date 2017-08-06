@@ -43,7 +43,7 @@
                         break;
                     case "Set":
                         if (token["Modules"] != null) {
-                            var moduleKeys = token["Modules"].Value<string[]>();
+                            var moduleKeys = token["Modules"].Values<string>();
                             filter = new ModuleSet(
                                 moduleKeys
                                 .Where(x => DataCache.Modules.ContainsKey(x))

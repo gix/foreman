@@ -14,6 +14,7 @@
     using Newtonsoft.Json.Linq;
     using NLua;
     using Properties;
+    using Units;
 
     public class Language
     {
@@ -758,6 +759,7 @@
                     }
                 }
                 newAssembler.Speed = ReadLuaFloat(values, "crafting_speed");
+                newAssembler.EnergyUsage = ParsePower(ReadLuaString(values, "energy_usage"));
 
                 LuaTable effects = ReadLuaLuaTable(values, "allowed_effects", true);
                 if (effects != null) {
@@ -782,6 +784,16 @@
                     "Error reading value '{0}' from assembler prototype '{1}'. Returned error message: '{2}'", e.Key,
                     name, e.Message));
             }
+        }
+
+        private static Power ParsePower(string value)
+        {
+            if (value.EndsWith("kW"))
+                return Power.FromKilowatts(double.Parse(value.Substring(0, value.Length - 2)));
+            if (value.EndsWith("W"))
+                return new Power(double.Parse(value.Substring(0, value.Length - 1)));
+
+            throw new ArgumentException($"Invalid power value '{value}'");
         }
 
         private static void InterpretFurnace(string name, LuaTable values)
@@ -899,24 +911,22 @@
             try {
                 float speedBonus = 0f;
                 float productivityBonus = 0f;
+                float consumptionBonus = 0f;
 
                 LuaTable effectTable = ReadLuaLuaTable(values, "effect");
+
                 LuaTable speed = ReadLuaLuaTable(effectTable, "speed", true);
-                if (speed != null) {
-                    speedBonus = ReadLuaFloat(speed, "bonus", true, -1f);
-                }
+                if (speed != null)
+                    speedBonus = ReadLuaFloat(speed, "bonus", true);
 
                 LuaTable productivity = ReadLuaLuaTable(effectTable, "productivity", true);
-                if (productivity != null) {
-                    productivityBonus = ReadLuaFloat(productivity, "bonus", true, -1f);
-                }
+                if (productivity != null)
+                    productivityBonus = ReadLuaFloat(productivity, "bonus", true);
 
-                /*
-                if (speed == null || speedBonus <= 0)
-                {
-                    return;
-                }
-                */
+                LuaTable consumption = ReadLuaLuaTable(effectTable, "consumption", true);
+                if (consumption != null)
+                    consumptionBonus = ReadLuaFloat(consumption, "bonus", true);
+
                 var limitations = ReadLuaLuaTable(values, "limitation", true);
                 List<string> allowedIn = null;
                 if (limitations != null) {
@@ -926,7 +936,8 @@
                     }
                 }
 
-                Module newModule = new Module(name, speedBonus, productivityBonus, allowedIn);
+                var newModule = new Module(
+                    name, speedBonus, productivityBonus, consumptionBonus, allowedIn);
 
                 foreach (string s in Settings.Default.EnabledModules) {
                     if (s.Split('|')[0] == name) {

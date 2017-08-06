@@ -27,8 +27,9 @@
         public abstract string DisplayName { get; }
         public abstract IEnumerable<Item> Inputs { get; }
         public abstract IEnumerable<Item> Outputs { get; }
-        public double SpeedBonus { get; internal set; }
+        public double SpeedBonus { get; set; }
         public double ProductivityBonus { get; set; }
+        public double ConsumptionBonus { get; set; }
 
         public List<NodeLink> InputLinks { get; } = new List<NodeLink>();
         public List<NodeLink> OutputLinks { get; } = new List<NodeLink>();
@@ -202,6 +203,7 @@
             info.AddValue("RecipeName", BaseRecipe.Name);
             info.AddValue("SpeedBonus", SpeedBonus);
             info.AddValue("ProductivityBonus", ProductivityBonus);
+            info.AddValue("ConsumptionBonus", ConsumptionBonus);
             info.AddValue("RateType", RateType);
             info.AddValue("ActualRate", ActualRate);
             if (RateType == RateType.Manual) {
@@ -297,14 +299,14 @@
             }
 
             List<MachinePermutation> sortedPermutations =
-                allowedPermutations.OrderBy(p => p.GetMinerRate(resource)).ToList();
+                allowedPermutations.OrderBy(p => p.GetMinerRate(resource, 0)).ToList();
 
             if (sortedPermutations.Any()) {
                 float requiredRate = GetSupplyRate(SuppliedItem);
                 MachinePermutation permutationToAdd =
-                    sortedPermutations.LastOrDefault(a => a.GetMinerRate(resource) < requiredRate);
+                    sortedPermutations.LastOrDefault(a => a.GetMinerRate(resource, 0) < requiredRate);
                 if (permutationToAdd != null) {
-                    double numberToAdd = requiredRate / permutationToAdd.GetMinerRate(resource);
+                    double numberToAdd = requiredRate / permutationToAdd.GetMinerRate(resource, 0);
                     results.Add(permutationToAdd, numberToAdd);
                 }
             }

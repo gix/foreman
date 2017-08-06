@@ -118,6 +118,9 @@
     <Compile Include="Extensions\LayoutUtils.cs" />
     <Compile Include="Extensions\MathExtensions.cs" />
     <Compile Include="Extensions\VectorUtils.cs" />
+    <Compile Include="Units\Power.cs" />
+    <Compile Include="Units\Power.Generated.cs" />
+    <Compile Include="Units\QuantityExtensions.cs" />
     <Compile Include="Views\SelectedItemsBehavior.cs" />
     <Compile Include="Views\DirectoryChooserDialog.xaml.cs">
       <DependentUpon>DirectoryChooserDialog.xaml</DependentUpon>

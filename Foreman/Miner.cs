@@ -1,7 +1,6 @@
 ﻿namespace Foreman
 {
     using System.Collections.Generic;
-    using System.Linq;
 
     public class Resource
     {
@@ -27,22 +26,6 @@
             Name = name;
             ResourceCategories = new List<string>();
             Enabled = true;
-        }
-
-        public float GetRate(Resource resource, IEnumerable<Module> modules)
-        {
-            double finalSpeed = Speed;
-            foreach (Module module in modules.Where(m => m != null)) {
-                finalSpeed += module.SpeedBonus * Speed;
-            }
-
-            // According to https://wiki.factorio.com/Mining
-            double timeForOneItem = resource.Time / ((MiningPower - resource.Hardness) * finalSpeed);
-
-            // Round up to the nearest tick, since mining can't start until the start of a new tick
-            timeForOneItem = GameUtils.RoundToNearestTick(timeForOneItem);
-
-            return (float)(1d / timeForOneItem);
         }
     }
 }

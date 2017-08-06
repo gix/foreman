@@ -3,6 +3,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Windows.Media.Imaging;
+    using Units;
 
     public class MachinePermutation
     {
@@ -11,7 +12,7 @@
 
         public double GetAssemblerRate(float recipeTime, float beaconBonus)
         {
-            return ((Assembler)Assembler).GetRate(recipeTime, beaconBonus, Modules);
+            return GameUtils.GetRate(recipeTime, Assembler.GetSpeed(beaconBonus, Modules));
         }
 
         internal double GetAssemblerProductivity()
@@ -21,9 +22,9 @@
                 .Sum(x => x.ProductivityBonus);
         }
 
-        public double GetMinerRate(Resource r)
+        public double GetMinerRate(Resource r, float beaconBonus)
         {
-            return ((Miner)Assembler).GetRate(r, Modules);
+            return GameUtils.GetMiningRate(r, ((Miner)Assembler).MiningPower, Assembler.GetSpeed(beaconBonus, Modules));
         }
 
         public MachinePermutation(ProductionEntity machine, ICollection<Module> modules)
@@ -40,12 +41,37 @@
         public BitmapSource Icon { get; set; }
         public int ModuleSlots { get; set; }
         public float Speed { get; set; }
+        public Power EnergyUsage { get; set; }
         private string friendlyName;
 
         public string FriendlyName
         {
             get => !string.IsNullOrWhiteSpace(friendlyName) ? friendlyName : Name;
             set => friendlyName = value;
+        }
+
+        public double GetSpeed(double beaconBonus, IEnumerable<Module> modules = null)
+        {
+            double finalSpeed = Speed;
+            if (modules != null) {
+                foreach (Module module in modules.Where(m => m != null))
+                    finalSpeed += module.SpeedBonus * Speed;
+            }
+            finalSpeed += beaconBonus * Speed;
+
+            return finalSpeed;
+        }
+
+        public Power GetEnergyConsumption(double beaconBonus, IEnumerable<Module> modules = null)
+        {
+            Power consumption = EnergyUsage;
+            if (modules != null) {
+                foreach (Module module in modules.Where(m => m != null))
+                    consumption += module.ConsumptionBonus * EnergyUsage;
+            }
+            consumption += beaconBonus * EnergyUsage;
+
+            return consumption;
         }
 
         public IEnumerable<MachinePermutation> GetAllPermutations(Recipe recipe)
@@ -90,20 +116,9 @@
             return string.Format("Assembler: {0}", Name);
         }
 
-        public float GetRate(float recipeTime, float beaconBonus, IEnumerable<Module> speedModules = null)
+        public double GetRate(float recipeTime, double beaconBonus, IEnumerable<Module> modules = null)
         {
-            double finalSpeed = Speed;
-            if (speedModules != null) {
-                foreach (Module module in speedModules.Where(m => m != null)) {
-                    finalSpeed += module.SpeedBonus * Speed;
-                }
-            }
-            finalSpeed += beaconBonus * Speed;
-
-            // Machines have to wait for a new tick before starting a new item, so round up to the nearest tick
-            double craftingTime = GameUtils.RoundToNearestTick(recipeTime / finalSpeed);
-
-            return (float)(1d / craftingTime);
+            return GameUtils.GetRate(recipeTime, GetSpeed(beaconBonus, modules));
         }
     }
 
@@ -114,6 +129,7 @@
         public bool Enabled { get; set; }
         public float SpeedBonus { get; }
         public float ProductivityBonus { get; }
+        public float ConsumptionBonus { get; }
         public string Name { get; }
         private string friendlyName;
         private readonly List<string> allowedIn;
@@ -125,10 +141,13 @@
         }
 
 
-        public Module(string name, float speedBonus, float productivityBonus, List<string> allowedIn)
+        public Module(
+            string name, float speedBonus, float productivityBonus,
+            float consumptionBonus, List<string> allowedIn)
         {
             SpeedBonus = speedBonus;
             ProductivityBonus = productivityBonus;
+            ConsumptionBonus = consumptionBonus;
             Name = name;
             Enabled = true;
             this.allowedIn = allowedIn;
