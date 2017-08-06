@@ -5,34 +5,13 @@
 
     public class Item
     {
-        public static readonly List<string> LocaleCategories =
-            new List<string> {"item-name", "fluid-name", "entity-name", "equipment-name"};
-
         public string Name { get; }
         public HashSet<Recipe> Recipes { get; }
         public BitmapSource Icon { get; set; }
 
-        public string FriendlyName
-        {
-            get
-            {
-                foreach (string category in LocaleCategories) {
-                    if (DataCache.LocaleFiles.ContainsKey(category) &&
-                        DataCache.LocaleFiles[category].ContainsKey(Name)) {
-                        return DataCache.LocaleFiles[category][Name];
-                    }
-                }
+        public string FriendlyName => DataCache.GetLocalizedString(Name);
 
-                return Name;
-            }
-        }
-
-        public bool IsMissingItem { get; set; } = false;
-
-        private Item()
-        {
-            Name = "";
-        }
+        public bool IsMissingItem { get; set; }
 
         public Item(string name)
         {

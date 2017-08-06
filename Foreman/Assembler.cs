@@ -42,13 +42,8 @@
         public int ModuleSlots { get; set; }
         public float Speed { get; set; }
         public Power EnergyUsage { get; set; }
-        private string friendlyName;
 
-        public string FriendlyName
-        {
-            get => !string.IsNullOrWhiteSpace(friendlyName) ? friendlyName : Name;
-            set => friendlyName = value;
-        }
+        public string FriendlyName => DataCache.GetLocalizedString(Name);
 
         public double GetSpeed(double beaconBonus, IEnumerable<Module> modules = null)
         {
@@ -131,15 +126,9 @@
         public float ProductivityBonus { get; }
         public float ConsumptionBonus { get; }
         public string Name { get; }
-        private string friendlyName;
         private readonly List<string> allowedIn;
 
-        public string FriendlyName
-        {
-            get => !string.IsNullOrWhiteSpace(friendlyName) ? friendlyName : Name;
-            set => friendlyName = value;
-        }
-
+        public string FriendlyName => DataCache.GetLocalizedString("item-name", Name);
 
         public Module(
             string name, float speedBonus, float productivityBonus,

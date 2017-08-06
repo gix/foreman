@@ -212,7 +212,7 @@
                 .Where(a => a.MaxIngredients >= recipe.Ingredients.Count);
             foreach (var assembler in allowedAssemblers.OrderBy(a => a.FriendlyName)) {
                 var item = DataCache.Items.Values.SingleOrDefault(i => i.Name == assembler.Name);
-                optionList.Add(new ItemChoice(item, assembler.FriendlyName, assembler.FriendlyName));
+                optionList.Add(new ItemChoice(item, assembler.FriendlyName, assembler.FriendlyName, assembler));
             }
 
             var c = await optionList.ChooseAsync(assemblerButton, PlacementMode.Right);
@@ -220,8 +220,7 @@
                 if (c == bestOption) {
                     recipeNode.Assembler = null;
                 } else {
-                    var assembler = DataCache.Assemblers.Single(a => a.Key == c.DisplayText).Value;
-                    recipeNode.Assembler = assembler;
+                    recipeNode.Assembler = (Assembler)c.Value;
                 }
                 UpdateAssemblerButtons();
                 graph.UpdateNodeValues();
@@ -253,7 +252,7 @@
 
             foreach (var module in allowedModules.OrderBy(a => a.FriendlyName)) {
                 var item = DataCache.Items.Values.SingleOrDefault(i => i.Name == module.Name);
-                options.Add(new ItemChoice(item, module.FriendlyName));
+                options.Add(new ItemChoice(item, module.FriendlyName, null, module));
             }
 
             var c = await options.ChooseAsync(modulesButton, PlacementMode.Right);
@@ -269,8 +268,7 @@
                 } else if (c == customOption) {
                     recipeNode.Modules = new ModuleSet();
                 } else {
-                    var module = DataCache.Modules.Single(a => a.Key == c.DisplayText).Value;
-                    recipeNode.Modules = ModuleSelector.Specific(module);
+                    recipeNode.Modules = ModuleSelector.Specific((Module)c.Value);
                 }
                 UpdateAssemblerButtons();
                 graph.UpdateNodeValues();
@@ -300,7 +298,7 @@
 
             foreach (var module in allowedModules.OrderBy(a => a.FriendlyName)) {
                 var item = DataCache.Items.Values.SingleOrDefault(i => i.Name == module.Name);
-                optionList.Add(new ItemChoice(item, module.FriendlyName, module.FriendlyName));
+                optionList.Add(new ItemChoice(item, module.FriendlyName, module.FriendlyName, module));
             }
 
             var c = await optionList.ChooseAsync(button, PlacementMode.Right);
@@ -308,7 +306,7 @@
                 if (c == noneOption)
                     modules[moduleIndex] = null;
                 else
-                    modules[moduleIndex] = DataCache.Modules.Single(a => a.Key == c.DisplayText).Value;
+                    modules[moduleIndex] = (Module)c.Value;
 
                 UpdateAssemblerButtons();
                 graph.UpdateNodeValues();

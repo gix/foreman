@@ -34,13 +34,10 @@
         {
             get
             {
-                if (DataCache.LocaleFiles.ContainsKey("recipe-name") &&
-                    DataCache.LocaleFiles["recipe-name"].ContainsKey(Name)) {
-                    return DataCache.LocaleFiles["recipe-name"][Name];
-                }
-                if (Results.Count == 1) {
+                if (DataCache.Current.TryGetLocalizedString("recipe-name", Name, out var friendlyName))
+                    return friendlyName;
+                if (Results.Count == 1)
                     return Results.Keys.First().FriendlyName;
-                }
                 return Name;
             }
         }

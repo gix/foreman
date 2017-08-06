@@ -1080,5 +1080,36 @@
                 }
             }
         }
+
+        public static readonly List<string> LocaleCategories =
+            new List<string> { "item-name", "fluid-name", "entity-name", "equipment-name" };
+
+        public static string GetLocalizedString(string category, string name)
+        {
+            if (LocaleFiles.TryGetValue(category, out var strings) &&
+                strings.TryGetValue(name, out var localized))
+                return localized;
+            return name;
+        }
+
+        public static bool TryGetLocalizedString(string category, string name, out string localized)
+        {
+            if (localeFiles.TryGetValue(category, out var strings) &&
+                strings.TryGetValue(name, out localized))
+                return true;
+            localized = null;
+            return false;
+        }
+
+        public static string GetLocalizedString(string name)
+        {
+            foreach (string category in LocaleCategories) {
+                if (LocaleFiles.TryGetValue(category, out var strings) &&
+                    strings.TryGetValue(name, out var localized))
+                    return localized;
+            }
+
+            return name;
+        }
     }
 }
