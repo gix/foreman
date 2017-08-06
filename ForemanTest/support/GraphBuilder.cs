@@ -161,7 +161,7 @@ namespace ForemanTest
 
                 Recipe recipe = new Recipe(name, duration, itemizeKeys(inputs), itemizeKeys(outputs));
                 Built = RecipeNode.Create(recipe, graph);
-                this.Built.ProductivityBonus = efficiency;
+                this.Built.BeaconModules.OverrideProductivityBonus = efficiency;
 
                 if (target > 0)
                 {

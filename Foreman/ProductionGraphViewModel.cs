@@ -576,10 +576,20 @@ namespace Foreman
                             newNode.DesiredRate = (float)node["ActualRate"];
                         }
                     }
+                    if (node["BeaconModules"] != null) {
+                        foreach (var entry in node["BeaconModules"].ToObject<Dictionary<string, int>>()) {
+                            var module = DataCache.Modules.GetValueOrDefault(entry.Key);
+                            if (module != null)
+                                newNode.BeaconModules.Add(module, entry.Value);
+                        }
+                    }
+
                     if (node["SpeedBonus"] != null)
-                        newNode.SpeedBonus = Math.Round((float)node["SpeedBonus"], 4);
+                        newNode.BeaconModules.OverrideSpeedBonus = node["SpeedBonus"].Value<double?>();
                     if (node["ProductivityBonus"] != null)
-                        newNode.ProductivityBonus = Math.Round((float)node["ProductivityBonus"], 4);
+                        newNode.BeaconModules.OverrideProductivityBonus = node["ProductivityBonus"].Value<double?>();
+                    if (node["ConsumptionBonus"] != null)
+                        newNode.BeaconModules.OverrideConsumptionBonus = node["ConsumptionBonus"].Value<double?>();
                 }
             }
 

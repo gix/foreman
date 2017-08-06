@@ -17,40 +17,40 @@
 
         public static ModuleSelector Productive => new ModuleSelectorProductivity();
 
+        public static ModuleSelector Efficient => new ModuleSelectorEfficiency();
+
         public static ModuleSelector Load(JToken token)
         {
             ModuleSelector filter = Fastest;
 
-            var filterType = (string)token["ModuleFilterType"];
-            if (filterType != null) {
-                switch (filterType) {
-                    case "Best":
-                        filter = Fastest;
-                        break;
-                    case "None":
-                        filter = None;
-                        break;
-                    case "Most Productive":
-                        filter = Productive;
-                        break;
-                    case "Specific":
-                        if (token["Module"] != null) {
-                            var moduleKey = (string)token["Module"];
-                            if (DataCache.Modules.ContainsKey(moduleKey)) {
-                                filter = new ModuleSpecificFilter(DataCache.Modules[moduleKey]);
-                            }
-                        }
-                        break;
-                    case "Set":
-                        if (token["Modules"] != null) {
-                            var moduleKeys = token["Modules"].Values<string>();
-                            filter = new ModuleSet(
-                                moduleKeys
-                                .Where(x => DataCache.Modules.ContainsKey(x))
-                                .Select(x => DataCache.Modules[x]));
-                        }
-                        break;
-                }
+            var filterType = token["ModuleFilterType"]?.Value<string>();
+            switch (filterType) {
+                case "Fastest":
+                    filter = Fastest;
+                    break;
+                case "None":
+                    filter = None;
+                    break;
+                case "Most Productive":
+                    filter = Productive;
+                    break;
+                case "Most Efficient":
+                    filter = Efficient;
+                    break;
+                case "Specific":
+                    var moduleKey = token["Module"]?.Value<string>();
+                    if (moduleKey != null && DataCache.Modules.ContainsKey(moduleKey))
+                        filter = new ModuleSpecificFilter(DataCache.Modules[moduleKey]);
+                    break;
+                case "Custom":
+                    if (token["Modules"] != null) {
+                        var moduleKeys = token["Modules"].Values<string>();
+                        filter = new ModuleSet(
+                            moduleKeys
+                            .Where(x => DataCache.Modules.ContainsKey(x))
+                            .Select(x => DataCache.Modules[x]));
+                    }
+                    break;
             }
 
             return filter;
@@ -101,15 +101,14 @@
         {
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                info.AddValue("ModuleFilterType", "Best");
+                info.AddValue("ModuleFilterType", "Fastest");
             }
 
             public override string Name => "Fastest";
 
             protected override IEnumerable<Module> AvailableModules()
             {
-                return DataCache.Modules.Values
-                    .OrderBy(m => -m.SpeedBonus);
+                return DataCache.Modules.Values.OrderBy(m => -m.SpeedBonus);
             }
         }
 
@@ -124,8 +123,22 @@
 
             protected override IEnumerable<Module> AvailableModules()
             {
-                return DataCache.Modules.Values
-                    .OrderBy(m => -m.ProductivityBonus);
+                return DataCache.Modules.Values.OrderBy(m => -m.ProductivityBonus);
+            }
+        }
+
+        private class ModuleSelectorEfficiency : ModuleSelector
+        {
+            public override void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("ModuleFilterType", "Most Efficient");
+            }
+
+            public override string Name => "Most Efficient";
+
+            protected override IEnumerable<Module> AvailableModules()
+            {
+                return DataCache.Modules.Values.OrderBy(m => m.ConsumptionBonus);
             }
         }
 
@@ -159,11 +172,11 @@
             this.modules = new List<Module>(modules);
         }
 
-        public override string Name => "Set";
+        public override string Name => "Custom";
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("ModuleFilterType", "Set");
+            info.AddValue("ModuleFilterType", "Custom");
             info.AddValue("Modules", modules.Select(x => x.Name).ToArray());
         }
 

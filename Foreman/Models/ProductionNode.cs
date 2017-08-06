@@ -1,6 +1,7 @@
 ﻿namespace Foreman
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -19,6 +20,79 @@
         Manual
     }
 
+    public class ModuleBag : IReadOnlyCollection<KeyValuePair<Module, int>>
+    {
+        private const double DistributionEfficiency = 2.0;
+        private readonly Dictionary<Module, int> modules = new Dictionary<Module, int>();
+
+        public double? OverrideSpeedBonus { get; set; }
+        public double? OverrideProductivityBonus { get; set; }
+        public double? OverrideConsumptionBonus { get; set; }
+
+        public double GetSpeedBonus()
+        {
+            return OverrideSpeedBonus ?? modules.Sum(x => x.Key.SpeedBonus * x.Value) / DistributionEfficiency;
+        }
+
+        public double GetProductivityBonus()
+        {
+            return OverrideProductivityBonus ?? modules.Sum(x => x.Key.ProductivityBonus * x.Value) / DistributionEfficiency;
+        }
+
+        public double GetConsumptionBonus()
+        {
+            return OverrideConsumptionBonus ?? modules.Sum(x => x.Key.ConsumptionBonus * x.Value) / DistributionEfficiency;
+        }
+
+        public int Count { get; private set; }
+
+        public void Clear()
+        {
+            modules.Clear();
+            Count = 0;
+        }
+
+        public void Add(Module module, int count = 1)
+        {
+            if (module == null)
+                throw new ArgumentNullException(nameof(module));
+
+            int thisCount;
+            modules.TryGetValue(module, out thisCount);
+            modules[module] = thisCount + count;
+            ++Count;
+        }
+
+        public bool Remove(Module module)
+        {
+            if (module == null)
+                throw new ArgumentNullException(nameof(module));
+
+            int count;
+            if (modules.TryGetValue(module, out count)) {
+                if (count == 1)
+                    modules.Remove(module);
+                else
+                    modules[module] = count - 1;
+
+                --Count;
+                return true;
+            }
+
+            return false;
+        }
+
+        public IEnumerator<KeyValuePair<Module, int>> GetEnumerator()
+        {
+            return modules.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+
     [Serializable]
     public abstract partial class ProductionNode : ISerializable
     {
@@ -27,9 +101,7 @@
         public abstract string DisplayName { get; }
         public abstract IEnumerable<Item> Inputs { get; }
         public abstract IEnumerable<Item> Outputs { get; }
-        public double SpeedBonus { get; set; }
-        public double ProductivityBonus { get; set; }
-        public double ConsumptionBonus { get; set; }
+        public ModuleBag BeaconModules { get; } = new ModuleBag();
 
         public List<NodeLink> InputLinks { get; } = new List<NodeLink>();
         public List<NodeLink> OutputLinks { get; } = new List<NodeLink>();
@@ -101,12 +173,7 @@
 
         public virtual float ProductivityMultiplier()
         {
-            return (float)(1.0 + ProductivityBonus);
-        }
-
-        internal double GetProductivityBonus()
-        {
-            return 1.5;
+            return (float)(1.0 + BeaconModules.GetProductivityBonus());
         }
 
         public float GetSuppliedRate(Item item)
@@ -153,7 +220,8 @@
 
             if (assembler != null) {
                 var modules = Modules.For(BaseRecipe, assembler.ModuleSlots);
-                var required = ActualRate / assembler.GetRate(BaseRecipe.Time, (float)SpeedBonus, modules);
+                var required = ActualRate / assembler.GetRate(
+                    BaseRecipe.Time, BeaconModules.GetSpeedBonus(), modules);
                 ret.Add(new MachinePermutation(assembler, modules.ToList()), required);
             }
 
@@ -201,9 +269,10 @@
         {
             info.AddValue("NodeType", "Recipe");
             info.AddValue("RecipeName", BaseRecipe.Name);
-            info.AddValue("SpeedBonus", SpeedBonus);
-            info.AddValue("ProductivityBonus", ProductivityBonus);
-            info.AddValue("ConsumptionBonus", ConsumptionBonus);
+            info.AddValue("BeaconModules", BeaconModules.ToDictionary(x => x.Key.Name, x => x.Value));
+            info.AddValue("SpeedBonus", BeaconModules.OverrideSpeedBonus);
+            info.AddValue("ProductivityBonus", BeaconModules.OverrideProductivityBonus);
+            info.AddValue("ConsumptionBonus", BeaconModules.OverrideConsumptionBonus);
             info.AddValue("RateType", RateType);
             info.AddValue("ActualRate", ActualRate);
             if (RateType == RateType.Manual) {
@@ -248,7 +317,7 @@
         public override float ProductivityMultiplier()
         {
             var assemblerBonus = GetAssemblers().Keys.Sum(x => x.GetAssemblerProductivity());
-            return (float)(1.0 + ProductivityBonus + assemblerBonus);
+            return (float)(1.0 + BeaconModules.GetProductivityBonus() + assemblerBonus);
         }
     }
 

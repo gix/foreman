@@ -3,10 +3,73 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:local="clr-namespace:Foreman.Controls"
+             xmlns:f="clr-namespace:Foreman"
+             xmlns:views="clr-namespace:Foreman.Views"
              mc:Ignorable="d"
              d:DesignWidth="500"
              d:DesignHeight="300">
+  <UserControl.Resources>
+    <DataTemplate x:Key="ModuleIconTemplate" DataType="{x:Type f:Module}">
+      <Image Source="{Binding Icon}" Stretch="Fill"
+             RenderOptions.BitmapScalingMode="Fant"/>
+    </DataTemplate>
+
+    <Style x:Key="ModuleSlot" TargetType="{x:Type Button}">
+      <Setter Property="Background" Value="#FFEEEEEE"/>
+      <Setter Property="BorderBrush" Value="#FFAAAAAA"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="1"/>
+      <Setter Property="Width" Value="32"/>
+      <Setter Property="Height" Value="32"/>
+      <Setter Property="MinWidth" Value="32"/>
+      <Setter Property="MinHeight" Value="32"/>
+      <Setter Property="ContentTemplate" Value="{StaticResource ModuleIconTemplate}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type Button}">
+            <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter/>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter Property="BorderBrush" Value="#FF336699"/>
+        </Trigger>
+        <Trigger Property="IsEnabled" Value="False">
+          <Setter Property="Background" Value="#FFFCFCFC"/>
+          <Setter Property="BorderBrush" Value="#FFEEEEEE"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+
+    <DataTemplate x:Key="AggregatedModuleTemplate" DataType="{x:Type views:AggregatedModule}">
+      <Grid Margin="3">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Button Content="{Binding Module}" Style="{StaticResource ModuleSlot}"
+                Click="aggregatedModuleButton_Click"/>
+        <TextBox Grid.Row="1" Text="{Binding Count, UpdateSourceTrigger=PropertyChanged}"
+                 Margin="0,2,0,0" TextChanged="aggregatedModuleCount_TextChanged"/>
+      </Grid>
+    </DataTemplate>
+    <Style x:Key="BeaconModuleList" TargetType="{x:Type ItemsControl}">
+      <Setter Property="ItemTemplate" Value="{StaticResource AggregatedModuleTemplate}"/>
+      <Setter Property="ItemsPanel">
+        <Setter.Value>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="3"/>
+          </ItemsPanelTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </UserControl.Resources>
   <Grid>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="100"/>
@@ -35,31 +98,53 @@
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
         <RowDefinition/>
       </Grid.RowDefinitions>
-      <TextBlock Grid.Row="0" Text="Assembler:" HorizontalAlignment="Right" Margin="3"/>
+      <TextBlock Grid.Row="0" Text="Assembler:" Margin="3"
+                 HorizontalAlignment="Right" VerticalAlignment="Center"/>
       <Button Grid.Row="0" Grid.Column="1" Margin="2" x:Name="assemblerButton" Click="assemblerButton_Click"/>
 
       <TextBlock Grid.Row="1" Text="Modules:" Margin="3"
                  HorizontalAlignment="Right" VerticalAlignment="Center"/>
       <Button Grid.Row="1" Grid.Column="1" Margin="2" x:Name="modulesButton" Click="modulesButton_Click"/>
 
-      <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
-        <Button x:Name="moduleButton1" Margin="2" Width="23" Height="23" MinWidth="23" MinHeight="23" Click="moduleButton_Click"/>
-        <Button x:Name="moduleButton2" Margin="2" Width="23" Height="23" MinWidth="23" MinHeight="23" Click="moduleButton_Click"/>
-        <Button x:Name="moduleButton3" Margin="2" Width="23" Height="23" MinWidth="23" MinHeight="23" Click="moduleButton_Click"/>
-        <Button x:Name="moduleButton4" Margin="2" Width="23" Height="23" MinWidth="23" MinHeight="23" Click="moduleButton_Click"/>
-      </StackPanel>
+      <Grid Grid.Row="2" Grid.Column="1" Margin="3">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="moduleButton1" Grid.Column="0" Style="{StaticResource ModuleSlot}" Click="moduleButton_Click"/>
+        <Button x:Name="moduleButton2" Grid.Column="1" Style="{StaticResource ModuleSlot}" Margin="2,0,0,0" Click="moduleButton_Click"/>
+        <Button x:Name="moduleButton3" Grid.Column="2" Style="{StaticResource ModuleSlot}" Margin="2,0,0,0" Click="moduleButton_Click"/>
+        <Button x:Name="moduleButton4" Grid.Column="3" Style="{StaticResource ModuleSlot}" Margin="2,0,0,0" Click="moduleButton_Click"/>
+      </Grid>
 
-      <TextBlock Grid.Row="3" Text="Speed Bonus:" Margin="3"
+
+      <TextBlock Text="Beacon Modules:" Grid.Row="3" Margin="3"
+                 HorizontalAlignment="Right" VerticalAlignment="Top"/>
+      <ItemsControl Grid.Row="3" Grid.Column="1" Margin="3"
+                    x:Name="beaconModulesList"
+                    Style="{StaticResource BeaconModuleList}"/>
+
+      <TextBlock Grid.Row="4" Text="Speed Bonus:" Margin="3"
                  HorizontalAlignment="Right" VerticalAlignment="Center"/>
-      <TextBox Grid.Row="3" Grid.Column="1" Margin="3"
+      <TextBox Grid.Row="4" Grid.Column="1" Margin="3" IsReadOnly="True"
                x:Name="speedBonusTextBox" TextChanged="speedBonusTextBox_TextChanged"/>
 
-      <TextBlock Grid.Row="4" Text="Productivity Bonus:" Margin="3"
+      <TextBlock Grid.Row="5" Text="Productivity Bonus:" Margin="3"
                  HorizontalAlignment="Right" VerticalAlignment="Center"/>
-      <TextBox Grid.Row="4" Grid.Column="1" Margin="3"
+      <TextBox Grid.Row="5" Grid.Column="1" Margin="3" IsReadOnly="True"
                x:Name="productivityBonusTextBox" TextChanged="productivityBonusTextBox_TextChanged"/>
+
+      <TextBlock Grid.Row="6" Text="Energy Consumption Bonus:" Margin="3"
+                 HorizontalAlignment="Right" VerticalAlignment="Center"/>
+      <TextBox Grid.Row="6" Grid.Column="1" Margin="3" IsReadOnly="True"
+               x:Name="consumptionBonusTextBox" TextChanged="consumptionBonusTextBox_TextChanged"/>
+
     </Grid>
   </Grid>
 </UserControl>

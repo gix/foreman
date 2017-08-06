@@ -134,7 +134,7 @@
         protected Choice(string displayText, string filterText, object value)
         {
             DisplayText = displayText;
-            FilterText = filterText;
+            FilterText = filterText ?? displayText;
             Value = value;
         }
 
@@ -145,7 +145,7 @@
 
     public class ItemChoice : Choice
     {
-        public ItemChoice(Item item, string displayText, string filterText, object value = null)
+        public ItemChoice(Item item, string displayText, string filterText = null, object value = null)
             : base(displayText, filterText, value)
         {
             Item = item;
@@ -156,7 +156,7 @@
 
     public class RecipeChoice : Choice
     {
-        public RecipeChoice(Recipe recipe, string text, string filterText, object value = null)
+        public RecipeChoice(Recipe recipe, string text, string filterText = null, object value = null)
             : base(string.Format(text, recipe.FriendlyName), filterText, value)
         {
             Recipe = recipe;

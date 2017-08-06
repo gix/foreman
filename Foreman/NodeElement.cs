@@ -365,33 +365,59 @@
         {
             var buffer = new StringBuilder();
             buffer.AppendFormat("Recipe: {0}", recipeNode.BaseRecipe.FriendlyName);
-            buffer.AppendFormat("\n--Base Time: {0}s", recipeNode.BaseRecipe.Time);
+            buffer.AppendFormat("\n\nBase Time: {0}s", recipeNode.BaseRecipe.Time);
 
-            buffer.Append("\n--Base Ingredients:");
+            buffer.Append("\nBase Ingredients:");
             foreach (var kvp in recipeNode.BaseRecipe.Ingredients)
-                buffer.AppendFormat("\n----{0} ({1})", kvp.Key.FriendlyName, kvp.Value);
+                buffer.AppendFormat("\n  {0} ({1})", kvp.Key.FriendlyName, kvp.Value);
 
-            buffer.Append("\n--Base Results:");
+            buffer.Append("\nBase Results:");
             foreach (var kvp in recipeNode.BaseRecipe.Results)
-                buffer.AppendFormat("\n----{0} ({1})", kvp.Key.FriendlyName, kvp.Value);
+                buffer.AppendFormat("\n  {0} ({1})", kvp.Key.FriendlyName, kvp.Value);
 
             if (Parent.ShowAssemblers) {
                 buffer.Append("\n\nAssemblers:");
                 foreach (var kvp in permutations) {
-                    buffer.AppendFormat("\n----{0} ({1})", kvp.Key.Assembler.FriendlyName, kvp.Value);
-                    foreach (var module in kvp.Key.Modules.Where(m => m != null))
-                        buffer.AppendFormat("\n------{0}", module.FriendlyName);
+                    var permutation = kvp.Key;
+
+                    var assembler = permutation.Assembler;
+                    buffer.AppendFormat("\n  {0} ({1})", assembler.FriendlyName, kvp.Value);
+                    foreach (var module in permutation.Modules.Where(m => m != null))
+                        buffer.AppendFormat("\n    {0}", module.FriendlyName);
+
+                    var baseConsumption = assembler.EnergyUsage;
+                    var actualConsumption = assembler.GetEnergyConsumption(DisplayedNode.BeaconModules.GetConsumptionBonus(), permutation.Modules);
+                    buffer.AppendFormat("\n  Energy consumption: {0:F0} kW", actualConsumption.Kilowatts);
+                    if (actualConsumption != baseConsumption)
+                        buffer.AppendFormat(" ({0:+0;−0}%)", ((actualConsumption / baseConsumption) - 1) * 100);
+
+                    buffer.AppendFormat("\n  Productivity: {0:+0;−0}%", (DisplayedNode.ProductivityMultiplier() - 1) * 100);
+
+                    var baseSpeed = assembler.Speed;
+                    var actualSpeed = assembler.GetSpeed(DisplayedNode.BeaconModules.GetSpeedBonus(), permutation.Modules);
+                    buffer.AppendFormat("\n  Crafting speed: {0:F2}", actualSpeed);
+                    if (actualSpeed != baseSpeed)
+                        buffer.AppendFormat(" ({0:+0;−0}%)", ((actualSpeed / baseSpeed) - 1) * 100);
                 }
             }
 
             if (Parent.Graph.SelectedAmountType == AmountType.FixedAmount) {
                 buffer.AppendFormat("\n\nCurrent iterations: {0}", DisplayedNode.ActualRate);
             } else {
+                var unit = Parent.Graph.SelectedUnit == RateUnit.PerMinute ? "m" : "s";
+
                 buffer.AppendFormat("\n\nCurrent Rate: {0}/{1}",
                     Parent.Graph.SelectedUnit == RateUnit.PerMinute
                         ? DisplayedNode.ActualRate / 60
                         : DisplayedNode.ActualRate,
-                    Parent.Graph.SelectedUnit == RateUnit.PerMinute ? "m" : "s");
+                    unit);
+
+                if (DisplayedNode is RecipeNode recipe) {
+                    foreach (var item in recipe.Outputs) {
+                        var rate = recipe.GetSupplyRate(item);
+                        buffer.AppendFormat("\n{0} Rate: {1}/{2}", item.FriendlyName, rate, unit);
+                    }
+                }
             }
 
             return buffer.ToString();

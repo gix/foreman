@@ -121,6 +121,7 @@
     <Compile Include="Units\Power.cs" />
     <Compile Include="Units\Power.Generated.cs" />
     <Compile Include="Units\QuantityExtensions.cs" />
+    <Compile Include="Infrastructure\BindableCollection.cs" />
     <Compile Include="Views\SelectedItemsBehavior.cs" />
     <Compile Include="Views\DirectoryChooserDialog.xaml.cs">
       <DependentUpon>DirectoryChooserDialog.xaml</DependentUpon>
