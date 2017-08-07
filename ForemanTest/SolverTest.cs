@@ -1,14 +1,13 @@
-﻿using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Foreman;
-using System;
-
-namespace ForemanTest
+﻿namespace ForemanTest
 {
-    [TestClass]
+    using System;
+    using System.Linq;
+    using Foreman;
+    using Xunit;
+
     public class SolverTest
     {
-        [TestMethod]
+        [Fact]
         public void TestBasicSolve()
         {
             var builder = GraphBuilder.Create();
@@ -25,7 +24,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.SupplyRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestBasicRecipe()
         {
             var builder = GraphBuilder.Create();
@@ -43,7 +42,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.SupplyRate("Ore"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestRecipeThatReducesItems()
         {
             var builder = GraphBuilder.Create();
@@ -61,7 +60,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(50, data.SupplyRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestRecipeThatMultipliesItems()
         {
             var builder = GraphBuilder.Create();
@@ -79,7 +78,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(5, data.SupplyRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestRecipeWithUnevenInputOutputRatio()
         {
             var builder = GraphBuilder.Create();
@@ -97,7 +96,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(8, data.SupplyRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestMultipleInput()
         {
             var builder = GraphBuilder.Create();
@@ -117,10 +116,10 @@ namespace ForemanTest
             GraphOptimisations.FindOptimalGraphToSatisfyFixedNodes(data.Graph);
 
             var production = data.SupplyRate("Plate");
-            Assert.IsTrue(production == 10, "Suppliers misproduced: " + production);
+            Assert.Equal(10, production);
         }
 
-        [TestMethod]
+        [Fact]
         public void TestMultipleOutput()
         {
             var builder = GraphBuilder.Create();
@@ -142,7 +141,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(15, data.SupplyRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestFixedSupply()
         {
             var builder = GraphBuilder.Create();
@@ -159,7 +158,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.ConsumedRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestFixedRecipe()
         {
             var builder = GraphBuilder.Create();
@@ -178,7 +177,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.ConsumedRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestPartialGraph()
         {
             var builder = GraphBuilder.Create();
@@ -194,7 +193,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(0, data.Graph.Nodes[0].ActualRate);
         }
 
-        [TestMethod]
+        [Fact]
         public void TestSingleFixedRecipe()
         {
             var builder = GraphBuilder.Create();
@@ -210,7 +209,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.Graph.Nodes[0].ActualRate);
         }
 
-        [TestMethod]
+        [Fact]
         public void TestDisjointGraph()
         {
             var builder = GraphBuilder.Create();
@@ -233,7 +232,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.SupplyRate("Ore"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestRecipeLinkedToSelf()
         {
             var builder = GraphBuilder.Create();
@@ -251,7 +250,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.SupplyRate("Ore"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestCycle()
         {
             var builder = GraphBuilder.Create();
@@ -268,7 +267,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(2, data.RecipeRate("fixer"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestNoInputRecipe()
         {
             var builder = GraphBuilder.Create();
@@ -286,7 +285,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.ConsumedRate("Ice"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestRecipeWithEfficiencyBonus()
         {
             var builder = GraphBuilder.Create();
@@ -304,7 +303,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(8, data.SupplyRate("Ore"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestRecipeCanBeOverSupplied()
         {
             var builder = GraphBuilder.Create();
@@ -333,7 +332,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(20, data.RecipeInputRate("furnace", "Ore"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestMinimizeOverSupply()
         {
             var builder = GraphBuilder.Create();
@@ -359,7 +358,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.ConsumedRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestOverProduction()
         {
             var builder = GraphBuilder.Create();
@@ -380,7 +379,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(10, data.ConsumedRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestUnderProduction()
         {
             var builder = GraphBuilder.Create();
@@ -398,7 +397,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(data.SupplyRate("Ore"), data.ConsumedRate("Plate"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestPreferUseOfOverSupplyThanFromSuppliers()
         {
             var builder = GraphBuilder.Create();
@@ -434,7 +433,7 @@ namespace ForemanTest
             AssertFloatsAreEqual(8, data.SupplyRate("Acid"));
         }
 
-        [TestMethod]
+        [Fact]
         public void TestPassThroughDoesNotAlterSolve()
         {
             // This regression was reported in
@@ -526,7 +525,7 @@ namespace ForemanTest
 
         private void AssertFloatsAreEqual(double expected, double actual)
         {
-            Assert.AreEqual(expected, actual, 0.0001);
+            Assert.Equal(expected, actual, 5);
         }
     }
 }

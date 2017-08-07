@@ -1,11 +1,10 @@
-﻿using Foreman;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace ForemanTest
+﻿namespace ForemanTest
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Foreman;
+
     // A fluid interface for building up production graphs for testing. See references for usage.
     public class GraphBuilder
     {
