@@ -223,15 +223,7 @@
                         InterpretModule(entry.Key as string, entry.Value as LuaTable);
                 }
 
-                UnknownIcon = LoadImage("UnknownIcon.png");
-                if (UnknownIcon == null) {
-                    var pixels = new uint[32 * 32];
-                    for (int i = 0; i < pixels.Length; ++i)
-                        pixels[i] = 0xFFFFFFFF;
-                    UnknownIcon = BitmapSource.Create(
-                        32, 32, 96, 96, PixelFormats.Pbgra32, null, pixels, 32);
-                    UnknownIcon.Freeze();
-                }
+                UnknownIcon = LoadUnknownIcon();
 
                 LoadAllLanguages();
                 await ChangeLocaleAsync(DefaultLocale);
@@ -240,6 +232,24 @@
             MarkCyclicRecipes();
 
             ReportErrors();
+        }
+
+        private BitmapSource LoadUnknownIcon()
+        {
+            var assembly = typeof(DataCache).Assembly;
+            using (var stream = assembly.GetManifestResourceStream(typeof(DataCache), "UnknownIcon.png")) {
+                if (stream != null)
+                    return ImagingExtensions.LoadImage(stream);
+            }
+
+            int length = 32;
+            var pixels = new uint[length * length];
+            for (int i = 0; i < pixels.Length; ++i)
+                pixels[i] = 0xFFFFFFFF;
+            var icon = BitmapSource.Create(
+                length, length, 96, 96, PixelFormats.Pbgra32, null, pixels, 32);
+            icon.Freeze();
+            return icon;
         }
 
         private void LoadAllLanguages()
