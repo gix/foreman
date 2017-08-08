@@ -39,16 +39,16 @@
                     break;
                 case "Specific":
                     var moduleKey = token["Module"]?.Value<string>();
-                    if (moduleKey != null && DataCache.Modules.ContainsKey(moduleKey))
-                        filter = new ModuleSpecificFilter(DataCache.Modules[moduleKey]);
+                    if (moduleKey != null && DataCache.Current.Modules.ContainsKey(moduleKey))
+                        filter = new ModuleSpecificFilter(DataCache.Current.Modules[moduleKey]);
                     break;
                 case "Custom":
                     if (token["Modules"] != null) {
                         var moduleKeys = token["Modules"].Values<string>();
                         filter = new ModuleSet(
                             moduleKeys
-                            .Where(x => DataCache.Modules.ContainsKey(x))
-                            .Select(x => DataCache.Modules[x]));
+                            .Where(x => DataCache.Current.Modules.ContainsKey(x))
+                            .Select(x => DataCache.Current.Modules[x]));
                     }
                     break;
             }
@@ -108,7 +108,7 @@
 
             protected override IEnumerable<Module> AvailableModules()
             {
-                return DataCache.Modules.Values.OrderBy(m => -m.SpeedBonus);
+                return DataCache.Current.Modules.Values.OrderBy(m => -m.SpeedBonus);
             }
         }
 
@@ -123,7 +123,7 @@
 
             protected override IEnumerable<Module> AvailableModules()
             {
-                return DataCache.Modules.Values.OrderBy(m => -m.ProductivityBonus);
+                return DataCache.Current.Modules.Values.OrderBy(m => -m.ProductivityBonus);
             }
         }
 
@@ -138,7 +138,7 @@
 
             protected override IEnumerable<Module> AvailableModules()
             {
-                return DataCache.Modules.Values.OrderBy(m => m.ConsumptionBonus);
+                return DataCache.Current.Modules.Values.OrderBy(m => m.ConsumptionBonus);
             }
         }
 

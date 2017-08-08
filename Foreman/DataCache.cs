@@ -33,38 +33,57 @@
         }
     }
 
-    public static class DataCache
+    public class DataCache
     {
-        private static string DataPath => Path.Combine(Settings.Default.FactorioPath, "data");
+        private static DataCache current = new DataCache();
 
-        private static string ModPath => Settings.Default.FactorioModPath;
+        public static DataCache Current
+        {
+            get => current;
+            private set
+            {
+                current = value;
+                colorCache.Clear();
+            }
+        }
 
-        public static List<Mod> Mods { get; set; } = new List<Mod>();
-        public static List<Language> Languages { get; } = new List<Language>();
+        private string DataPath => Path.Combine(Settings.Default.FactorioPath, "data");
 
-        public static string Difficulty = "normal";
+        private string ModPath => Settings.Default.FactorioModPath;
+        public List<Mod> Mods { get; set; } = new List<Mod>();
+        public List<Language> Languages { get; } = new List<Language>();
 
-        public static Dictionary<string, Item> Items { get; } = new Dictionary<string, Item>();
-        public static Dictionary<string, Recipe> Recipes { get; } = new Dictionary<string, Recipe>();
-        public static Dictionary<string, Assembler> Assemblers { get; } = new Dictionary<string, Assembler>();
-        public static Dictionary<string, Miner> Miners { get; } = new Dictionary<string, Miner>();
-        public static Dictionary<string, Resource> Resources { get; } = new Dictionary<string, Resource>();
-        public static Dictionary<string, Module> Modules { get; } = new Dictionary<string, Module>();
-        public static Dictionary<string, Inserter> Inserters { get; } = new Dictionary<string, Inserter>();
+        public string Difficulty { get; set; } = "normal";
+        public Dictionary<string, Item> Items { get; } = new Dictionary<string, Item>();
+        public Dictionary<string, Recipe> Recipes { get; } = new Dictionary<string, Recipe>();
+        public Dictionary<string, Assembler> Assemblers { get; } = new Dictionary<string, Assembler>();
+        public Dictionary<string, Miner> Miners { get; } = new Dictionary<string, Miner>();
+        public Dictionary<string, Resource> Resources { get; } = new Dictionary<string, Resource>();
+        public Dictionary<string, Module> Modules { get; } = new Dictionary<string, Module>();
+        public Dictionary<string, Inserter> Inserters { get; } = new Dictionary<string, Inserter>();
 
         private const float defaultRecipeTime = 0.5f;
-        private static readonly Dictionary<BitmapSource, Color> colorCache = new Dictionary<BitmapSource, Color>();
-        public static BitmapSource UnknownIcon;
+        private static readonly Dictionary<BitmapSource, Color> colorCache =
+            new Dictionary<BitmapSource, Color>();
+        public BitmapSource UnknownIcon;
 
-        public static Dictionary<string, Dictionary<string, string>> LocaleFiles { get; } =
+        public Dictionary<string, Dictionary<string, string>> LocaleFiles { get; } =
             new Dictionary<string, Dictionary<string, string>>();
 
-        public static Dictionary<string, Exception> FailedFiles { get; } = new Dictionary<string, Exception>();
-        public static Dictionary<string, Exception> FailedPathDirectories { get; } = new Dictionary<string, Exception>();
+        public Dictionary<string, Exception> FailedFiles { get; } = new Dictionary<string, Exception>();
+        public Dictionary<string, Exception> FailedPathDirectories { get; } = new Dictionary<string, Exception>();
 
-        public static Dictionary<string, byte[]> ZipHashes { get; } = new Dictionary<string, byte[]>();
+        public Dictionary<string, byte[]> ZipHashes { get; } = new Dictionary<string, byte[]>();
 
-        public static void LoadAllData(List<string> enabledMods)
+        public static void Reload(List<string> enabledMods = null)
+        {
+            var newData = new DataCache();
+            newData.Difficulty = Current.Difficulty;
+            newData.LoadAllData(enabledMods);
+            Current = newData;
+        }
+
+        private void LoadAllData(List<string> enabledMods)
         {
             Clear();
 
@@ -113,8 +132,8 @@
                     defines.direction.west = 4
 ");
 
-                foreach (string filename in new[] { "data.lua", "data-updates.lua", "data-final-fixes.lua" }) {
-                    foreach (Mod mod in Mods.Where(m => m.Enabled)) {
+                foreach (Mod mod in Mods.Where(m => m.Enabled)) {
+                    foreach (string filename in new[] { "data.lua", "data-updates.lua", "data-final-fixes.lua" }) {
                         //Mods use relative paths, but if more than one mod is in package.path at once this can be ambiguous
                         lua["package.path"] = basePackagePath;
                         AddLuaPackagePath(lua, mod.Dir);
@@ -213,7 +232,7 @@
             ReportErrors();
         }
 
-        private static void LoadAllLanguages()
+        private void LoadAllLanguages()
         {
             var localeDirs = Directory.EnumerateDirectories(
                 Path.Combine(Mods.First(m => m.Name == "core").Dir, "locale"));
@@ -229,7 +248,7 @@
             }
         }
 
-        public static void Clear()
+        public void Clear()
         {
             Mods.Clear();
             Items.Clear();
@@ -239,14 +258,14 @@
             Resources.Clear();
             Modules.Clear();
             colorCache.Clear();
-            LocaleFiles.Clear();
+            localeFiles.Clear();
             FailedFiles.Clear();
             FailedPathDirectories.Clear();
             Inserters.Clear();
             Languages.Clear();
         }
 
-        private static void ReportErrors()
+        private void ReportErrors()
         {
             if (FailedPathDirectories.Any()) {
                 ErrorLogging.LogLine("There were errors setting the lua path variable for the following directories:");
@@ -261,7 +280,7 @@
             }
         }
 
-        private static void AddLuaPackagePath(Lua lua, string dir)
+        private void AddLuaPackagePath(Lua lua, string dir)
         {
             try {
                 string luaCommand = string.Format("package.path = package.path .. ';{0}{1}?.lua'", dir,
@@ -273,7 +292,7 @@
             }
         }
 
-        private static void FindAllMods(List<string> enabledMods) //Vanilla game counts as a mod too.
+        private void FindAllMods(List<string> enabledMods) //Vanilla game counts as a mod too.
         {
             if (Directory.Exists(DataPath)) {
                 foreach (string dir in Directory.EnumerateDirectories(DataPath))
@@ -325,7 +344,7 @@
             Mods = modGraph.SortMods();
         }
 
-        private static void ReadModInfoFile(string dir)
+        private void ReadModInfoFile(string dir)
         {
             var path = Path.Combine(dir, "info.json");
             if (!File.Exists(path))
@@ -337,7 +356,7 @@
             }
         }
 
-        private static void UnzipMod(string modZipFile)
+        private void UnzipMod(string modZipFile)
         {
             string fullPath = Path.GetFullPath(modZipFile);
             byte[] hash;
@@ -368,7 +387,7 @@
             }
         }
 
-        private static void ReadModInfoZip(string zipFile)
+        private void ReadModInfoZip(string zipFile)
         {
             UnzipMod(zipFile);
 
@@ -382,10 +401,10 @@
             ReadModInfo(File.ReadAllText(file), Path.GetDirectoryName(file));
         }
 
-        private static void ReadModInfo(string json, string dir)
+        private void ReadModInfo(string json, string path)
         {
             Mod newMod = JsonConvert.DeserializeObject<Mod>(json);
-            newMod.Dir = dir;
+            newMod.Dir = path;
 
             Version parsedVersion;
             if (!Version.TryParse(newMod.Version, out parsedVersion))
@@ -397,7 +416,7 @@
             Mods.Add(newMod);
         }
 
-        private static void ParseModDependencies(Mod mod)
+        private void ParseModDependencies(Mod mod)
         {
             if (mod.Name == "base")
                 mod.Dependencies.Add("core");
@@ -442,7 +461,7 @@
             }
         }
 
-        private static void InterpretItems(Lua lua, string typeName)
+        private void InterpretItems(Lua lua, string typeName)
         {
             if (lua.GetTable("data.raw")[typeName] is LuaTable itemTable) {
                 foreach (KeyValuePair<object, object> entry in itemTable)
@@ -450,7 +469,7 @@
             }
         }
 
-        public static void LoadLocaleFiles(string locale = "en")
+        public void LoadLocaleFiles(string locale = "en")
         {
             foreach (Mod mod in Mods.Where(m => m.Enabled)) {
                 string localeDir = Path.Combine(mod.Dir, "locale", locale);
@@ -467,7 +486,7 @@
             }
         }
 
-        private static void LoadLocaleFile(string file)
+        private void LoadLocaleFile(string file)
         {
             using (var stream = new StreamReader(file)) {
                 string iniSection = "none";
@@ -492,7 +511,7 @@
             }
         }
 
-        private static BitmapSource LoadImage(string fileName)
+        private BitmapSource LoadModImage(string filePath)
         {
             if (string.IsNullOrEmpty(fileName))
                 return null;
@@ -539,7 +558,7 @@
             return image;
         }
 
-        public static Color IconAverageColour(BitmapSource icon)
+        public static Color IconAverageColor(BitmapSource icon)
         {
             if (icon == null)
                 return Colors.LightGray;
@@ -561,7 +580,7 @@
             return result;
         }
 
-        private static void InterpretLuaItem(string name, LuaTable values)
+        private void InterpretLuaItem(string name, LuaTable values)
         {
             if (string.IsNullOrEmpty(name))
                 return;
@@ -583,14 +602,14 @@
             }
         }
 
-        private static Item FindOrCreateUnknownItem(string itemName)
+        private Item FindOrCreateUnknownItem(string itemName)
         {
             // This is only if a recipe references an item that isn't in the
             // item prototypes (which shouldn't really happen)
             return Items.GetOrAdd(itemName, x => new Item(x));
         }
 
-        private static void InterpretLuaRecipe(string name, LuaTable values)
+        private void InterpretLuaRecipe(string name, LuaTable values)
         {
             try {
                 var timeSource = values[Difficulty] == null ? values : values.TableOrDefault(Difficulty);
@@ -625,8 +644,7 @@
             }
         }
 
-
-        private static void ReadAssemblerProperties(Assembler assembler, LuaTable values)
+        private void ReadAssemblerProperties(Assembler assembler, LuaTable values)
         {
             assembler.Icon = LoadImage(values.StringOrDefault("icon"));
             assembler.MaxIngredients = values.IntOrDefault("ingredient_count");
@@ -659,7 +677,7 @@
             }
         }
 
-        private static void InterpretAssemblingMachine(string name, LuaTable values)
+        private void InterpretAssemblingMachine(string name, LuaTable values)
         {
             try {
                 var newAssembler = new Assembler(name);
@@ -683,7 +701,7 @@
             throw new ArgumentException($"Invalid power value '{value}'");
         }
 
-        private static void InterpretFurnace(string name, LuaTable values)
+        private void InterpretFurnace(string name, LuaTable values)
         {
             try {
                 var newFurnace = new Assembler(name);
@@ -711,7 +729,7 @@
             }
         }
 
-        private static void InterpretRocketSilo(string name, LuaTable values)
+        private void InterpretRocketSilo(string name, LuaTable values)
         {
             try {
                 var newRocketSilo = new Assembler(name);
@@ -725,7 +743,7 @@
             }
         }
 
-        private static void InterpretMiner(string name, LuaTable values)
+        private void InterpretMiner(string name, LuaTable values)
         {
             try {
                 var newMiner = new Miner(name);
@@ -761,7 +779,7 @@
             }
         }
 
-        private static void InterpretResource(string name, LuaTable values)
+        private void InterpretResource(string name, LuaTable values)
         {
             try {
                 if (values["minable"] == null) {
@@ -791,7 +809,7 @@
             }
         }
 
-        private static void InterpretModule(string name, LuaTable values)
+        private void InterpretModule(string name, LuaTable values)
         {
             try {
                 float speedBonus = 0f;
@@ -840,7 +858,7 @@
             }
         }
 
-        private static void InterpretInserter(string name, LuaTable values)
+        private void InterpretInserter(string name, LuaTable values)
         {
             try {
                 float rotationSpeed = values.Float("rotation_speed");
@@ -856,7 +874,7 @@
             }
         }
 
-        private static Dictionary<Item, float> ExtractResultsFromLuaRecipe(LuaTable values)
+        private Dictionary<Item, float> ExtractResultsFromLuaRecipe(LuaTable values)
         {
             var results = new Dictionary<Item, float>();
 
@@ -914,7 +932,7 @@
             return results;
         }
 
-        private static Dictionary<Item, float> ExtractIngredientsFromLuaRecipe(LuaTable values)
+        private Dictionary<Item, float> ExtractIngredientsFromLuaRecipe(LuaTable values)
         {
             var ingredients = new Dictionary<Item, float>();
 
@@ -937,7 +955,7 @@
             return ingredients;
         }
 
-        private static void MarkCyclicRecipes()
+        private void MarkCyclicRecipes()
         {
             var testGraph = new ProductionGraph();
             foreach (Recipe recipe in Recipes.Values)
@@ -954,7 +972,7 @@
         public static readonly List<string> LocaleCategories =
             new List<string> { "item-name", "fluid-name", "entity-name", "equipment-name" };
 
-        public static string GetLocalizedString(string category, string name)
+        public string GetLocalizedString(string category, string name)
         {
             if (LocaleFiles.TryGetValue(category, out var strings) &&
                 strings.TryGetValue(name, out var localized))
@@ -962,7 +980,7 @@
             return name;
         }
 
-        public static bool TryGetLocalizedString(string category, string name, out string localized)
+        public bool TryGetLocalizedString(string category, string name, out string localized)
         {
             if (localeFiles.TryGetValue(category, out var strings) &&
                 strings.TryGetValue(name, out localized))
@@ -971,7 +989,7 @@
             return false;
         }
 
-        public static string GetLocalizedString(string name)
+        public string GetLocalizedString(string name)
         {
             foreach (string category in LocaleCategories) {
                 if (LocaleFiles.TryGetValue(category, out var strings) &&

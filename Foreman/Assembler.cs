@@ -43,7 +43,7 @@
         public float Speed { get; set; }
         public Power EnergyUsage { get; set; }
 
-        public string FriendlyName => DataCache.GetLocalizedString(Name);
+        public string FriendlyName => DataCache.Current.GetLocalizedString(Name);
 
         public double GetSpeed(double beaconBonus, IEnumerable<Module> modules = null)
         {
@@ -79,7 +79,7 @@
                 yield break;
             }
 
-            var allowedModules = DataCache.Modules.Values
+            var allowedModules = DataCache.Current.Modules.Values
                 .Where(m => m.Enabled)
                 .Where(m => m.AllowedIn(recipe));
 
@@ -119,7 +119,7 @@
 
     public class Module
     {
-        public BitmapSource Icon => DataCache.Items[Name].Icon; // For each module there should be a corresponding item with the icon already loaded.
+        public BitmapSource Icon => DataCache.Current.Items[Name].Icon; // For each module there should be a corresponding item with the icon already loaded.
 
         public bool Enabled { get; set; }
         public float SpeedBonus { get; }
@@ -128,7 +128,7 @@
         public string Name { get; }
         private readonly List<string> allowedIn;
 
-        public string FriendlyName => DataCache.GetLocalizedString("item-name", Name);
+        public string FriendlyName => DataCache.Current.GetLocalizedString("item-name", Name);
 
         public Module(
             string name, float speedBonus, float productivityBonus,

@@ -13,10 +13,10 @@
             InitializeComponent();
             DataContext = this;
 
-            Assemblers.AddRange(DataCache.Assemblers.Values.OrderBy(x => x.FriendlyName));
-            Miners.AddRange(DataCache.Miners.Values.OrderBy(x => x.FriendlyName));
-            Modules.AddRange(DataCache.Modules.Values.OrderBy(x => x.FriendlyName));
-            Mods.AddRange(DataCache.Mods.OrderBy(x => x.Name));
+            Assemblers.AddRange(DataCache.Current.Assemblers.Values.OrderBy(x => x.FriendlyName));
+            Miners.AddRange(DataCache.Current.Miners.Values.OrderBy(x => x.FriendlyName));
+            Modules.AddRange(DataCache.Current.Modules.Values.OrderBy(x => x.FriendlyName));
+            Mods.AddRange(DataCache.Current.Mods.OrderBy(x => x.Name));
         }
 
         public bool ModsChanged { get; private set; }

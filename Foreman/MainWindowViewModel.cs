@@ -221,17 +221,17 @@ namespace Foreman
 
             switch (Settings.Default.FactorioDifficulty) {
                 case "normal":
-                    DataCache.Difficulty = "normal";
+                    DataCache.Current.Difficulty = "normal";
                     Difficulty = Difficulty.Normal;
                     break;
                 case "expensive":
-                    DataCache.Difficulty = "expensive";
+                    DataCache.Current.Difficulty = "expensive";
                     Difficulty = Difficulty.Expensive;
                     break;
                 default:
                     Settings.Default.FactorioDifficulty = "normal";
                     Settings.Default.Save();
-                    DataCache.Difficulty = "normal";
+                    DataCache.Current.Difficulty = "normal";
                     Difficulty = Difficulty.Normal;
                     break;
             }
@@ -239,17 +239,17 @@ namespace Foreman
             ShowAssemblers = GraphViewModel.ShowAssemblers = Settings.Default.ShowAssemblers;
             ShowMiners = GraphViewModel.ShowMiners = Settings.Default.ShowMiners;
 
-            await Task.Run(() => DataCache.LoadAllData(null));
+            await Task.Run(() => DataCache.Reload(null));
 
-            Languages.AddRange(DataCache.Languages);
-            SelectedLanguage = DataCache.Languages.FirstOrDefault(l => l.Name == Settings.Default.Language);
+            Languages.AddRange(DataCache.Current.Languages);
+            SelectedLanguage = DataCache.Current.Languages.FirstOrDefault(l => l.Name == Settings.Default.Language);
 
             UpdateControlValues();
         }
 
         private void LoadItemList()
         {
-            unfilteredItemList = DataCache.Items.Values.ToList();
+            unfilteredItemList = DataCache.Current.Items.Values.ToList();
             unfilteredItemList.StableSortBy(x => x.FriendlyName);
 
             ItemList.Clear();
@@ -258,7 +258,7 @@ namespace Foreman
 
         private void LoadRecipeList()
         {
-            unfilteredRecipeList = DataCache.Recipes.Values.ToList();
+            unfilteredRecipeList = DataCache.Current.Recipes.Values.ToList();
             unfilteredRecipeList.StableSortBy(x => x.FriendlyName);
 
             RecipeList.Clear();
@@ -280,7 +280,7 @@ namespace Foreman
 
                 var optionList = new List<Choice>();
                 optionList.Add(itemOutputOption);
-                foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Enabled)) {
+                foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(r => r.Enabled)) {
                     if (recipe.Results.ContainsKey(item)) {
                         optionList.Add(new RecipeChoice(recipe,
                             string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
@@ -288,7 +288,7 @@ namespace Foreman
                 }
                 optionList.Add(itemSupplyOption);
 
-                foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Enabled)) {
+                foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(r => r.Enabled)) {
                     if (recipe.Ingredients.ContainsKey(item)) {
                         optionList.Add(new RecipeChoice(recipe,
                             string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
@@ -387,7 +387,7 @@ namespace Foreman
                 Settings.Default.Save();
 
                 JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
-                DataCache.LoadAllData(null);
+                DataCache.Reload();
                 GraphViewModel.LoadFromJson(savedGraph);
                 UpdateControlValues();
             }
@@ -403,7 +403,7 @@ namespace Foreman
                 Settings.Default.Save();
 
                 JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
-                DataCache.LoadAllData(null);
+                DataCache.Reload();
                 GraphViewModel.LoadFromJson(savedGraph);
                 UpdateControlValues();
             }
@@ -485,13 +485,13 @@ namespace Foreman
             Settings.Default.EnabledMiners.Clear();
             Settings.Default.EnabledModules.Clear();
 
-            Settings.Default.EnabledMods.AddRange(DataCache.Mods
+            Settings.Default.EnabledMods.AddRange(DataCache.Current.Mods
                 .Select(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
-            Settings.Default.EnabledAssemblers.AddRange(DataCache.Assemblers.Values
+            Settings.Default.EnabledAssemblers.AddRange(DataCache.Current.Assemblers.Values
                 .Select(a => a.Name + "|" + a.Enabled.ToString()).ToArray());
-            Settings.Default.EnabledMiners.AddRange(DataCache.Miners.Values
+            Settings.Default.EnabledMiners.AddRange(DataCache.Current.Miners.Values
                 .Select(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
-            Settings.Default.EnabledModules.AddRange(DataCache.Modules.Values
+            Settings.Default.EnabledModules.AddRange(DataCache.Current.Modules.Values
                 .Select(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
 
             Settings.Default.Save();
@@ -501,8 +501,8 @@ namespace Foreman
         {
             string newLocale = SelectedLanguage.Name;
 
-            DataCache.LocaleFiles.Clear();
-            DataCache.LoadLocaleFiles(newLocale);
+            DataCache.Current.LocaleFiles.Clear();
+            DataCache.Current.LoadLocaleFiles(newLocale);
 
             GraphViewModel.UpdateNodes();
             UpdateControlValues();
@@ -556,21 +556,21 @@ namespace Foreman
 
         private void DifficultyChanged()
         {
-            var currentDifficulty = DataCache.Difficulty;
+            var currentDifficulty = DataCache.Current.Difficulty;
 
             if (Difficulty == Difficulty.Normal)
-                DataCache.Difficulty = "normal";
+                DataCache.Current.Difficulty = "normal";
             else if (Difficulty == Difficulty.Expensive)
-                DataCache.Difficulty = "expensive";
+                DataCache.Current.Difficulty = "expensive";
 
-            if (currentDifficulty == DataCache.Difficulty)
+            if (currentDifficulty == DataCache.Current.Difficulty)
                 return;
 
-            Settings.Default.FactorioDifficulty = DataCache.Difficulty;
+            Settings.Default.FactorioDifficulty = DataCache.Current.Difficulty;
             Settings.Default.Save();
 
             JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
-            DataCache.LoadAllData(null);
+            DataCache.Reload();
             GraphViewModel.LoadFromJson(savedGraph);
             UpdateControlValues();
         }

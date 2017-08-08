@@ -206,12 +206,12 @@
             var recipeNode = (RecipeNode)BaseNode;
             var recipe = recipeNode.BaseRecipe;
 
-            var allowedAssemblers = DataCache.Assemblers.Values
+            var allowedAssemblers = DataCache.Current.Assemblers.Values
                 .Where(a => a.Enabled)
                 .Where(a => a.Categories.Contains(recipe.Category))
                 .Where(a => a.MaxIngredients >= recipe.Ingredients.Count);
             foreach (var assembler in allowedAssemblers.OrderBy(a => a.FriendlyName)) {
-                var item = DataCache.Items.Values.SingleOrDefault(i => i.Name == assembler.Name);
+                var item = DataCache.Current.Items.Values.SingleOrDefault(i => i.Name == assembler.Name);
                 optionList.Add(new ItemChoice(item, assembler.FriendlyName, assembler.FriendlyName, assembler));
             }
 
@@ -238,7 +238,7 @@
             var recipeNode = (RecipeNode)BaseNode;
             var recipe = recipeNode.BaseRecipe;
 
-            var allowedModules = DataCache.Modules.Values
+            var allowedModules = DataCache.Current.Modules.Values
                 .Where(a => a.Enabled)
                 .Where(a => a.AllowedIn(recipe));
 
@@ -251,7 +251,7 @@
             };
 
             foreach (var module in allowedModules.OrderBy(a => a.FriendlyName)) {
-                var item = DataCache.Items.Values.SingleOrDefault(i => i.Name == module.Name);
+                var item = DataCache.Current.Items.Values.SingleOrDefault(i => i.Name == module.Name);
                 options.Add(new ItemChoice(item, module.FriendlyName, null, module));
             }
 
@@ -292,12 +292,12 @@
             var noneOption = new ItemChoice(null, "None", "None");
             optionList.Add(noneOption);
 
-            var allowedModules = DataCache.Modules.Values
+            var allowedModules = DataCache.Current.Modules.Values
                 .Where(x => x.Enabled)
                 .Where(x => x.AllowedIn(recipeNode.BaseRecipe));
 
             foreach (var module in allowedModules.OrderBy(a => a.FriendlyName)) {
-                var item = DataCache.Items.Values.SingleOrDefault(i => i.Name == module.Name);
+                var item = DataCache.Current.Items.Values.SingleOrDefault(i => i.Name == module.Name);
                 optionList.Add(new ItemChoice(item, module.FriendlyName, module.FriendlyName, module));
             }
 
@@ -351,12 +351,12 @@
             var noneOption = new ItemChoice(null, "None", "None");
             optionList.Add(noneOption);
 
-            var allowedModules = DataCache.Modules.Values
+            var allowedModules = DataCache.Current.Modules.Values
                 .Where(x => x.Enabled)
                 .Where(x => x.AllowedIn(recipeNode.BaseRecipe));
 
             foreach (var module in allowedModules.OrderBy(a => a.FriendlyName)) {
-                var item = DataCache.Items.Values.SingleOrDefault(i => i.Name == module.Name);
+                var item = DataCache.Current.Items.Values.SingleOrDefault(i => i.Name == module.Name);
                 optionList.Add(new ItemChoice(item, module.FriendlyName, module.FriendlyName, module));
             }
 

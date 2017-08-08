@@ -145,7 +145,7 @@ namespace Foreman.Controls
         private void StartDrag()
         {
             var brush = new SolidColorBrush(
-                DataCache.IconAverageColour(sourcePin.Item.Icon));
+                DataCache.IconAverageColor(sourcePin.Item.Icon));
 
             var connectorShape = new CurvedConnectorShape {
                 Fill = brush,

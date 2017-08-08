@@ -237,7 +237,7 @@ namespace Foreman
                     var optionList = new List<Choice>();
                     optionList.Add(itemPassthroughOption);
                     optionList.Add(itemOutputOption);
-                    foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Enabled)) {
+                    foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(r => r.Enabled)) {
                         if (recipe.Results.ContainsKey(item) && recipe.Category != "incinerator" &&
                             recipe.Category != "incineration") {
                             optionList.Add(new RecipeChoice(recipe,
@@ -246,7 +246,7 @@ namespace Foreman
                         }
                     }
                     optionList.Add(itemSupplyOption);
-                    foreach (Recipe recipe in DataCache.Recipes.Values.Where(r => r.Enabled)) {
+                    foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(r => r.Enabled)) {
                         if (recipe.Ingredients.ContainsKey(item)) {
                             optionList.Add(new RecipeChoice(recipe,
                                 string.Format("Create '{0}' recipe node", recipe.FriendlyName),
@@ -363,7 +363,7 @@ namespace Foreman
                 recipeOptionList.Add(itemOutputOption);
                 recipeOptionList.Add(itemPassthroughOption);
 
-                foreach (Recipe recipe in DataCache.Recipes.Values.Where(
+                foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(
                     r => r.Ingredients.Keys.Contains(item) && r.Enabled && r.Category != "incinerator" &&
                          r.Category != "incineration")) {
                     recipeOptionList.Add(new RecipeChoice(recipe, "Use recipe " + recipe.FriendlyName,
@@ -410,7 +410,7 @@ namespace Foreman
                 recipeOptionList.Add(itemSupplyOption);
                 recipeOptionList.Add(itemPassthroughOption);
 
-                foreach (Recipe recipe in DataCache.Recipes.Values.Where(
+                foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(
                     r => r.Results.Keys.Contains(item) && r.Enabled && r.Category != "incinerator" &&
                          r.Category != "incineration")) {
                     if (recipe.Category != "incinerator" && recipe.Category != "incineration") {
@@ -465,14 +465,14 @@ namespace Foreman
             info.AddValue("ElementLocations",
                 Graph.Nodes.Select(x => GetElementForNode(x).Position).ToList());
             info.AddValue("EnabledAssemblers",
-                DataCache.Assemblers.Values.Where(a => a.Enabled).Select(a => a.Name));
+                DataCache.Current.Assemblers.Values.Where(a => a.Enabled).Select(a => a.Name));
             info.AddValue("EnabledMiners",
-                DataCache.Miners.Values.Where(m => m.Enabled).Select(m => m.Name));
+                DataCache.Current.Miners.Values.Where(m => m.Enabled).Select(m => m.Name));
             info.AddValue("EnabledModules",
-                DataCache.Modules.Values.Where(m => m.Enabled).Select(m => m.Name));
-            info.AddValue("EnabledMods", DataCache.Mods.Where(m => m.Enabled).Select(m => m.Name));
+                DataCache.Current.Modules.Values.Where(m => m.Enabled).Select(m => m.Name));
+            info.AddValue("EnabledMods", DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name));
             info.AddValue("EnabledRecipes",
-                DataCache.Recipes.Values.Where(r => r.Enabled).Select(r => r.Name));
+                DataCache.Current.Recipes.Values.Where(r => r.Enabled).Select(r => r.Name));
         }
 
         public void LoadFromJson(JObject json)
@@ -484,12 +484,12 @@ namespace Foreman
 
             //Has to go first, as all other data depends on which mods are loaded
             var enabledMods = json["EnabledMods"].ToSet(t => (string)t);
-            foreach (Mod mod in DataCache.Mods) {
+            foreach (Mod mod in DataCache.Current.Mods) {
                 mod.Enabled = enabledMods.Contains(mod.Name);
             }
 
-            DataCache.LoadAllData(
-                DataCache.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList());
+            DataCache.Reload(
+                DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList());
 
             Graph.SelectedAmountType = (AmountType)(int)json["AmountType"];
             Graph.SelectedUnit = (RateUnit)(int)json["Unit"];
@@ -501,8 +501,8 @@ namespace Foreman
                 switch ((string)node["NodeType"]) {
                     case "Consumer": {
                             string itemName = (string)node["ItemName"];
-                            if (DataCache.Items.ContainsKey(itemName)) {
-                                Item item = DataCache.Items[itemName];
+                            if (DataCache.Current.Items.ContainsKey(itemName)) {
+                                Item item = DataCache.Current.Items[itemName];
                                 newNode = ConsumerNode.Create(item, Graph);
                             } else {
                                 Item missingItem = new Item(itemName);
@@ -513,47 +513,47 @@ namespace Foreman
                         }
                     case "Supply": {
                             string itemName = (string)node["ItemName"];
-                            if (DataCache.Items.ContainsKey(itemName)) {
-                                Item item = DataCache.Items[itemName];
+                            if (DataCache.Current.Items.ContainsKey(itemName)) {
+                                Item item = DataCache.Current.Items[itemName];
                                 newNode = SupplyNode.Create(item, Graph);
                             } else {
                                 Item missingItem = new Item(itemName);
                                 missingItem.IsMissingItem = true;
-                                DataCache.Items.Add(itemName, missingItem);
+                                DataCache.Current.Items.Add(itemName, missingItem);
                                 newNode = SupplyNode.Create(missingItem, Graph);
                             }
                             break;
                         }
                     case "PassThrough": {
                             string itemName = (string)node["ItemName"];
-                            if (DataCache.Items.ContainsKey(itemName)) {
-                                Item item = DataCache.Items[itemName];
+                            if (DataCache.Current.Items.ContainsKey(itemName)) {
+                                Item item = DataCache.Current.Items[itemName];
                                 newNode = PassthroughNode.Create(item, Graph);
                             } else {
                                 Item missingItem = new Item(itemName);
                                 missingItem.IsMissingItem = true;
-                                DataCache.Items.Add(itemName, missingItem);
+                                DataCache.Current.Items.Add(itemName, missingItem);
                                 newNode = PassthroughNode.Create(missingItem, Graph);
                             }
                             break;
                         }
                     case "Recipe": {
                             string recipeName = (string)node["RecipeName"];
-                            if (DataCache.Recipes.ContainsKey(recipeName)) {
-                                Recipe recipe = DataCache.Recipes[recipeName];
+                            if (DataCache.Current.Recipes.ContainsKey(recipeName)) {
+                                Recipe recipe = DataCache.Current.Recipes[recipeName];
                                 newNode = RecipeNode.Create(recipe, Graph);
                             } else {
                                 Recipe missingRecipe = new Recipe(recipeName, 0f, new Dictionary<Item, float>(),
                                     new Dictionary<Item, float>());
                                 missingRecipe.IsMissingRecipe = true;
-                                DataCache.Recipes.Add(recipeName, missingRecipe);
+                                DataCache.Current.Recipes.Add(recipeName, missingRecipe);
                                 newNode = RecipeNode.Create(missingRecipe, Graph);
                             }
 
                             if (node["Assembler"] != null) {
                                 var assemblerKey = (string)node["Assembler"];
-                                if (DataCache.Assemblers.ContainsKey(assemblerKey)) {
-                                    ((RecipeNode)newNode).Assembler = DataCache.Assemblers[assemblerKey];
+                                if (DataCache.Current.Assemblers.ContainsKey(assemblerKey)) {
+                                    ((RecipeNode)newNode).Assembler = DataCache.Current.Assemblers[assemblerKey];
                                 }
                             }
 
@@ -578,7 +578,7 @@ namespace Foreman
                     }
                     if (node["BeaconModules"] != null) {
                         foreach (var entry in node["BeaconModules"].ToObject<Dictionary<string, int>>()) {
-                            var module = DataCache.Modules.GetValueOrDefault(entry.Key);
+                            var module = DataCache.Current.Modules.GetValueOrDefault(entry.Key);
                             if (module != null)
                                 newNode.BeaconModules.Add(module, entry.Value);
                         }
@@ -599,12 +599,12 @@ namespace Foreman
                 ProductionNode consumer = Graph.Nodes[(int)nodeLink["Consumer"]];
 
                 string itemName = (string)nodeLink["Item"];
-                if (!DataCache.Items.ContainsKey(itemName)) {
+                if (!DataCache.Current.Items.ContainsKey(itemName)) {
                     Item missingItem = new Item(itemName);
                     missingItem.IsMissingItem = true;
-                    DataCache.Items.Add(itemName, missingItem);
+                    DataCache.Current.Items.Add(itemName, missingItem);
                 }
-                Item item = DataCache.Items[itemName];
+                Item item = DataCache.Current.Items[itemName];
 
                 if (!NodeLink.CanLink(supplier, consumer, item)) {
                     notifications.Add($"Unable to link '{supplier}' to '{consumer}' for item '{item}'.");
@@ -615,20 +615,20 @@ namespace Foreman
             }
 
             var enabledAssemblers = json["EnabledAssemblers"].ToSet(t => (string)t);
-            foreach (Assembler assembler in DataCache.Assemblers.Values)
+            foreach (Assembler assembler in DataCache.Current.Assemblers.Values)
                 assembler.Enabled = enabledAssemblers.Contains(assembler.Name);
 
             var enabledMiners = json["EnabledMiners"].ToSet(t => (string)t);
-            foreach (Miner miner in DataCache.Miners.Values)
+            foreach (Miner miner in DataCache.Current.Miners.Values)
                 miner.Enabled = enabledMiners.Contains(miner.Name);
 
             var enabledModules = json["EnabledModules"].ToSet(t => (string)t);
-            foreach (Module module in DataCache.Modules.Values)
+            foreach (Module module in DataCache.Current.Modules.Values)
                 module.Enabled = enabledModules.Contains(module.Name);
 
             if (json.TryGetValue("EnabledRecipes", out JToken enabledRecipesToken)) {
                 var enabledRecipes = enabledRecipesToken.ToSet(t => (string)t);
-                foreach (Recipe recipe in DataCache.Recipes.Values)
+                foreach (Recipe recipe in DataCache.Current.Recipes.Values)
                     recipe.Enabled = enabledRecipes.Contains(recipe.Name);
             }
 

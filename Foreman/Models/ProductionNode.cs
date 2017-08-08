@@ -208,7 +208,7 @@
             var assembler = Assembler;
 
             if (assembler == null) {
-                assembler = DataCache.Assemblers.Values
+                assembler = DataCache.Current.Assemblers.Values
                     .Where(a => a.Enabled)
                     .Where(a => a.Categories.Contains(BaseRecipe.Category))
                     .Where(a => a.MaxIngredients >= BaseRecipe.Ingredients.Count)
@@ -352,12 +352,12 @@
         {
             Dictionary<MachinePermutation, double> results = new Dictionary<MachinePermutation, double>();
 
-            Resource resource = DataCache.Resources.Values.FirstOrDefault(r => r.Result == SuppliedItem.Name);
+            Resource resource = DataCache.Current.Resources.Values.FirstOrDefault(r => r.Result == SuppliedItem.Name);
             if (resource == null) {
                 return results;
             }
 
-            List<Miner> allowedMiners = DataCache.Miners.Values
+            List<Miner> allowedMiners = DataCache.Current.Miners.Values
                 .Where(m => m.Enabled)
                 .Where(m => m.ResourceCategories.Contains(resource.Category)).ToList();
 

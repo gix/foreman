@@ -25,7 +25,7 @@
                 if (Results.Count == 1) {
                     return Results.Keys.First().Icon;
                 }
-                return DataCache.UnknownIcon;
+                return DataCache.Current.UnknownIcon;
             }
             set => uniqueIcon = value;
         }

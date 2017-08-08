@@ -20,7 +20,7 @@
             DisplayedLink = displayedLink;
             Source = source;
             Destination = destination;
-            FillColor = DataCache.IconAverageColour(displayedLink.Item.Icon);
+            FillColor = DataCache.IconAverageColor(displayedLink.Item.Icon);
         }
 
         public override bool IsDraggable => false;
