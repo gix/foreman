@@ -98,7 +98,7 @@ namespace Foreman
             set
             {
                 if (SetProperty(ref difficulty, value))
-                    DifficultyChanged();
+                    DifficultyChanged().Forget();
             }
         }
 
@@ -218,7 +218,6 @@ namespace Foreman
             if (Settings.Default.EnabledModules == null)
                 Settings.Default.EnabledModules = new StringCollection();
 
-
             switch (Settings.Default.FactorioDifficulty) {
                 case "normal":
                     DataCache.Current.Difficulty = "normal";
@@ -239,7 +238,7 @@ namespace Foreman
             ShowAssemblers = GraphViewModel.ShowAssemblers = Settings.Default.ShowAssemblers;
             ShowMiners = GraphViewModel.ShowMiners = Settings.Default.ShowMiners;
 
-            await Task.Run(() => DataCache.Reload(null));
+            await Task.Run(DataCache.Reload);
 
             Languages.AddRange(DataCache.Current.Languages);
             SelectedLanguage = DataCache.Current.Languages.FirstOrDefault(l => l.Name == Settings.Default.Language);
@@ -378,7 +377,7 @@ namespace Foreman
             ItemList.AddRange(items);
         }
 
-        private Task ChangeFactorioDirectory()
+        private async Task ChangeFactorioDirectory()
         {
             var dialog = new DirectoryChooserDialog(Settings.Default.FactorioPath);
             dialog.Title = "Locate the Factorio directory";
@@ -387,14 +386,12 @@ namespace Foreman
                 Settings.Default.Save();
 
                 JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
-                DataCache.Reload();
-                GraphViewModel.LoadFromJson(savedGraph);
+                await GraphViewModel.LoadFromJson(savedGraph);
                 UpdateControlValues();
             }
-            return Task.CompletedTask;
         }
 
-        private Task ChangeModDirectory()
+        private async Task ChangeModDirectory()
         {
             var dialog = new DirectoryChooserDialog(Settings.Default.FactorioModPath);
             dialog.Title = "Locate the mods directory";
@@ -403,18 +400,15 @@ namespace Foreman
                 Settings.Default.Save();
 
                 JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
-                DataCache.Reload();
-                GraphViewModel.LoadFromJson(savedGraph);
+                await GraphViewModel.LoadFromJson(savedGraph);
                 UpdateControlValues();
             }
-            return Task.CompletedTask;
         }
 
-        private Task Reload()
+        private async Task Reload()
         {
-            GraphViewModel.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewModel)));
+            await GraphViewModel.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewModel)));
             UpdateControlValues();
-            return Task.CompletedTask;
         }
 
         private Task SaveGraph()
@@ -444,17 +438,16 @@ namespace Foreman
             return Task.CompletedTask;
         }
 
-        private Task LoadGraph()
+        private async Task LoadGraph()
         {
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Filter = "JSON Files (*.json)|*.json|All files (*.*)|*.*";
             dialog.CheckFileExists = true;
-            if (dialog.ShowDialog(view) != true) {
-                return Task.CompletedTask;
-            }
+            if (dialog.ShowDialog(view) != true)
+                return;
 
             try {
-                GraphViewModel.LoadFromJson(JObject.Parse(File.ReadAllText(dialog.FileName)));
+                await GraphViewModel.LoadFromJson(JObject.Parse(File.ReadAllText(dialog.FileName)));
             } catch (Exception exception) {
                 MessageBox.Show("Could not load this file. See log for more details");
                 ErrorLogging.LogLine(string.Format("Error loading file '{0}'. Error: '{1}'", dialog.FileName,
@@ -462,20 +455,18 @@ namespace Foreman
             }
 
             UpdateControlValues();
-            return Task.CompletedTask;
         }
 
-        private Task EnableDisable()
+        private async Task EnableDisable()
         {
             var dialog = new EnableDisableItemsDialog();
             dialog.ShowDialog(view);
             SaveEnabledObjects();
 
             if (dialog.ModsChanged) {
-                GraphViewModel.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewModel)));
+                await GraphViewModel.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewModel)));
                 UpdateControlValues();
             }
-            return Task.CompletedTask;
         }
 
         private void SaveEnabledObjects()
@@ -554,7 +545,7 @@ namespace Foreman
             return Task.CompletedTask;
         }
 
-        private void DifficultyChanged()
+        private async Task DifficultyChanged()
         {
             var currentDifficulty = DataCache.Current.Difficulty;
 
@@ -570,8 +561,7 @@ namespace Foreman
             Settings.Default.Save();
 
             JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
-            DataCache.Reload();
-            GraphViewModel.LoadFromJson(savedGraph);
+            await GraphViewModel.LoadFromJson(savedGraph);
             UpdateControlValues();
         }
     }

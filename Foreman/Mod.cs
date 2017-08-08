@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
 
     public class Mod
@@ -53,6 +54,14 @@
         public override string ToString()
         {
             return Name;
+        }
+
+        public IEnumerable<string> EnumerateFiles(string relativePath, string searchPattern)
+        {
+            if (Dir != null)
+                return Directory.GetFiles(Path.Combine(Dir, relativePath), searchPattern);
+
+            return Enumerable.Empty<string>();
         }
     }
 

@@ -475,7 +475,7 @@ namespace Foreman
                 DataCache.Current.Recipes.Values.Where(r => r.Enabled).Select(r => r.Name));
         }
 
-        public void LoadFromJson(JObject json)
+        public async Task LoadFromJson(JObject json)
         {
             var notifications = new List<string>();
 
@@ -488,8 +488,8 @@ namespace Foreman
                 mod.Enabled = enabledMods.Contains(mod.Name);
             }
 
-            DataCache.Reload(
-                DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList());
+            var mods = DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList();
+            await Task.Run(() => DataCache.Reload(mods));
 
             Graph.SelectedAmountType = (AmountType)(int)json["AmountType"];
             Graph.SelectedUnit = (RateUnit)(int)json["Unit"];

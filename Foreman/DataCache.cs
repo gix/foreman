@@ -6,6 +6,7 @@
     using System.IO.Compression;
     using System.Linq;
     using System.Security.Cryptography;
+    using System.Threading.Tasks;
     using System.Windows.Forms;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
@@ -50,10 +51,14 @@
         private string DataPath => Path.Combine(Settings.Default.FactorioPath, "data");
 
         private string ModPath => Settings.Default.FactorioModPath;
+
+        private Mod coreMod;
         public List<Mod> Mods { get; set; } = new List<Mod>();
         public List<Language> Languages { get; } = new List<Language>();
 
         public string Difficulty { get; set; } = "normal";
+        private const string DefaultLocale = "en";
+
         public Dictionary<string, Item> Items { get; } = new Dictionary<string, Item>();
         public Dictionary<string, Recipe> Recipes { get; } = new Dictionary<string, Recipe>();
         public Dictionary<string, Assembler> Assemblers { get; } = new Dictionary<string, Assembler>();
@@ -67,7 +72,7 @@
             new Dictionary<BitmapSource, Color>();
         public BitmapSource UnknownIcon;
 
-        public Dictionary<string, Dictionary<string, string>> LocaleFiles { get; } =
+        private Dictionary<string, Dictionary<string, string>> localeFiles =
             new Dictionary<string, Dictionary<string, string>>();
 
         public Dictionary<string, Exception> FailedFiles { get; } = new Dictionary<string, Exception>();
@@ -75,15 +80,20 @@
 
         public Dictionary<string, byte[]> ZipHashes { get; } = new Dictionary<string, byte[]>();
 
-        public static void Reload(List<string> enabledMods = null)
+        public static Task Reload()
+        {
+            return Reload(null);
+        }
+
+        public static async Task Reload(List<string> enabledMods)
         {
             var newData = new DataCache();
             newData.Difficulty = Current.Difficulty;
-            newData.LoadAllData(enabledMods);
+            await newData.LoadAllData(enabledMods);
             Current = newData;
         }
 
-        private void LoadAllData(List<string> enabledMods)
+        private async Task LoadAllData(List<string> enabledMods)
         {
             Clear();
 
@@ -224,7 +234,7 @@
                 }
 
                 LoadAllLanguages();
-                LoadLocaleFiles();
+                await ChangeLocaleAsync(DefaultLocale);
             }
 
             MarkCyclicRecipes();
@@ -235,7 +245,7 @@
         private void LoadAllLanguages()
         {
             var localeDirs = Directory.EnumerateDirectories(
-                Path.Combine(Mods.First(m => m.Name == "core").Dir, "locale"));
+                Path.Combine(coreMod.Dir, "locale"));
 
             foreach (string dir in localeDirs) {
                 var newLanguage = new Language(Path.GetFileName(dir));
@@ -304,6 +314,8 @@
                 foreach (string zipFile in Directory.EnumerateFiles(ModPath, "*.zip"))
                     ReadModInfoZip(zipFile);
             }
+
+            coreMod = Mods.FirstOrDefault(x => x.Name == "core");
 
             var enabledModsFromFile = new Dictionary<string, bool>();
 
@@ -469,30 +481,38 @@
             }
         }
 
-        public void LoadLocaleFiles(string locale = "en")
+        public async Task ChangeLocaleAsync(string newLocale)
         {
-            foreach (Mod mod in Mods.Where(m => m.Enabled)) {
-                string localeDir = Path.Combine(mod.Dir, "locale", locale);
-                if (!Directory.Exists(localeDir))
-                    continue;
+            localeFiles = await LoadLocaleFilesAsync(newLocale, Mods, FailedFiles);
+        }
 
-                foreach (string file in Directory.GetFiles(localeDir, "*.cfg")) {
+        private static async Task<Dictionary<string, Dictionary<string, string>>> LoadLocaleFilesAsync(
+            string locale, IEnumerable<Mod> mods, Dictionary<string, Exception> failedFiles = null)
+        {
+            var localeFiles = new Dictionary<string, Dictionary<string, string>>();
+
+            foreach (Mod mod in mods.Where(m => m.Enabled)) {
+                var localDir = Path.Combine("locale", locale);
+                foreach (string file in mod.EnumerateFiles(localDir, "*.cfg")) {
                     try {
-                        LoadLocaleFile(file);
-                    } catch (Exception ex) {
-                        FailedFiles[file] = ex;
+                        await LoadLocaleFileAsync(file, localeFiles);
+                    } catch (Exception ex) when (failedFiles != null) {
+                        failedFiles[file] = ex;
                     }
                 }
             }
+
+            return localeFiles;
         }
 
-        private void LoadLocaleFile(string file)
+        private static async Task LoadLocaleFileAsync(
+            string file, Dictionary<string, Dictionary<string, string>> newLocaleFiles)
         {
             using (var stream = new StreamReader(file)) {
                 string iniSection = "none";
 
                 while (!stream.EndOfStream) {
-                    string line = stream.ReadLine();
+                    string line = await stream.ReadLineAsync();
                     if (line == null)
                         break;
 
@@ -501,7 +521,7 @@
                         continue;
                     }
 
-                    var entries = LocaleFiles.GetOrAdd(
+                    var entries = newLocaleFiles.GetOrAdd(
                         iniSection, x => new Dictionary<string, string>());
 
                     string[] split = line.Split('=');
@@ -974,7 +994,7 @@
 
         public string GetLocalizedString(string category, string name)
         {
-            if (LocaleFiles.TryGetValue(category, out var strings) &&
+            if (localeFiles.TryGetValue(category, out var strings) &&
                 strings.TryGetValue(name, out var localized))
                 return localized;
             return name;
@@ -992,7 +1012,7 @@
         public string GetLocalizedString(string name)
         {
             foreach (string category in LocaleCategories) {
-                if (LocaleFiles.TryGetValue(category, out var strings) &&
+                if (localeFiles.TryGetValue(category, out var strings) &&
                     strings.TryGetValue(name, out var localized))
                     return localized;
             }
