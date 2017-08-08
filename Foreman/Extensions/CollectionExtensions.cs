@@ -6,7 +6,7 @@
 
     public static class CollectionExtensions
     {
-        public static void AddRange<T>(this IList<T> list, IEnumerable<T> items)
+        public static void AddRange<T>(this ICollection<T> list, IEnumerable<T> items)
         {
             if (list is List<T> l)
                 l.AddRange(list);
@@ -74,6 +74,38 @@
             if (dictionary.TryGetValue(key, out value))
                 return value;
             return defaultValue;
+        }
+
+        public static TValue GetValueOrDefault<TKey, TValue>(
+            this IDictionary<TKey, TValue> dictionary, TKey key,
+            Func<TKey, TValue> defaultValueFactory)
+        {
+            TValue value;
+            if (dictionary.TryGetValue(key, out value))
+                return value;
+            return defaultValueFactory(key);
+        }
+
+        public static TValue GetOrAdd<TKey, TValue>(
+            this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            TValue existingValue;
+            if (dictionary.TryGetValue(key, out existingValue))
+                return existingValue;
+            dictionary.Add(key, value);
+            return value;
+        }
+
+        public static TValue GetOrAdd<TKey, TValue>(
+            this IDictionary<TKey, TValue> dictionary, TKey key,
+            Func<TKey, TValue> valueFactory)
+        {
+            TValue existingValue;
+            if (dictionary.TryGetValue(key, out existingValue))
+                return existingValue;
+            var value = valueFactory(key);
+            dictionary.Add(key, value);
+            return value;
         }
     }
 }

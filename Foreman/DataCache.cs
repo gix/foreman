@@ -35,19 +35,6 @@
 
     public static class DataCache
     {
-        private class MissingPrototypeValueException : Exception
-        {
-            public LuaTable Table { get; }
-            public string Key { get; }
-
-            public MissingPrototypeValueException(LuaTable table, string key, string message = "")
-                : base(message)
-            {
-                Table = table;
-                Key = key;
-            }
-        }
-
         private static string DataPath => Path.Combine(Settings.Default.FactorioPath, "data");
 
         private static string ModPath => Settings.Default.FactorioModPath;
@@ -66,7 +53,7 @@
         public static Dictionary<string, Inserter> Inserters { get; } = new Dictionary<string, Inserter>();
 
         private const float defaultRecipeTime = 0.5f;
-        private static readonly Dictionary<BitmapSource, Color> colourCache = new Dictionary<BitmapSource, Color>();
+        private static readonly Dictionary<BitmapSource, Color> colorCache = new Dictionary<BitmapSource, Color>();
         public static BitmapSource UnknownIcon;
 
         public static Dictionary<string, Dictionary<string, string>> LocaleFiles { get; } =
@@ -81,7 +68,7 @@
         {
             Clear();
 
-            using (Lua lua = new Lua()) {
+            using (var lua = new Lua()) {
                 FindAllMods(enabledMods);
 
                 AddLuaPackagePath(lua, Path.Combine(DataPath, "core", "lualib")); //Core lua functions
@@ -90,11 +77,10 @@
                 string dataloaderFile = Path.Combine(DataPath, "core", "lualib", "dataloader.lua");
                 try {
                     lua.DoFile(dataloaderFile);
-                } catch (Exception e) {
-                    FailedFiles[dataloaderFile] = e;
-                    ErrorLogging.LogLine(string.Format(
-                        "Error loading dataloader.lua. This file is required to load any values from the prototypes. Message: '{0}'",
-                        e.Message));
+                } catch (Exception ex) {
+                    FailedFiles[dataloaderFile] = ex;
+                    ErrorLogging.LogLine(
+                        $"Error loading dataloader.lua. This file is required to load any values from the prototypes. Message: '{ex.Message}'");
                     return;
                 }
 
@@ -143,8 +129,8 @@
                         if (File.Exists(dataFile)) {
                             try {
                                 lua.DoFile(dataFile);
-                            } catch (Exception e) {
-                                FailedFiles[dataFile] = e;
+                            } catch (Exception ex) {
+                                FailedFiles[dataFile] = ex;
                             }
                         }
                     }
@@ -171,52 +157,41 @@
                     InterpretItems(lua, type);
                 }
 
-                LuaTable recipeTable = lua.GetTable("data.raw")["recipe"] as LuaTable;
-                if (recipeTable != null) {
-                    var recipeEnumerator = recipeTable.GetEnumerator();
-                    while (recipeEnumerator.MoveNext()) {
-                        InterpretLuaRecipe(recipeEnumerator.Key as string, recipeEnumerator.Value as LuaTable);
-                    }
+                var rawData = lua.GetTable("data.raw");
+
+                if (rawData["recipe"] is LuaTable recipeTable) {
+                    foreach (KeyValuePair<object, object> entry in recipeTable)
+                        InterpretLuaRecipe(entry.Key as string, entry.Value as LuaTable);
                 }
 
-                LuaTable assemblerTable = lua.GetTable("data.raw")["assembling-machine"] as LuaTable;
-                if (assemblerTable != null) {
-                    var assemblerEnumerator = assemblerTable.GetEnumerator();
-                    while (assemblerEnumerator.MoveNext()) {
-                        InterpretAssemblingMachine(assemblerEnumerator.Key as string,
-                            assemblerEnumerator.Value as LuaTable);
-                    }
+                if (rawData["assembling-machine"] is LuaTable assemblerTable) {
+                    foreach (KeyValuePair<object, object> entry in assemblerTable)
+                        InterpretAssemblingMachine(entry.Key as string, entry.Value as LuaTable);
                 }
 
-                LuaTable furnaceTable = lua.GetTable("data.raw")["furnace"] as LuaTable;
-                if (furnaceTable != null) {
-                    var furnaceEnumerator = furnaceTable.GetEnumerator();
-                    while (furnaceEnumerator.MoveNext()) {
-                        InterpretFurnace(furnaceEnumerator.Key as string, furnaceEnumerator.Value as LuaTable);
-                    }
+                if (rawData["furnace"] is LuaTable furnaceTable) {
+                    foreach (KeyValuePair<object, object> entry in furnaceTable)
+                        InterpretFurnace(entry.Key as string, entry.Value as LuaTable);
                 }
 
-                LuaTable minerTable = lua.GetTable("data.raw")["mining-drill"] as LuaTable;
-                if (minerTable != null) {
-                    var minerEnumerator = minerTable.GetEnumerator();
-                    while (minerEnumerator.MoveNext()) {
-                        InterpretMiner(minerEnumerator.Key as string, minerEnumerator.Value as LuaTable);
-                    }
+                if (rawData["rocket-silo"] is LuaTable rocketSiloTable) {
+                    foreach (KeyValuePair<object, object> entry in rocketSiloTable)
+                        InterpretRocketSilo(entry.Key as string, entry.Value as LuaTable);
                 }
 
-                LuaTable resourceTable = lua.GetTable("data.raw")["resource"] as LuaTable;
-                if (resourceTable != null) {
-                    var resourceEnumerator = resourceTable.GetEnumerator();
-                    while (resourceEnumerator.MoveNext()) {
-                        InterpretResource(resourceEnumerator.Key as string, resourceEnumerator.Value as LuaTable);
-                    }
+                if (rawData["mining-drill"] is LuaTable minerTable) {
+                    foreach (KeyValuePair<object, object> entry in minerTable)
+                        InterpretMiner(entry.Key as string, entry.Value as LuaTable);
                 }
 
-                LuaTable moduleTable = lua.GetTable("data.raw")["module"] as LuaTable;
-                if (moduleTable != null) {
-                    foreach (string moduleName in moduleTable.Keys) {
-                        InterpretModule(moduleName, moduleTable[moduleName] as LuaTable);
-                    }
+                if (rawData["resource"] is LuaTable resourceTable) {
+                    foreach (KeyValuePair<object, object> entry in resourceTable)
+                        InterpretResource(entry.Key as string, entry.Value as LuaTable);
+                }
+
+                if (rawData["module"] is LuaTable moduleTable) {
+                    foreach (KeyValuePair<object, object> entry in moduleTable)
+                        InterpretModule(entry.Key as string, entry.Value as LuaTable);
                 }
 
                 UnknownIcon = LoadImage("UnknownIcon.png");
@@ -240,9 +215,10 @@
 
         private static void LoadAllLanguages()
         {
-            var dirList = Directory.EnumerateDirectories(Path.Combine(Mods.First(m => m.Name == "core").Dir, "locale"));
+            var localeDirs = Directory.EnumerateDirectories(
+                Path.Combine(Mods.First(m => m.Name == "core").Dir, "locale"));
 
-            foreach (string dir in dirList) {
+            foreach (string dir in localeDirs) {
                 var newLanguage = new Language(Path.GetFileName(dir));
                 try {
                     string infoJson = File.ReadAllText(Path.Combine(dir, "info.json"));
@@ -262,7 +238,7 @@
             Miners.Clear();
             Resources.Clear();
             Modules.Clear();
-            colourCache.Clear();
+            colorCache.Clear();
             LocaleFiles.Clear();
             FailedFiles.Clear();
             FailedPathDirectories.Clear();
@@ -270,84 +246,18 @@
             Languages.Clear();
         }
 
-        private static float ReadLuaFloat(LuaTable table, string key, bool canBeMissing = false,
-            float defaultValue = 0f)
-        {
-            if (table[key] == null) {
-                if (canBeMissing) {
-                    return defaultValue;
-                }
-                throw new MissingPrototypeValueException(table, key, "Key is missing");
-            }
-
-            try {
-                return Convert.ToSingle(table[key]);
-            } catch (FormatException) {
-                throw new MissingPrototypeValueException(table, key,
-                    string.Format("Expected a float, but the value ('{0}') isn't one", table[key]));
-            }
-        }
-
-        private static int ReadLuaInt(LuaTable table, string key, bool canBeMissing = false, int defaultValue = 0)
-        {
-            if (table[key] == null) {
-                if (canBeMissing) {
-                    return defaultValue;
-                }
-                throw new MissingPrototypeValueException(table, key, "Key is missing");
-            }
-
-            try {
-                return Convert.ToInt32(table[key]);
-            } catch (FormatException) {
-                throw new MissingPrototypeValueException(table, key,
-                    string.Format("Expected an Int32, but the value ('{0}') isn't one", table[key]));
-            }
-        }
-
-        private static string ReadLuaString(LuaTable table, string key, bool canBeMissing = false,
-            string defaultValue = null)
-        {
-            if (table[key] == null) {
-                if (canBeMissing) {
-                    return defaultValue;
-                }
-                throw new MissingPrototypeValueException(table, key, "Key is missing");
-            }
-
-            return Convert.ToString(table[key]);
-        }
-
-        private static LuaTable ReadLuaLuaTable(LuaTable table, string key, bool canBeMissing = false)
-        {
-            if (table[key] == null) {
-                if (canBeMissing) {
-                    return null;
-                }
-                throw new MissingPrototypeValueException(table, key, "Key is missing");
-            }
-
-            try {
-                return table[key] as LuaTable;
-            } catch (Exception) {
-                throw new MissingPrototypeValueException(table, key, "Could not convert key to LuaTable");
-            }
-        }
-
         private static void ReportErrors()
         {
             if (FailedPathDirectories.Any()) {
                 ErrorLogging.LogLine("There were errors setting the lua path variable for the following directories:");
-                foreach (string dir in FailedPathDirectories.Keys) {
-                    ErrorLogging.LogLine(string.Format("{0} ({1})", dir, FailedPathDirectories[dir].Message));
-                }
+                foreach (string dir in FailedPathDirectories.Keys)
+                    ErrorLogging.LogLine($"{dir} ({FailedPathDirectories[dir].Message})");
             }
 
             if (FailedFiles.Any()) {
                 ErrorLogging.LogLine("The following files could not be loaded due to errors:");
-                foreach (string file in FailedFiles.Keys) {
-                    ErrorLogging.LogLine(string.Format("{0} ({1})", file, FailedFiles[file].Message));
-                }
+                foreach (string file in FailedFiles.Keys)
+                    ErrorLogging.LogLine($"{file} ({FailedFiles[file].Message})");
             }
         }
 
@@ -358,43 +268,25 @@
                     Path.DirectorySeparatorChar);
                 luaCommand = luaCommand.Replace("\\", "\\\\");
                 lua.DoString(luaCommand);
-            } catch (Exception e) {
-                FailedPathDirectories[dir] = e;
-            }
-        }
-
-        private static IEnumerable<string> GetAllLuaFiles()
-        {
-            if (Directory.Exists(ModPath)) {
-                foreach (string file in Directory.GetFiles(DataPath, "*.lua", SearchOption.AllDirectories)) {
-                    yield return file;
-                }
-            }
-            if (Directory.Exists(ModPath)) {
-                foreach (string file in Directory.GetFiles(ModPath, "*.lua", SearchOption.AllDirectories)) {
-                    yield return file;
-                }
+            } catch (Exception ex) {
+                FailedPathDirectories[dir] = ex;
             }
         }
 
         private static void FindAllMods(List<string> enabledMods) //Vanilla game counts as a mod too.
         {
             if (Directory.Exists(DataPath)) {
-                foreach (string dir in Directory.EnumerateDirectories(DataPath)) {
+                foreach (string dir in Directory.EnumerateDirectories(DataPath))
                     ReadModInfoFile(dir);
-                }
             }
-            if (Directory.Exists(Settings.Default.FactorioModPath)) {
-                foreach (string dir in Directory.EnumerateDirectories(Settings.Default.FactorioModPath)) {
+            if (Directory.Exists(ModPath)) {
+                foreach (string dir in Directory.EnumerateDirectories(ModPath))
                     ReadModInfoFile(dir);
-                }
-                foreach (string zipFile in Directory.EnumerateFiles(Settings.Default.FactorioModPath,
-                    "*.zip")) {
+                foreach (string zipFile in Directory.EnumerateFiles(ModPath, "*.zip"))
                     ReadModInfoZip(zipFile);
-                }
             }
 
-            Dictionary<string, bool> enabledModsFromFile = new Dictionary<string, bool>();
+            var enabledModsFromFile = new Dictionary<string, bool>();
 
             string modListFile = Path.Combine(Settings.Default.FactorioModPath, "mod-list.json");
             if (File.Exists(modListFile)) {
@@ -412,7 +304,7 @@
                     mod.Enabled = enabledMods.Contains(mod.Name);
                 }
             } else {
-                Dictionary<string, string> splitModStrings = new Dictionary<string, string>();
+                var splitModStrings = new Dictionary<string, string>();
                 foreach (string s in Settings.Default.EnabledMods) {
                     var split = s.Split('|');
                     splitModStrings.Add(split[0], split[1]);
@@ -428,21 +320,20 @@
                 }
             }
 
-            DependencyGraph modGraph = new DependencyGraph(Mods);
+            var modGraph = new DependencyGraph(Mods);
             modGraph.DisableUnsatisfiedMods();
             Mods = modGraph.SortMods();
         }
 
         private static void ReadModInfoFile(string dir)
         {
+            var path = Path.Combine(dir, "info.json");
+            if (!File.Exists(path))
+                return;
             try {
-                if (!File.Exists(Path.Combine(dir, "info.json"))) {
-                    return;
-                }
-                string json = File.ReadAllText(Path.Combine(dir, "info.json"));
-                ReadModInfo(json, dir);
+                ReadModInfo(File.ReadAllText(path), dir);
             } catch (Exception) {
-                ErrorLogging.LogLine(string.Format("The mod at '{0}' has an invalid info.json file", dir));
+                ErrorLogging.LogLine($"The mod at '{dir}' has an invalid info.json file");
             }
         }
 
@@ -452,11 +343,9 @@
             byte[] hash;
             bool needsExtraction = false;
 
-            using (var md5 = MD5.Create()) {
-                using (var stream = File.OpenRead(fullPath)) {
-                    hash = md5.ComputeHash(stream);
-                }
-            }
+            using (var md5 = MD5.Create())
+            using (var stream = File.OpenRead(fullPath))
+                hash = md5.ComputeHash(stream);
 
             if (ZipHashes.ContainsKey(fullPath)) {
                 if (!ZipHashes[fullPath].SequenceEqual(hash)) {
@@ -483,12 +372,13 @@
         {
             UnzipMod(zipFile);
 
-            string file = Directory
-                .EnumerateFiles(Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(zipFile)),
-                    "info.json", SearchOption.AllDirectories).FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(file)) {
+            var path = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(zipFile));
+            string file = Directory.EnumerateFiles(
+                path, "info.json", SearchOption.AllDirectories).FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(file))
                 return;
-            }
+
             ReadModInfo(File.ReadAllText(file), Path.GetDirectoryName(file));
         }
 
@@ -509,9 +399,8 @@
 
         private static void ParseModDependencies(Mod mod)
         {
-            if (mod.Name == "base") {
+            if (mod.Name == "base")
                 mod.Dependencies.Add("core");
-            }
 
             foreach (string depString in mod.Dependencies) {
                 int token = 0;
@@ -555,15 +444,9 @@
 
         private static void InterpretItems(Lua lua, string typeName)
         {
-            LuaTable itemTable = lua.GetTable("data.raw")[typeName] as LuaTable;
-
-            var table = lua.GetTable("data.raw")["solar-panel"] as LuaTable;
-
-            if (itemTable != null) {
-                var enumerator = itemTable.GetEnumerator();
-                while (enumerator.MoveNext()) {
-                    InterpretLuaItem(enumerator.Key as string, enumerator.Value as LuaTable);
-                }
+            if (lua.GetTable("data.raw")[typeName] is LuaTable itemTable) {
+                foreach (KeyValuePair<object, object> entry in itemTable)
+                    InterpretLuaItem(entry.Key as string, entry.Value as LuaTable);
             }
         }
 
@@ -571,40 +454,48 @@
         {
             foreach (Mod mod in Mods.Where(m => m.Enabled)) {
                 string localeDir = Path.Combine(mod.Dir, "locale", locale);
-                if (Directory.Exists(localeDir)) {
-                    foreach (string file in Directory.GetFiles(localeDir, "*.cfg")) {
-                        try {
-                            using (StreamReader fStream = new StreamReader(file)) {
-                                string currentIniSection = "none";
+                if (!Directory.Exists(localeDir))
+                    continue;
 
-                                while (!fStream.EndOfStream) {
-                                    string line = fStream.ReadLine();
-                                    if (line.StartsWith("[") && line.EndsWith("]")) {
-                                        currentIniSection = line.Trim('[', ']');
-                                    } else {
-                                        if (!LocaleFiles.ContainsKey(currentIniSection)) {
-                                            LocaleFiles.Add(currentIniSection, new Dictionary<string, string>());
-                                        }
-                                        string[] split = line.Split('=');
-                                        if (split.Length == 2) {
-                                            LocaleFiles[currentIniSection][split[0].Trim()] = split[1].Trim();
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (Exception e) {
-                            FailedFiles[file] = e;
-                        }
+                foreach (string file in Directory.GetFiles(localeDir, "*.cfg")) {
+                    try {
+                        LoadLocaleFile(file);
+                    } catch (Exception ex) {
+                        FailedFiles[file] = ex;
                     }
+                }
+            }
+        }
+
+        private static void LoadLocaleFile(string file)
+        {
+            using (var stream = new StreamReader(file)) {
+                string iniSection = "none";
+
+                while (!stream.EndOfStream) {
+                    string line = stream.ReadLine();
+                    if (line == null)
+                        break;
+
+                    if (line.StartsWith("[") && line.EndsWith("]")) {
+                        iniSection = line.Trim('[', ']');
+                        continue;
+                    }
+
+                    var entries = LocaleFiles.GetOrAdd(
+                        iniSection, x => new Dictionary<string, string>());
+
+                    string[] split = line.Split('=');
+                    if (split.Length == 2)
+                        entries[split[0].Trim()] = split[1].Trim();
                 }
             }
         }
 
         private static BitmapSource LoadImage(string fileName)
         {
-            if (string.IsNullOrEmpty(fileName)) {
+            if (string.IsNullOrEmpty(fileName))
                 return null;
-            }
 
             string fullPath = "";
             if (File.Exists(fileName)) {
@@ -650,41 +541,39 @@
 
         public static Color IconAverageColour(BitmapSource icon)
         {
-            if (icon == null) {
+            if (icon == null)
                 return Colors.LightGray;
-            }
 
             Color result;
-            if (colourCache.ContainsKey(icon)) {
-                result = colourCache[icon];
-            } else {
-                result = icon.ComputeAvgColor();
+            if (colorCache.TryGetValue(icon, out result))
+                return result;
 
-                // Set alpha to 255, also lighten the colours to make them more pastel-y
-                result = Color.FromArgb(
-                    255,
-                    (byte)(result.R + (255 - result.R) / 2),
-                    (byte)(result.G + (255 - result.G) / 2),
-                    (byte)(result.B + (255 - result.B) / 2));
-                colourCache.Add(icon, result);
-            }
+            result = icon.ComputeAvgColor();
+
+            // Set alpha to 255, also lighten the colours to make them more pastel-y
+            result = Color.FromArgb(
+                255,
+                (byte)(result.R + (255 - result.R) / 2),
+                (byte)(result.G + (255 - result.G) / 2),
+                (byte)(result.B + (255 - result.B) / 2));
+            colorCache.Add(icon, result);
 
             return result;
         }
 
         private static void InterpretLuaItem(string name, LuaTable values)
         {
-            if (string.IsNullOrEmpty(name)) {
+            if (string.IsNullOrEmpty(name))
                 return;
-            }
+
             Item newItem = new Item(name);
-            var fileName = ReadLuaString(values, "icon", true);
+            var fileName = values.StringOrDefault("icon");
             if (fileName == null) {
-                var icons = ReadLuaLuaTable(values, "icons", true);
+                var icons = values.TableOrDefault("icons");
                 // TODO: Figure out how to either composite multiple icons
                 var first = (LuaTable)icons?[1];
                 if (first != null)
-                    fileName = ReadLuaString(first, "icon", true);
+                    fileName = first.StringOrDefault("icon");
             }
 
             newItem.Icon = LoadImage(fileName);
@@ -694,28 +583,23 @@
             }
         }
 
-        //This is only if a recipe references an item that isn't in the item prototypes (which shouldn't really happen)
         private static Item FindOrCreateUnknownItem(string itemName)
         {
-            Item newItem;
-            if (!Items.ContainsKey(itemName)) {
-                Items.Add(itemName, newItem = new Item(itemName));
-            } else {
-                newItem = Items[itemName];
-            }
-            return newItem;
+            // This is only if a recipe references an item that isn't in the
+            // item prototypes (which shouldn't really happen)
+            return Items.GetOrAdd(itemName, x => new Item(x));
         }
 
         private static void InterpretLuaRecipe(string name, LuaTable values)
         {
             try {
-                var timeSource = values[Difficulty] == null ? values : ReadLuaLuaTable(values, Difficulty, true);
+                var timeSource = values[Difficulty] == null ? values : values.TableOrDefault(Difficulty);
                 if (timeSource == null) {
                     ErrorLogging.LogLine($"Error reading recipe '{name}', unable to locate data table.");
                     return;
                 }
 
-                float time = ReadLuaFloat(timeSource, "energy_required", true, 0.5f);
+                float time = timeSource.FloatOrDefault("energy_required", 0.5f);
 
                 Dictionary<Item, float> ingredients = ExtractIngredientsFromLuaRecipe(values);
                 Dictionary<Item, float> results = ExtractResultsFromLuaRecipe(values);
@@ -724,65 +608,68 @@
                     name = results.ElementAt(0).Key.Name;
                 Recipe newRecipe = new Recipe(name, time == 0.0f ? defaultRecipeTime : time, ingredients, results);
 
-                newRecipe.Category = ReadLuaString(values, "category", true, "crafting");
+                newRecipe.Category = values.StringOrDefault("category", "crafting");
 
-                string iconFile = ReadLuaString(values, "icon", true);
-                if (iconFile != null) {
-                    BitmapSource icon = LoadImage(iconFile);
-                    newRecipe.Icon = icon;
-                }
+                string iconFile = values.StringOrDefault("icon");
+                if (iconFile != null)
+                    newRecipe.Icon = LoadImage(iconFile);
 
-                foreach (Item result in results.Keys) {
+                foreach (Item result in results.Keys)
                     result.Recipes.Add(newRecipe);
-                }
 
                 Recipes.Add(newRecipe.Name, newRecipe);
-            } catch (MissingPrototypeValueException e) {
-                ErrorLogging.LogLine(string.Format(
-                    "Error reading value '{0}' from recipe prototype '{1}'. Returned error message: '{2}'", e.Key, name,
-                    e.Message));
+            } catch (MissingPrototypeValueException ex) {
+                ErrorLogging.LogLine(
+                    $"Error reading value '{ex.Key}' from recipe prototype '{name}'. " +
+                    $"Returned error message: '{ex.Message}'");
+            }
+        }
+
+
+        private static void ReadAssemblerProperties(Assembler assembler, LuaTable values)
+        {
+            assembler.Icon = LoadImage(values.StringOrDefault("icon"));
+            assembler.MaxIngredients = values.IntOrDefault("ingredient_count");
+            assembler.ModuleSlots = values.IntOrDefault("module_slots");
+            if (assembler.ModuleSlots == 0) {
+                var moduleTable = values.TableOrDefault("module_specification");
+                if (moduleTable != null)
+                    assembler.ModuleSlots = moduleTable.IntOrDefault("module_slots");
+            }
+
+            assembler.Speed = values.Float("crafting_speed");
+            assembler.EnergyUsage = ParsePower(values.String("energy_usage"));
+
+            LuaTable categories = values.Table("crafting_categories");
+            foreach (string category in categories.Values) {
+                assembler.Categories.Add(category);
+            }
+
+            LuaTable effects = values.TableOrDefault("allowed_effects");
+            if (effects != null) {
+                foreach (string effect in effects.Values) {
+                    assembler.AllowedEffects.Add(effect);
+                }
+            }
+
+            foreach (string s in Settings.Default.EnabledAssemblers) {
+                if (s.Split('|')[0] == assembler.Name) {
+                    assembler.Enabled = (s.Split('|')[1] == "True");
+                }
             }
         }
 
         private static void InterpretAssemblingMachine(string name, LuaTable values)
         {
             try {
-                Assembler newAssembler = new Assembler(name);
-
-                newAssembler.Icon = LoadImage(ReadLuaString(values, "icon", true));
-                newAssembler.MaxIngredients = ReadLuaInt(values, "ingredient_count");
-                newAssembler.ModuleSlots = ReadLuaInt(values, "module_slots", true, 0);
-                if (newAssembler.ModuleSlots == 0) {
-                    var moduleTable = ReadLuaLuaTable(values, "module_specification", true);
-                    if (moduleTable != null) {
-                        newAssembler.ModuleSlots = ReadLuaInt(moduleTable, "module_slots", true, 0);
-                    }
-                }
-                newAssembler.Speed = ReadLuaFloat(values, "crafting_speed");
-                newAssembler.EnergyUsage = ParsePower(ReadLuaString(values, "energy_usage"));
-
-                LuaTable effects = ReadLuaLuaTable(values, "allowed_effects", true);
-                if (effects != null) {
-                    foreach (string effect in effects.Values) {
-                        newAssembler.AllowedEffects.Add(effect);
-                    }
-                }
-                LuaTable categories = ReadLuaLuaTable(values, "crafting_categories");
-                foreach (string category in categories.Values) {
-                    newAssembler.Categories.Add(category);
-                }
-
-                foreach (string s in Settings.Default.EnabledAssemblers) {
-                    if (s.Split('|')[0] == name) {
-                        newAssembler.Enabled = (s.Split('|')[1] == "True");
-                    }
-                }
+                var newAssembler = new Assembler(name);
+                ReadAssemblerProperties(newAssembler, values);
 
                 Assemblers.Add(newAssembler.Name, newAssembler);
-            } catch (MissingPrototypeValueException e) {
-                ErrorLogging.LogLine(string.Format(
-                    "Error reading value '{0}' from assembler prototype '{1}'. Returned error message: '{2}'", e.Key,
-                    name, e.Message));
+            } catch (MissingPrototypeValueException ex) {
+                ErrorLogging.LogLine(
+                    $"Error reading value '{ex.Key}' from assembler prototype '{name}'. " +
+                    $"Returned error message: '{ex.Message}'");
             }
         }
 
@@ -799,63 +686,61 @@
         private static void InterpretFurnace(string name, LuaTable values)
         {
             try {
-                Assembler newFurnace = new Assembler(name);
+                var newFurnace = new Assembler(name);
+                ReadAssemblerProperties(newFurnace, values);
 
-                newFurnace.Icon = LoadImage(ReadLuaString(values, "icon", true));
-                newFurnace.MaxIngredients = 1;
-                newFurnace.ModuleSlots = ReadLuaInt(values, "module_slots", true, 0);
-                if (newFurnace.ModuleSlots == 0) {
-                    var moduleTable = ReadLuaLuaTable(values, "module_specification", true);
-                    if (moduleTable != null) {
-                        newFurnace.ModuleSlots = ReadLuaInt(moduleTable, "module_slots", true, 0);
-                    }
-                }
-                newFurnace.Speed = ReadLuaFloat(values, "crafting_speed", true, -1f);
                 if (newFurnace.Speed == -1f) {
                     //In case we're still on Factorio 0.10
-                    newFurnace.Speed = ReadLuaFloat(values, "smelting_speed");
+                    newFurnace.Speed = values.Float("smelting_speed");
                 }
 
-                LuaTable categories = ReadLuaLuaTable(values, "crafting_categories", true);
-                if (categories == null) {
+                if (values["crafting_categories"] == null) {
                     //Another 0.10 compatibility thing.
-                    categories = ReadLuaLuaTable(values, "smelting_categories");
-                }
-                foreach (string category in categories.Values) {
-                    newFurnace.Categories.Add(category);
-                }
-
-                foreach (string s in Settings.Default.EnabledAssemblers) {
-                    if (s.Split('|')[0] == name) {
-                        newFurnace.Enabled = (s.Split('|')[1] == "True");
+                    LuaTable categories = values.Table("smelting_categories");
+                    if (categories != null) {
+                        foreach (string category in categories.Values)
+                            newFurnace.Categories.Add(category);
                     }
                 }
 
                 Assemblers.Add(newFurnace.Name, newFurnace);
-            } catch (MissingPrototypeValueException e) {
-                ErrorLogging.LogLine(string.Format(
-                    "Error reading value '{0}' from furnace prototype '{1}'. Returned error message: '{2}'", e.Key,
-                    name, e.Message));
+            } catch (MissingPrototypeValueException ex) {
+                ErrorLogging.LogLine(
+                    $"Error reading value '{ex.Key}' from furnace prototype '{name}'. " +
+                    $"Returned error message: '{ex.Message}'");
+            }
+        }
+
+        private static void InterpretRocketSilo(string name, LuaTable values)
+        {
+            try {
+                var newRocketSilo = new Assembler(name);
+                ReadAssemblerProperties(newRocketSilo, values);
+
+                Assemblers.Add(newRocketSilo.Name, newRocketSilo);
+            } catch (MissingPrototypeValueException ex) {
+                ErrorLogging.LogLine(
+                    $"Error reading value '{ex.Key}' from rocket silo prototype '{name}'. " +
+                    $"Returned error message: '{ex.Message}'");
             }
         }
 
         private static void InterpretMiner(string name, LuaTable values)
         {
             try {
-                Miner newMiner = new Miner(name);
+                var newMiner = new Miner(name);
 
-                newMiner.Icon = LoadImage(ReadLuaString(values, "icon", true));
-                newMiner.MiningPower = ReadLuaFloat(values, "mining_power");
-                newMiner.Speed = ReadLuaFloat(values, "mining_speed");
-                newMiner.ModuleSlots = ReadLuaInt(values, "module_slots", true, 0);
+                newMiner.Icon = LoadImage(values.StringOrDefault("icon"));
+                newMiner.MiningPower = values.Float("mining_power");
+                newMiner.Speed = values.Float("mining_speed");
+                newMiner.ModuleSlots = values.IntOrDefault("module_slots");
                 if (newMiner.ModuleSlots == 0) {
-                    var moduleTable = ReadLuaLuaTable(values, "module_specification", true);
-                    if (moduleTable != null) {
-                        newMiner.ModuleSlots = ReadLuaInt(moduleTable, "module_slots", true, 0);
-                    }
+                    var moduleTable = values.TableOrDefault("module_specification");
+                    if (moduleTable != null)
+                        newMiner.ModuleSlots = moduleTable.IntOrDefault("module_slots");
                 }
 
-                LuaTable categories = ReadLuaLuaTable(values, "resource_categories");
+                LuaTable categories = values.Table("resource_categories");
                 if (categories != null) {
                     foreach (string category in categories.Values) {
                         newMiner.ResourceCategories.Add(category);
@@ -869,10 +754,10 @@
                 }
 
                 Miners.Add(name, newMiner);
-            } catch (MissingPrototypeValueException e) {
-                ErrorLogging.LogLine(string.Format(
-                    "Error reading value '{0}' from miner prototype '{1}'. Returned error message: '{2}'", e.Key, name,
-                    e.Message));
+            } catch (MissingPrototypeValueException ex) {
+                ErrorLogging.LogLine(
+                    $"Error reading value '{ex.Key}' from miner prototype '{name}'. " +
+                    $"Returned error message: '{ex.Message}'");
             }
         }
 
@@ -882,27 +767,27 @@
                 if (values["minable"] == null) {
                     return; //This means the resource is not usable by miners and is therefore not useful to us
                 }
-                Resource newResource = new Resource(name);
-                newResource.Category = ReadLuaString(values, "category", true, "basic-solid");
-                LuaTable minableTable = ReadLuaLuaTable(values, "minable", true);
-                newResource.Hardness = ReadLuaFloat(minableTable, "hardness");
-                newResource.Time = ReadLuaFloat(minableTable, "mining_time");
+
+                var newResource = new Resource(name);
+                newResource.Category = values.StringOrDefault("category", "basic-solid");
+                LuaTable minableTable = values.TableOrDefault("minable");
+                newResource.Hardness = minableTable.Float("hardness");
+                newResource.Time = minableTable.Float("mining_time");
 
                 if (minableTable["result"] != null) {
-                    newResource.Result = ReadLuaString(minableTable, "result");
+                    newResource.Result = minableTable.String("result");
                 } else {
-                    try {
-                        newResource.Result = ((minableTable["results"] as LuaTable)[1] as LuaTable)["name"] as string;
-                    } catch (Exception e) {
-                        throw new MissingPrototypeValueException(minableTable, "results", e.Message);
+                    newResource.Result = ((minableTable["results"] as LuaTable)?[1] as LuaTable)?["name"] as string;
+                    if (newResource.Result == null) {
+                        throw new MissingPrototypeValueException(minableTable, "results");
                     }
                 }
 
                 Resources.Add(name, newResource);
-            } catch (MissingPrototypeValueException e) {
-                ErrorLogging.LogLine(string.Format(
-                    "Error reading value '{0}' from resource prototype '{1}'. Returned error message: '{2}'", e.Key,
-                    name, e.Message));
+            } catch (MissingPrototypeValueException ex) {
+                ErrorLogging.LogLine(
+                    $"Error reading value '{ex.Key}' from resource prototype '{name}'. " +
+                    $"Returned error message: '{ex.Message}'");
             }
         }
 
@@ -913,21 +798,23 @@
                 float productivityBonus = 0f;
                 float consumptionBonus = 0f;
 
-                LuaTable effectTable = ReadLuaLuaTable(values, "effect");
+                LuaTable effectTable = values.Table("effect");
 
-                LuaTable speed = ReadLuaLuaTable(effectTable, "speed", true);
-                if (speed != null)
-                    speedBonus = ReadLuaFloat(speed, "bonus", true);
+                LuaTable speed = effectTable.TableOrDefault("speed");
+                if (speed != null) {
+                    speedBonus = speed.FloatOrDefault("bonus");
+                }
 
-                LuaTable productivity = ReadLuaLuaTable(effectTable, "productivity", true);
-                if (productivity != null)
-                    productivityBonus = ReadLuaFloat(productivity, "bonus", true);
+                LuaTable productivity = effectTable.TableOrDefault("productivity");
+                if (productivity != null) {
+                    productivityBonus = productivity.FloatOrDefault("bonus");
+                }
 
-                LuaTable consumption = ReadLuaLuaTable(effectTable, "consumption", true);
+                LuaTable consumption = effectTable.TableOrDefault("consumption");
                 if (consumption != null)
-                    consumptionBonus = ReadLuaFloat(consumption, "bonus", true);
+                    consumptionBonus = consumption.FloatOrDefault("bonus");
 
-                var limitations = ReadLuaLuaTable(values, "limitation", true);
+                var limitations = values.TableOrDefault("limitation");
                 List<string> allowedIn = null;
                 if (limitations != null) {
                     allowedIn = new List<string>();
@@ -946,77 +833,70 @@
                 }
 
                 Modules.Add(name, newModule);
-            } catch (MissingPrototypeValueException e) {
-                ErrorLogging.LogLine(string.Format(
-                    "Error reading value '{0}' from module prototype '{1}'. Returned error message: '{2}'", e.Key, name,
-                    e.Message));
+            } catch (MissingPrototypeValueException ex) {
+                ErrorLogging.LogLine(
+                    $"Error reading value '{ex.Key}' from module prototype '{name}'. " +
+                    $"Returned error message: '{ex.Message}'");
             }
         }
 
         private static void InterpretInserter(string name, LuaTable values)
         {
             try {
-                float rotationSpeed = ReadLuaFloat(values, "rotation_speed");
+                float rotationSpeed = values.Float("rotation_speed");
                 Inserter newInserter = new Inserter(name);
                 newInserter.RotationSpeed = rotationSpeed;
-                newInserter.Icon = LoadImage(ReadLuaString(values, "icon", true));
+                newInserter.Icon = LoadImage(values.StringOrDefault("icon"));
 
                 Inserters.Add(name, newInserter);
-            } catch (MissingPrototypeValueException e) {
-                ErrorLogging.LogLine(string.Format(
-                    "Error reading value '{0}' from inserter prototype '{1}'. Returned error message: '{2}'", e.Key,
-                    name, e.Message));
+            } catch (MissingPrototypeValueException ex) {
+                ErrorLogging.LogLine(
+                    $"Error reading value '{ex.Key}' from inserter prototype '{name}'. " +
+                    $"Returned error message: '{ex.Message}'");
             }
         }
 
         private static Dictionary<Item, float> ExtractResultsFromLuaRecipe(LuaTable values)
         {
-            Dictionary<Item, float> results = new Dictionary<Item, float>();
+            var results = new Dictionary<Item, float>();
 
             LuaTable source = null;
 
             if (values[Difficulty] == null)
                 source = values;
             else {
-                var difficultyTable = ReadLuaLuaTable(values, Difficulty, true);
+                var difficultyTable = values.TableOrDefault(Difficulty);
                 if (difficultyTable?["result"] != null || difficultyTable?["results"] != null)
                     source = difficultyTable;
             }
 
             if (source?["result"] != null) {
-                string resultName = ReadLuaString(source, "result");
-                float resultCount = ReadLuaFloat(source, "result_count", true);
+                string resultName = source.String("result");
+                float resultCount = source.FloatOrDefault("result_count");
                 if (resultCount == 0f) {
                     resultCount = 1f;
                 }
                 results.Add(FindOrCreateUnknownItem(resultName), resultCount);
             } else {
                 // If we can't read results, try difficulty/results
-                LuaTable resultsTable = ReadLuaLuaTable(source, "results", true);
+                LuaTable resultsTable = source.TableOrDefault("results");
 
                 if (resultsTable != null) {
-                    var resultEnumerator = resultsTable.GetEnumerator();
-                    while (resultEnumerator.MoveNext()) {
-                        LuaTable resultTable = resultEnumerator.Value as LuaTable;
-                        Item result;
-                        if (resultTable["name"] != null) {
-                            result = FindOrCreateUnknownItem(ReadLuaString(resultTable, "name"));
-                        } else {
-                            result = FindOrCreateUnknownItem((string)resultTable[1]);
-                        }
+                    foreach (LuaTable resultTable in resultsTable.Values) {
+                        Item result = FindOrCreateUnknownItem(
+                            (string)resultTable["name"] ?? (string)resultTable[1]);
 
-                        float amount = 0f;
+                        float amount;
                         if (resultTable["amount"] != null) {
-                            amount = ReadLuaFloat(resultTable, "amount");
+                            amount = resultTable.Float("amount");
                             //Just the average yield. Maybe in the future it should show more information about the probability
-                            var probability = ReadLuaFloat(resultTable, "probability", true, 1.0f);
-                            amount *= probability;
+                            amount *= resultTable.FloatOrDefault("probability", 1);
                         } else if (resultTable["amount_min"] != null) {
-                            float probability = ReadLuaFloat(resultTable, "probability", true, 1f);
-                            float amount_min = ReadLuaFloat(resultTable, "amount_min");
-                            float amount_max = ReadLuaFloat(resultTable, "amount_max");
-                            amount = ((amount_min + amount_max) / 2f) *
-                                     probability; //Just the average yield. Maybe in the future it should show more information about the probability
+                            float probability = resultTable.FloatOrDefault("probability", 1);
+                            float amountMin = resultTable.Float("amount_min");
+                            float amountMax = resultTable.Float("amount_max");
+                            //Just the average yield. Maybe in the future it should show more information about the probability
+                            amount = ((amountMin + amountMax) / 2f) * probability;
                         } else {
                             amount = Convert.ToSingle(resultTable[2]);
                         }
@@ -1036,32 +916,22 @@
 
         private static Dictionary<Item, float> ExtractIngredientsFromLuaRecipe(LuaTable values)
         {
-            Dictionary<Item, float> ingredients = new Dictionary<Item, float>();
+            var ingredients = new Dictionary<Item, float>();
 
-            LuaTable ingredientsTable = ReadLuaLuaTable(values, "ingredients", true) ??
-                                        ReadLuaLuaTable(ReadLuaLuaTable(values, Difficulty), "ingredients");
+            LuaTable ingredientsTable =
+                values.TableOrDefault("ingredients") ??
+                values.Table(Difficulty).Table("ingredients");
 
-            var ingredientEnumerator = ingredientsTable.GetEnumerator();
-            while (ingredientEnumerator.MoveNext()) {
-                LuaTable ingredientTable = ingredientEnumerator.Value as LuaTable;
-                string name;
-                float amount;
-                if (ingredientTable["name"] != null) {
-                    name = ingredientTable["name"] as string;
-                } else {
-                    name = ingredientTable[1] as string; //Name and amount often have no key in the prototype
-                }
-                if (ingredientTable["amount"] != null) {
-                    amount = Convert.ToSingle(ingredientTable["amount"]);
-                } else {
-                    amount = Convert.ToSingle(ingredientTable[2]);
-                }
+            foreach (LuaTable ingredientTable in ingredientsTable.Values) {
+                // Name and amount often have no key in the prototype
+                string name = (ingredientTable["name"] ?? ingredientTable[1]) as string;
+                float amount = Convert.ToSingle(ingredientTable["amount"] ?? ingredientTable[2]);
+
                 Item ingredient = FindOrCreateUnknownItem(name);
-                if (!ingredients.ContainsKey(ingredient)) {
+                if (!ingredients.ContainsKey(ingredient))
                     ingredients.Add(ingredient, amount);
-                } else {
+                else
                     ingredients[ingredient] += amount;
-                }
             }
 
             return ingredients;
@@ -1069,10 +939,10 @@
 
         private static void MarkCyclicRecipes()
         {
-            ProductionGraph testGraph = new ProductionGraph();
-            foreach (Recipe recipe in Recipes.Values) {
-                var node = RecipeNode.Create(recipe, testGraph);
-            }
+            var testGraph = new ProductionGraph();
+            foreach (Recipe recipe in Recipes.Values)
+                RecipeNode.Create(recipe, testGraph);
+
             testGraph.CreateAllPossibleInputLinks();
             foreach (var scc in testGraph.GetStronglyConnectedComponents(true)) {
                 foreach (var node in scc) {
@@ -1110,6 +980,93 @@
             }
 
             return name;
+        }
+    }
+
+    public class MissingPrototypeValueException : Exception
+    {
+        public LuaTable Table { get; }
+        public string Key { get; }
+
+        public MissingPrototypeValueException(LuaTable table, string key, string message = "")
+            : base(message)
+        {
+            Table = table;
+            Key = key;
+        }
+    }
+
+    public static class LuaExtensions
+    {
+        public static float Float(this LuaTable table, string key)
+        {
+            if (table[key] == null)
+                throw new MissingPrototypeValueException(table, key, "Key is missing");
+
+            try {
+                return Convert.ToSingle(table[key]);
+            } catch (FormatException) {
+                throw new MissingPrototypeValueException(table, key,
+                    $"Expected a float, but the value ('{table[key]}') isn't one");
+            }
+        }
+
+        public static float FloatOrDefault(this LuaTable table, string key, float defaultValue = 0f)
+        {
+            if (table[key] == null)
+                return defaultValue;
+
+            try {
+                return Convert.ToSingle(table[key]);
+            } catch (FormatException) {
+                throw new MissingPrototypeValueException(table, key,
+                    $"Expected a float, but the value ('{table[key]}') isn't one");
+            }
+        }
+
+        public static int IntOrDefault(this LuaTable table, string key, int defaultValue = 0)
+        {
+            if (table[key] == null)
+                return defaultValue;
+
+            try {
+                return Convert.ToInt32(table[key]);
+            } catch (FormatException) {
+                throw new MissingPrototypeValueException(table, key,
+                    $"Expected an Int32, but the value ('{table[key]}') isn't one");
+            }
+        }
+
+        public static string String(this LuaTable table, string key)
+        {
+            if (table[key] != null)
+                return Convert.ToString(table[key]);
+
+            throw new MissingPrototypeValueException(table, key, "Key is missing");
+        }
+
+        public static string StringOrDefault(
+            this LuaTable table, string key, string defaultValue = null)
+        {
+            if (table[key] != null)
+                return Convert.ToString(table[key]);
+            return defaultValue;
+        }
+
+        public static LuaTable Table(this LuaTable table, string key)
+        {
+            if (table[key] != null)
+                return table[key] as LuaTable;
+
+            throw new MissingPrototypeValueException(table, key, "Key is missing");
+        }
+
+        public static LuaTable TableOrDefault(
+            this LuaTable table, string key, LuaTable defaultValue = null)
+        {
+            if (table[key] != null)
+                return table[key] as LuaTable;
+            return defaultValue;
         }
     }
 }
