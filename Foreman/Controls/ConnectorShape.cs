@@ -276,15 +276,18 @@
 
         protected override Geometry GenerateArrowHeadGeometry()
         {
-            Point startPoint = Points[0];
-            Point endPoint = Points[Points.Count - 1];
-            Point midPoint = PointUtils.MidPoint(startPoint, endPoint);
-
             GetControlPoints(out Point p0, out Point p1, out Point p2, out Point p3);
 
-            // Compute the gradient at the middle point of the bezier segment.
+            // Compute the mid point of the bezier segment.
             //
-            // P(t)    = (1-t)^3 * P0 + 3t(1-t)^2 * P1 + 3t^2 (1-t) * P2 + t^3 * P3
+            // P(t)   = (1-t)^3 * P0 + 3t(1-t)^2 * P1 + 3t^2 (1-t) * P2 + t^3 * P3
+            // P(0.5) = 0.125 * P0 + 0.375 * P1 + 0.375 * P2 + 0.125 * P3
+            var midPointX = 0.125 * p0.X + 0.375 * p1.X + 0.375 * p2.X + 0.125 * p3.X;
+            var midPointY = 0.125 * p0.Y + 0.375 * p1.Y + 0.375 * p2.Y + 0.125 * p3.Y;
+            var midPoint = new Point(midPointX, midPointY);
+
+            // Compute the gradient at the mid point.
+            //
             // P'(t)   = -3(1-t)^2 * P0 + 3(1-t)^2 * P1 - 6t(1-t) * P1 - 3t^2 * P2 + 6t(1-t) * P2 + 3t^2 * P3
             // P'(0.5) = -0.75*P0 - 0.75*P1 + 0.75*P2 + 0.75*P3
             var gradientX = 0.75 * (-p0.X - p1.X + p2.X + p3.X);
@@ -338,7 +341,7 @@
             } else if (Points.Count == 3) {
                 Point startPoint = Points[0];
                 Point endPoint = Points[1];
-                Point midPoint = PointUtils.MidPoint(startPoint, endPoint);
+                Point midPoint = Points[2];
 
                 p0 = startPoint;
                 if (Direction == ConnectorShapeDirection.Horizontal) {

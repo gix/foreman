@@ -133,9 +133,20 @@
 
         private void ComputeConnectorPoints()
         {
-            var computedPoints = new PointCollection { SourceHotspot, DestinationHotspot };
-            computedPoints.Freeze();
-            Points = computedPoints;
+            if (Source != null && Destination!= null && Source.Node == Destination.Node) {
+                var computedPoints = new PointCollection {
+                    SourceHotspot,
+                    SourceHotspot + new Vector(-Source.Node.RenderWidth, -250),
+                    DestinationHotspot + new Vector(-Source.Node.RenderWidth, 250),
+                    DestinationHotspot
+                };
+                computedPoints.Freeze();
+                Points = computedPoints;
+            } else {
+                var computedPoints = new PointCollection { SourceHotspot, DestinationHotspot };
+                computedPoints.Freeze();
+                Points = computedPoints;
+            }
         }
     }
 }
