@@ -158,6 +158,7 @@
         public Dictionary<string, Miner> Miners { get; } = new Dictionary<string, Miner>();
         public Dictionary<string, Resource> Resources { get; } = new Dictionary<string, Resource>();
         public Dictionary<string, Module> Modules { get; } = new Dictionary<string, Module>();
+        public Dictionary<string, Beacon> Beacons { get; } = new Dictionary<string, Beacon>();
         public Dictionary<string, Inserter> Inserters { get; } = new Dictionary<string, Inserter>();
 
         private const float defaultRecipeTime = 0.5f;
@@ -328,6 +329,11 @@
                         InterpretModule(entry.Key as string, entry.Value as LuaTable);
                 }
 
+                if (rawData["beacon"] is LuaTable beaconTable) {
+                    foreach (KeyValuePair<object, object> entry in beaconTable)
+                        InterpretBeacon(entry.Key as string, entry.Value as LuaTable);
+                }
+
                 UnknownIcon = LoadUnknownIcon();
 
                 LoadAllLanguages();
@@ -382,6 +388,7 @@
             Miners.Clear();
             Resources.Clear();
             Modules.Clear();
+            Beacons.Clear();
             colorCache.Clear();
             localeFiles.Clear();
             FailedFiles.Clear();
@@ -879,6 +886,10 @@
 
         private static Power ParsePower(string value)
         {
+            if (value.EndsWith("GW"))
+                return Power.FromGigawatts(double.Parse(value.Substring(0, value.Length - 2)));
+            if (value.EndsWith("MW"))
+                return Power.FromMegawatts(double.Parse(value.Substring(0, value.Length - 2)));
             if (value.EndsWith("kW"))
                 return Power.FromKilowatts(double.Parse(value.Substring(0, value.Length - 2)));
             if (value.EndsWith("W"))
@@ -892,6 +903,7 @@
             try {
                 var newFurnace = new Assembler(name);
                 ReadAssemblerProperties(newFurnace, values);
+                newFurnace.MaxIngredients = 1;
 
                 if (newFurnace.Speed == -1f) {
                     //In case we're still on Factorio 0.10
@@ -938,6 +950,7 @@
                 newMiner.MiningPower = values.Float("mining_power");
                 newMiner.Speed = values.Float("mining_speed");
                 newMiner.ModuleSlots = values.IntOrDefault("module_slots");
+                newMiner.EnergyUsage = ParsePower(values.String("energy_usage"));
                 if (newMiner.ModuleSlots == 0) {
                     var moduleTable = values.TableOrDefault("module_specification");
                     if (moduleTable != null)
@@ -972,21 +985,24 @@
                     return; //This means the resource is not usable by miners and is therefore not useful to us
                 }
 
-                var newResource = new Resource(name);
-                newResource.Category = values.StringOrDefault("category", "basic-solid");
+                var category = values.StringOrDefault("category", "basic-solid");
                 LuaTable minableTable = values.TableOrDefault("minable");
-                newResource.Hardness = minableTable.Float("hardness");
-                newResource.Time = minableTable.Float("mining_time");
+                var hardness = minableTable.Float("hardness");
+                var miningTime = minableTable.Float("mining_time");
 
+                string result;
                 if (minableTable["result"] != null) {
-                    newResource.Result = minableTable.String("result");
+                    result = minableTable.String("result");
                 } else {
-                    newResource.Result = ((minableTable["results"] as LuaTable)?[1] as LuaTable)?["name"] as string;
-                    if (newResource.Result == null) {
+                    result = ((minableTable["results"] as LuaTable)?[1] as LuaTable)?["name"] as string;
+                    if (result == null)
                         throw new MissingPrototypeValueException(minableTable, "results");
-                    }
                 }
 
+                var resultItem = FindOrCreateUnknownItem(result);
+
+                var newResource = new Resource(
+                    name, category, hardness, miningTime, resultItem);
                 Resources.Add(name, newResource);
             } catch (MissingPrototypeValueException ex) {
                 ErrorLogging.LogLine(
@@ -998,6 +1014,8 @@
         private void InterpretModule(string name, LuaTable values)
         {
             try {
+                string category = values.StringOrDefault("category");
+
                 float speedBonus = 0f;
                 float productivityBonus = 0f;
                 float consumptionBonus = 0f;
@@ -1028,7 +1046,8 @@
                 }
 
                 var newModule = new Module(
-                    name, speedBonus, productivityBonus, consumptionBonus, allowedIn);
+                    name, category, speedBonus, productivityBonus,
+                    consumptionBonus, allowedIn);
 
                 foreach (string s in Settings.Default.EnabledModules) {
                     if (s.Split('|')[0] == name) {
@@ -1037,6 +1056,32 @@
                 }
 
                 Modules.Add(name, newModule);
+            } catch (MissingPrototypeValueException ex) {
+                ErrorLogging.LogLine(
+                    $"Error reading value '{ex.Key}' from module prototype '{name}'. " +
+                    $"Returned error message: '{ex.Message}'");
+            }
+        }
+
+        private void InterpretBeacon(string name, LuaTable values)
+        {
+            try {
+                IEnumerable<string> allowedEffects = Enumerable.Empty<string>();
+                if (values["allowed_effects"] is LuaTable effects)
+                    allowedEffects = effects.Values.Cast<string>();
+
+                var effectivity = values.FloatOrDefault("distribution_effectivity", 1);
+
+                int moduleSlots = values.IntOrDefault("module_slots");
+                if (values["module_specification"] is LuaTable t)
+                    moduleSlots = t.IntOrDefault("module_slots");
+                else {
+                    moduleSlots = values.IntOrDefault("module_slots");
+                }
+
+                var beacon = new Beacon(
+                    name, allowedEffects, effectivity, moduleSlots);
+                Beacons.Add(name, beacon);
             } catch (MissingPrototypeValueException ex) {
                 ErrorLogging.LogLine(
                     $"Error reading value '{ex.Key}' from module prototype '{name}'. " +

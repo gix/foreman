@@ -363,7 +363,7 @@ namespace Foreman
                 recipeOptionList.Add(itemOutputOption);
                 recipeOptionList.Add(itemPassthroughOption);
 
-                foreach (Recipe recipe in DataCache.Current.RecipesSupplying(item).Where(IsEligible)) {
+                foreach (Recipe recipe in DataCache.Current.RecipesConsuming(item).Where(IsEligible)) {
                     recipeOptionList.Add(new RecipeChoice(recipe, "Use recipe " + recipe.FriendlyName,
                         recipe.FriendlyName));
                 }

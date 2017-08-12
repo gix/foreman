@@ -4,15 +4,26 @@
 
     public class Resource
     {
-        public string Name { get; }
-        public string Category { get; set; }
-        public float Hardness { get; set; }
-        public float Time { get; set; }
-        public string Result { get; set; }
-
-        public Resource(string name)
+        public Resource(
+            string name, string category, float hardness, float miningTime,
+            Item result)
         {
             Name = name;
+            Category = category;
+            Hardness = hardness;
+            MiningTime = miningTime;
+            Result = result;
+        }
+
+        public string Name { get; }
+        public string Category { get; }
+        public float Hardness { get; }
+        public float MiningTime { get; }
+        public Item Result { get; }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 
@@ -26,6 +37,11 @@
             Name = name;
             ResourceCategories = new List<string>();
             Enabled = true;
+        }
+
+        public double GetRate(Resource resource, double beaconBonus, IEnumerable<Module> modules = null)
+        {
+            return GameUtils.GetMiningRate(resource, MiningPower, GetSpeed(beaconBonus, modules));
         }
     }
 }

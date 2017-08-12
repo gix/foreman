@@ -48,8 +48,8 @@
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
         </ItemsControl>
-        <StackPanel Grid.Row="2" Margin="8">
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+        <StackPanel Grid.Row="2" Margin="8" HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal">
             <TextBlock Text="{Binding DisplayedNumber}"
                        FontSize="14pt"
                        Visibility="{Binding ShowNumber, Converter={StaticResource BoolToVisibilityConverter}}"

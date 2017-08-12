@@ -1,12 +1,17 @@
 namespace Foreman.Infrastructure
 {
+    using System;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.ComponentModel;
 
+    public delegate void ItemPropertyChangedHandler<in T>(T item, PropertyChangedEventArgs args);
+
     public class BindableCollection<T> : ObservableCollection<T>
         where T : INotifyPropertyChanged
     {
+        public event ItemPropertyChangedHandler<T> ItemPropertyChanged;
+
         protected override void ClearItems()
         {
             foreach (var entry in this)
@@ -48,6 +53,7 @@ namespace Foreman.Infrastructure
         protected virtual void OnItemPropertyChanged(
             T item, PropertyChangedEventArgs args)
         {
+            ItemPropertyChanged?.Invoke(item, args);
         }
     }
 }

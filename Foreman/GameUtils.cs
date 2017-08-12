@@ -22,7 +22,7 @@
         public static double GetMiningRate(Resource resource, double miningPower, double speed)
         {
             // According to https://wiki.factorio.com/Mining
-            double timeForOneItem = resource.Time / ((miningPower - resource.Hardness) * speed);
+            double timeForOneItem = resource.MiningTime / ((miningPower - resource.Hardness) * speed);
 
             // Round up to the nearest tick, since mining can't start until the start of a new tick
             timeForOneItem = RoundToNearestTick(timeForOneItem);

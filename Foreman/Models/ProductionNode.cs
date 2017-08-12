@@ -20,7 +20,7 @@
         Manual
     }
 
-    public class ModuleBag : IReadOnlyCollection<KeyValuePair<Module, int>>
+    public class ModuleBag : IReadOnlyCollection<(Module Module, int Count)>
     {
         private const double DistributionEfficiency = 2.0;
         private readonly Dictionary<Module, int> modules = new Dictionary<Module, int>();
@@ -82,9 +82,10 @@
             return false;
         }
 
-        public IEnumerator<KeyValuePair<Module, int>> GetEnumerator()
+        public IEnumerator<(Module Module, int Count)> GetEnumerator()
         {
-            return modules.GetEnumerator();
+            foreach (var entry in modules)
+                yield return (entry.Key, entry.Value);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -193,7 +194,27 @@
         }
     }
 
-    public class RecipeNode : ProductionNode
+    public abstract class EffectableNode : ProductionNode
+    {
+        protected EffectableNode(ProductionGraph graph) : base(graph)
+        {
+            Modules = ModuleSelector.Fastest;
+        }
+
+        public ModuleSelector Modules { get; set; }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            Modules.GetObjectData(info, context);
+        }
+
+        public abstract bool IsEffectableBy(Module module);
+
+        public abstract IEnumerable<ProductionEntity> GetAllowedProductionEntities();
+        public abstract ProductionEntity ProductionEntity { get; set; }
+    }
+
+    public class RecipeNode : EffectableNode
     {
         public Recipe BaseRecipe { get; }
 
@@ -201,38 +222,41 @@
         // as a proxy since "best" can have varying definitions.
         public Assembler Assembler { get; set; }
 
-        public ModuleSelector Modules { get; set; }
+        public IEnumerable<Assembler> GetAllowedAssemblers()
+        {
+            return DataCache.Current.Assemblers.Values
+                .Where(a => a.Enabled)
+                .Where(a => a.Categories.Contains(BaseRecipe.Category))
+                .Where(a => a.MaxIngredients >= BaseRecipe.Ingredients.Count);
+        }
 
         internal Dictionary<MachinePermutation, double> GetAssemblers()
         {
             var assembler = Assembler;
 
             if (assembler == null) {
-                assembler = DataCache.Current.Assemblers.Values
-                    .Where(a => a.Enabled)
-                    .Where(a => a.Categories.Contains(BaseRecipe.Category))
-                    .Where(a => a.MaxIngredients >= BaseRecipe.Ingredients.Count)
-                    .OrderBy(a => -a.Speed)
+                assembler = GetAllowedAssemblers()
+                    .OrderByDescending(a => a.Speed)
+                    .ThenByDescending(a => a.ModuleSlots)
                     .FirstOrDefault();
             }
 
-            var ret = new Dictionary<MachinePermutation, double>();
+            var results = new Dictionary<MachinePermutation, double>();
 
             if (assembler != null) {
-                var modules = Modules.For(BaseRecipe, assembler.ModuleSlots);
+                var modules = Modules.For(Assembler, BaseRecipe, assembler.ModuleSlots);
                 var required = ActualRate / assembler.GetRate(
                     BaseRecipe.Time, BeaconModules.GetSpeedBonus(), modules);
-                ret.Add(new MachinePermutation(assembler, modules.ToList()), required);
+                results.Add(new MachinePermutation(assembler, modules.ToList()), required);
             }
 
-            return ret;
+            return results;
         }
 
         protected RecipeNode(Recipe baseRecipe, ProductionGraph graph)
             : base(graph)
         {
             BaseRecipe = baseRecipe;
-            Modules = ModuleSelector.Fastest;
         }
 
         public override IEnumerable<Item> Inputs => BaseRecipe.Ingredients.Keys;
@@ -267,9 +291,10 @@
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            base.GetObjectData(info, context);
             info.AddValue("NodeType", "Recipe");
             info.AddValue("RecipeName", BaseRecipe.Name);
-            info.AddValue("BeaconModules", BeaconModules.ToDictionary(x => x.Key.Name, x => x.Value));
+            info.AddValue("BeaconModules", BeaconModules.ToDictionary(x => x.Module, x => x.Count));
             info.AddValue("SpeedBonus", BeaconModules.OverrideSpeedBonus);
             info.AddValue("ProductivityBonus", BeaconModules.OverrideProductivityBonus);
             info.AddValue("ConsumptionBonus", BeaconModules.OverrideConsumptionBonus);
@@ -281,7 +306,22 @@
             if (Assembler != null) {
                 info.AddValue("Assembler", Assembler.Name);
             }
-            Modules.GetObjectData(info, context);
+        }
+
+        public override bool IsEffectableBy(Module module)
+        {
+            return module.AllowedIn(Assembler, BaseRecipe);
+        }
+
+        public override IEnumerable<ProductionEntity> GetAllowedProductionEntities()
+        {
+            return GetAllowedAssemblers();
+        }
+
+        public override ProductionEntity ProductionEntity
+        {
+            get => Assembler;
+            set => Assembler = (Assembler)value;
         }
 
         public override float GetConsumeRate(Item item)
@@ -321,9 +361,16 @@
         }
     }
 
-    public class SupplyNode : ProductionNode
+    public class SupplyNode : EffectableNode
     {
+        private Resource resource;
+
         public Item SuppliedItem { get; }
+
+        public Resource Resource =>
+            resource ?? (resource =
+                DataCache.Current.Resources.Values.FirstOrDefault(
+                    r => r.Result == SuppliedItem));
 
         protected SupplyNode(Item item, ProductionGraph graph)
             : base(graph)
@@ -347,37 +394,46 @@
         }
 
         public override string DisplayName => SuppliedItem.FriendlyName;
+        public Miner Miner { get; set; }
+
+        public override IEnumerable<ProductionEntity> GetAllowedProductionEntities()
+        {
+            return GetAllowedAssemblers();
+        }
+
+        public override ProductionEntity ProductionEntity
+        {
+            get => Miner;
+            set => Miner = (Miner)value;
+        }
+
+        public IEnumerable<Miner> GetAllowedAssemblers()
+        {
+            return DataCache.Current.Miners.Values
+                .Where(a => a.Enabled)
+                .Where(a => a.ResourceCategories.Contains(Resource.Category));
+        }
 
         public Dictionary<MachinePermutation, double> GetMinimumMiners()
         {
-            Dictionary<MachinePermutation, double> results = new Dictionary<MachinePermutation, double>();
-
-            Resource resource = DataCache.Current.Resources.Values.FirstOrDefault(r => r.Result == SuppliedItem.Name);
-            if (resource == null) {
+            var results = new Dictionary<MachinePermutation, double>();
+            if (Resource == null)
                 return results;
+
+            var miner = Miner;
+
+            if (miner == null) {
+                miner = GetAllowedAssemblers()
+                    .OrderByDescending(a => a.Speed)
+                    .ThenByDescending(a => a.ModuleSlots)
+                    .FirstOrDefault();
             }
 
-            List<Miner> allowedMiners = DataCache.Current.Miners.Values
-                .Where(m => m.Enabled)
-                .Where(m => m.ResourceCategories.Contains(resource.Category)).ToList();
-
-            List<MachinePermutation> allowedPermutations = new List<MachinePermutation>();
-            foreach (Miner miner in allowedMiners) {
-                // TODO: Find correct recipe to pass in here. Needed to disallow productivity modules.
-                allowedPermutations.AddRange(miner.GetAllPermutations(null));
-            }
-
-            List<MachinePermutation> sortedPermutations =
-                allowedPermutations.OrderBy(p => p.GetMinerRate(resource, 0)).ToList();
-
-            if (sortedPermutations.Any()) {
-                float requiredRate = GetSupplyRate(SuppliedItem);
-                MachinePermutation permutationToAdd =
-                    sortedPermutations.LastOrDefault(a => a.GetMinerRate(resource, 0) < requiredRate);
-                if (permutationToAdd != null) {
-                    double numberToAdd = requiredRate / permutationToAdd.GetMinerRate(resource, 0);
-                    results.Add(permutationToAdd, numberToAdd);
-                }
+            if (miner != null) {
+                var modules = Modules.For(miner, Resource, miner.ModuleSlots);
+                var permutation = new MachinePermutation(miner, modules);
+                var required = ActualRate / miner.GetRate(Resource, BeaconModules.GetSpeedBonus(), modules);
+                results.Add(permutation, required);
             }
 
             return results;
@@ -385,6 +441,7 @@
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            base.GetObjectData(info, context);
             info.AddValue("NodeType", "Supply");
             info.AddValue("ItemName", SuppliedItem.Name);
             info.AddValue("RateType", RateType);
@@ -392,6 +449,11 @@
             if (RateType == RateType.Manual) {
                 info.AddValue("DesiredRate", DesiredRate);
             }
+        }
+
+        public override bool IsEffectableBy(Module module)
+        {
+            return module.AllowedIn(Miner, Resource);
         }
 
         public override float GetConsumeRate(Item item)

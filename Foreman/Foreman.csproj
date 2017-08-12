@@ -90,16 +90,21 @@
     </Compile>
     <Compile Include="Assembler.cs" />
     <Compile Include="AsyncDelegateCommand.cs" />
+    <Compile Include="Beacon.cs" />
     <Compile Include="Controls\BalloonBorder.cs" />
     <Compile Include="Controls\BalloonToolTip.cs" />
     <Compile Include="Controls\CanvasService.cs" />
     <Compile Include="Controls\PinConnectHandler.cs" />
     <Compile Include="Direction.cs" />
     <Compile Include="Connector.cs" />
+    <Compile Include="Entity.cs" />
+    <Compile Include="Extensions\ExceptionExtensions.cs" />
     <Compile Include="Extensions\RectExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="GhostElement.cs" />
     <Compile Include="GraphElement.cs" />
+    <Compile Include="Infrastructure\Windows\Bind.cs" />
+    <Compile Include="Infrastructure\Windows\FloatBinding.cs" />
     <Compile Include="NodeElement.cs" />
     <Compile Include="Pin.cs" />
     <Compile Include="HookUtils.cs" />
@@ -127,6 +132,8 @@
     <Compile Include="Units\Power.Generated.cs" />
     <Compile Include="Units\QuantityExtensions.cs" />
     <Compile Include="Infrastructure\BindableCollection.cs" />
+    <Compile Include="Infrastructure\Windows\NegateBooleanConverter.cs" />
+    <Compile Include="Views\NodeOptionsViewModel.cs" />
     <Compile Include="Views\SelectedItemsBehavior.cs" />
     <Compile Include="Views\DirectoryChooserDialog.xaml.cs">
       <DependentUpon>DirectoryChooserDialog.xaml</DependentUpon>
@@ -146,8 +153,8 @@
     <Compile Include="ProductionGraphViewModel.cs" />
     <Compile Include="PositionConverter.cs" />
     <Compile Include="MainWindowViewModel.cs" />
-    <Compile Include="Views\RateOptionsControl.xaml.cs">
-      <DependentUpon>RateOptionsControl.xaml</DependentUpon>
+    <Compile Include="Views\NodeOptionsView.xaml.cs">
+      <DependentUpon>NodeOptionsView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\ProductionGraphViewer.xaml.cs">
       <DependentUpon>ProductionGraphViewer.xaml</DependentUpon>
@@ -229,7 +236,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="Views\RateOptionsControl.xaml">
+    <Page Include="Views\NodeOptionsView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -7,30 +7,20 @@
 
     public class MachinePermutation
     {
-        public ProductionEntity Assembler { get; }
-        public List<Module> Modules { get; }
-
-        public double GetAssemblerRate(float recipeTime, float beaconBonus)
+        public MachinePermutation(ProductionEntity machine, IEnumerable<Module> modules)
         {
-            return GameUtils.GetRate(recipeTime, Assembler.GetSpeed(beaconBonus, Modules));
+            Assembler = machine;
+            Modules = modules.ToList();
         }
+
+        public ProductionEntity Assembler { get; }
+        public IReadOnlyList<Module> Modules { get; }
 
         internal double GetAssemblerProductivity()
         {
             return Modules
                 .Where(x => x != null)
                 .Sum(x => x.ProductivityBonus);
-        }
-
-        public double GetMinerRate(Resource r, float beaconBonus)
-        {
-            return GameUtils.GetMiningRate(r, ((Miner)Assembler).MiningPower, Assembler.GetSpeed(beaconBonus, Modules));
-        }
-
-        public MachinePermutation(ProductionEntity machine, ICollection<Module> modules)
-        {
-            Assembler = machine;
-            Modules = modules.ToList();
         }
     }
 
@@ -81,7 +71,7 @@
 
             var allowedModules = DataCache.Current.Modules.Values
                 .Where(m => m.Enabled)
-                .Where(m => m.AllowedIn(recipe));
+                .Where(m => m.AllowedIn((Assembler)this, recipe));
 
             foreach (Module module in allowedModules) {
                 for (int i = 0; i < ModuleSlots; i++) {
@@ -89,6 +79,33 @@
                     yield return new MachinePermutation(this, currentModules);
                 }
             }
+        }
+
+        public IEnumerable<MachinePermutation> GetAllPermutations(Resource resource)
+        {
+            yield return new MachinePermutation(this, new List<Module>());
+
+            Module[] currentModules = new Module[ModuleSlots];
+
+            if (ModuleSlots <= 0) {
+                yield break;
+            }
+
+            var allowedModules = DataCache.Current.Modules.Values
+                .Where(m => m.Enabled)
+                .Where(m => m.AllowedIn((Miner)this, resource));
+
+            foreach (Module module in allowedModules) {
+                for (int i = 0; i < ModuleSlots; i++) {
+                    currentModules[i] = module;
+                    yield return new MachinePermutation(this, currentModules);
+                }
+            }
+        }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 
@@ -122,6 +139,7 @@
         public BitmapSource Icon => DataCache.Current.Items[Name].Icon; // For each module there should be a corresponding item with the icon already loaded.
 
         public bool Enabled { get; set; }
+        public string Category { get; set; }
         public float SpeedBonus { get; }
         public float ProductivityBonus { get; }
         public float ConsumptionBonus { get; }
@@ -131,24 +149,45 @@
         public string FriendlyName => DataCache.Current.GetLocalizedString("item-name", Name);
 
         public Module(
-            string name, float speedBonus, float productivityBonus,
+            string name, string category, float speedBonus, float productivityBonus,
             float consumptionBonus, List<string> allowedIn)
         {
             SpeedBonus = speedBonus;
             ProductivityBonus = productivityBonus;
             ConsumptionBonus = consumptionBonus;
             Name = name;
+            Category = category;
             Enabled = true;
             this.allowedIn = allowedIn;
         }
 
-        public bool AllowedIn(Recipe recipe)
+        public bool AllowedIn(Assembler assembler, Recipe recipe)
         {
-            // TODO: Remove recipe == null case, it's just there as scaffolding.
-            if (allowedIn == null || recipe == null)
-                return true;
+            if (assembler != null && !EnumerateEffects().All(x => assembler.AllowedEffects.Contains(x)))
+                return false;
+            return allowedIn == null || allowedIn.Contains(recipe.Name);
+        }
 
-            return allowedIn.Contains(recipe.Name);
+        public bool AllowedIn(Miner miner, Resource resource)
+        {
+            if (miner != null && resource != null && !miner.ResourceCategories.Contains(resource.Category))
+                return false;
+            return true;
+        }
+
+        public IEnumerable<string> EnumerateEffects()
+        {
+            if (SpeedBonus != 0)
+                yield return "speed";
+            if (ProductivityBonus != 0)
+                yield return "productivity";
+            if (ConsumptionBonus != 0)
+                yield return "consumption";
+        }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }

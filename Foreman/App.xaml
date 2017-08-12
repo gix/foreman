@@ -1,7 +1,8 @@
 ﻿<Application x:Class="Foreman.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:f="clr-namespace:Foreman">
+             xmlns:f="clr-namespace:Foreman"
+             xmlns:v="clr-namespace:Foreman.Views">
   <Application.Resources>
     <Style TargetType="{x:Type Button}">
       <Setter Property="MinWidth" Value="75"/>
@@ -159,6 +160,10 @@
           </ListBox.ItemContainerStyle>
         </ListBox>
       </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type v:NodeOptionsViewModel}">
+      <v:NodeOptionsView/>
     </DataTemplate>
   </Application.Resources>
 </Application>

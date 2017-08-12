@@ -58,11 +58,22 @@
 
         protected abstract IEnumerable<Module> AvailableModules();
 
-        public virtual IEnumerable<Module> For(Recipe recipe, int moduleSlots)
+        public virtual IEnumerable<Module> For(Assembler assembler, Recipe recipe, int moduleSlots)
         {
             var modules = AvailableModules()
                 .Where(m => m.Enabled)
-                .Where(m => m.AllowedIn(recipe))
+                .Where(m => m.AllowedIn(assembler, recipe))
+                .Take(1);
+
+            return Enumerable.Repeat(modules, moduleSlots)
+                .SelectMany(x => x);
+        }
+
+        public virtual IEnumerable<Module> For(Miner miner, Resource resource, int moduleSlots)
+        {
+            var modules = AvailableModules()
+                .Where(m => m.Enabled)
+                .Where(m => m.AllowedIn(miner, resource))
                 .Take(1);
 
             return Enumerable.Repeat(modules, moduleSlots)
@@ -83,7 +94,7 @@
                 Module = module;
             }
 
-            public override string Name => Module.Name;
+            public override string Name => Module.FriendlyName;
 
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
@@ -185,9 +196,14 @@
             return Enumerable.Empty<Module>();
         }
 
-        public override IEnumerable<Module> For(Recipe recipe, int moduleSlots)
+        public override IEnumerable<Module> For(Assembler assembler, Recipe recipe, int moduleSlots)
         {
-            return modules.Where(x => x != null && x.AllowedIn(recipe)).Take(moduleSlots);
+            return modules.Where(x => x != null && x.AllowedIn(assembler, recipe)).Take(moduleSlots);
+        }
+
+        public override IEnumerable<Module> For(Miner miner, Resource resource, int moduleSlots)
+        {
+            return modules.Where(x => x != null && x.AllowedIn(miner, resource)).Take(moduleSlots);
         }
 
         public int Count => modules.Count;
