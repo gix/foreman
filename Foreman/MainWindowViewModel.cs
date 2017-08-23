@@ -279,19 +279,15 @@ namespace Foreman
 
                 var optionList = new List<Choice>();
                 optionList.Add(itemOutputOption);
-                foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(r => r.Enabled)) {
-                    if (recipe.Results.ContainsKey(item)) {
-                        optionList.Add(new RecipeChoice(recipe,
-                            string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
-                    }
+                foreach (Recipe recipe in DataCache.Current.RecipesSupplying(item)) {
+                    optionList.Add(new RecipeChoice(recipe,
+                        string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
                 }
                 optionList.Add(itemSupplyOption);
 
-                foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(r => r.Enabled)) {
-                    if (recipe.Ingredients.ContainsKey(item)) {
-                        optionList.Add(new RecipeChoice(recipe,
-                            string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
-                    }
+                foreach (Recipe recipe in DataCache.Current.RecipesConsuming(item)) {
+                    optionList.Add(new RecipeChoice(recipe,
+                        string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
                 }
 
                 var c = await optionList.ChooseAsync(source, PlacementMode.Right);

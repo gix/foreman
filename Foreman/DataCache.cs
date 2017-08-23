@@ -173,6 +173,16 @@
 
         public Dictionary<string, byte[]> ZipHashes { get; } = new Dictionary<string, byte[]>();
 
+        public IEnumerable<Recipe> RecipesSupplying(Item item)
+        {
+            return Recipes.Values.Where(x => x.Enabled && x.Results.ContainsKey(item));
+        }
+
+        public IEnumerable<Recipe> RecipesConsuming(Item item)
+        {
+            return Recipes.Values.Where(x => x.Enabled && x.Ingredients.ContainsKey(item));
+        }
+
         public static Task Reload()
         {
             return Reload(null);

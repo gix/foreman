@@ -222,6 +222,11 @@ namespace Foreman
             UpdateNodes();
         }
 
+        private static bool IsEligible(Recipe recipe)
+        {
+            return recipe.Category != "incinerator" && recipe.Category != "incineration";
+        }
+
         public async Task OnDataDropped(IDataObject data, Point screenPosition, Point position)
         {
             if (data.IsDataPresent<HashSet<Item>>()) {
@@ -237,21 +242,16 @@ namespace Foreman
                     var optionList = new List<Choice>();
                     optionList.Add(itemPassthroughOption);
                     optionList.Add(itemOutputOption);
-                    foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(r => r.Enabled)) {
-                        if (recipe.Results.ContainsKey(item) && recipe.Category != "incinerator" &&
-                            recipe.Category != "incineration") {
-                            optionList.Add(new RecipeChoice(recipe,
-                                string.Format("Create '{0}' recipe node", recipe.FriendlyName),
-                                recipe.FriendlyName));
-                        }
+                    foreach (Recipe recipe in DataCache.Current.RecipesSupplying(item).Where(IsEligible)) {
+                        optionList.Add(new RecipeChoice(recipe,
+                            string.Format("Create '{0}' recipe node", recipe.FriendlyName),
+                            recipe.FriendlyName));
                     }
                     optionList.Add(itemSupplyOption);
-                    foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(r => r.Enabled)) {
-                        if (recipe.Ingredients.ContainsKey(item)) {
-                            optionList.Add(new RecipeChoice(recipe,
-                                string.Format("Create '{0}' recipe node", recipe.FriendlyName),
-                                recipe.FriendlyName));
-                        }
+                    foreach (Recipe recipe in DataCache.Current.RecipesConsuming(item)) {
+                        optionList.Add(new RecipeChoice(recipe,
+                            string.Format("Create '{0}' recipe node", recipe.FriendlyName),
+                            recipe.FriendlyName));
                     }
 
                     Choice c = await optionList.ChooseAsync(screenPosition);
@@ -363,9 +363,7 @@ namespace Foreman
                 recipeOptionList.Add(itemOutputOption);
                 recipeOptionList.Add(itemPassthroughOption);
 
-                foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(
-                    r => r.Ingredients.Keys.Contains(item) && r.Enabled && r.Category != "incinerator" &&
-                         r.Category != "incineration")) {
+                foreach (Recipe recipe in DataCache.Current.RecipesSupplying(item).Where(IsEligible)) {
                     recipeOptionList.Add(new RecipeChoice(recipe, "Use recipe " + recipe.FriendlyName,
                         recipe.FriendlyName));
                 }
@@ -374,18 +372,17 @@ namespace Foreman
                 if (c != null) {
                     NodeElement newElement = null;
                     if (c is RecipeChoice rc) {
-                        Recipe selectedRecipe = rc.Recipe;
-                        newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Graph), this);
+                        newElement = new NodeElement(RecipeNode.Create(rc.Recipe, Graph), this);
                     } else if (c == itemOutputOption) {
-                        Item selectedItem = ((ItemChoice)c).Item;
-                        newElement = new NodeElement(ConsumerNode.Create(selectedItem, Graph), this);
-                        ((ConsumerNode)newElement.DisplayedNode).RateType = RateType.Auto;
+                        var node = ConsumerNode.Create(((ItemChoice)c).Item, Graph);
+                        node.RateType = RateType.Auto;
+                        newElement = new NodeElement(node, this);
                     } else if (c == itemPassthroughOption) {
-                        Item selectedItem = ((ItemChoice)c).Item;
-                        newElement = new NodeElement(PassthroughNode.Create(selectedItem, Graph), this);
-                        ((PassthroughNode)newElement.DisplayedNode).RateType = RateType.Auto;
+                        var node = PassthroughNode.Create(((ItemChoice)c).Item, Graph);
+                        node.RateType = RateType.Auto;
+                        newElement = new NodeElement(node, this);
                     } else {
-                        Trace.Fail("Unhandled option: " + c.ToString());
+                        Trace.Fail("Unhandled option: " + c);
                     }
 
                     newElement.Update();
@@ -410,30 +407,24 @@ namespace Foreman
                 recipeOptionList.Add(itemSupplyOption);
                 recipeOptionList.Add(itemPassthroughOption);
 
-                foreach (Recipe recipe in DataCache.Current.Recipes.Values.Where(
-                    r => r.Results.Keys.Contains(item) && r.Enabled && r.Category != "incinerator" &&
-                         r.Category != "incineration")) {
-                    if (recipe.Category != "incinerator" && recipe.Category != "incineration") {
-                        recipeOptionList.Add(new RecipeChoice(recipe, "Use recipe " + recipe.FriendlyName,
-                            recipe.FriendlyName));
-                    }
+                foreach (Recipe recipe in DataCache.Current.RecipesSupplying(item).Where(IsEligible)) {
+                    recipeOptionList.Add(new RecipeChoice(recipe, "Use recipe " + recipe.FriendlyName,
+                        recipe.FriendlyName));
                 }
 
                 var c = await recipeOptionList.ChooseAsync(screenPosition);
                 if (c != null) {
                     NodeElement newElement = null;
                     if (c is RecipeChoice rc) {
-                        Recipe selectedRecipe = rc.Recipe;
-                        newElement = new NodeElement(RecipeNode.Create(selectedRecipe, Graph), this);
+                        newElement = new NodeElement(RecipeNode.Create(rc.Recipe, Graph), this);
                     } else if (c == itemSupplyOption) {
-                        Item selectedItem = ((ItemChoice)c).Item;
-                        newElement = new NodeElement(SupplyNode.Create(selectedItem, Graph), this);
+                        newElement = new NodeElement(SupplyNode.Create(((ItemChoice)c).Item, Graph), this);
                     } else if (c == itemPassthroughOption) {
-                        Item selectedItem = ((ItemChoice)c).Item;
-                        newElement = new NodeElement(PassthroughNode.Create(selectedItem, Graph), this);
-                        ((PassthroughNode)newElement.DisplayedNode).RateType = RateType.Auto;
+                        var node = PassthroughNode.Create(((ItemChoice)c).Item, Graph);
+                        node.RateType = RateType.Auto;
+                        newElement = new NodeElement(node, this);
                     } else {
-                        Trace.Fail("Unhandled option: " + c.ToString());
+                        Trace.Fail("Unhandled option: " + c);
                     }
                     newElement.Update();
                     newElement.Position = canvasPosition;
