@@ -491,9 +491,7 @@ namespace Foreman
         private void OnLanguageChanged()
         {
             string newLocale = SelectedLanguage.Name;
-
-            DataCache.Current.LocaleFiles.Clear();
-            DataCache.Current.LoadLocaleFiles(newLocale);
+            Task.Run(async () => await DataCache.Current.ChangeLocaleAsync(newLocale));
 
             GraphViewModel.UpdateNodes();
             UpdateControlValues();

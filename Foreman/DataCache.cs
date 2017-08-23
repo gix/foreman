@@ -34,6 +34,99 @@
         }
     }
 
+    public class LocalizedStringDictionary
+    {
+        private readonly Dictionary<(string, string), string> dictionary =
+            new Dictionary<(string, string), string>();
+
+        public void Clear()
+        {
+            dictionary.Clear();
+        }
+
+        public string this[string section, string key]
+        {
+            get => dictionary.GetValueOrDefault((section, key));
+            set => dictionary[(section, key)] = value;
+        }
+
+        public bool TryGetValue(string section, string key, out string value)
+        {
+            return dictionary.TryGetValue((section, key), out value);
+        }
+    }
+
+    public abstract class LocalizationInfo
+    {
+        public abstract string Interpolate(LocalizedStringDictionary localized);
+
+        public static LocalizationInfo Create(
+            string section, string name, string placeholderSection, string placeholderName)
+        {
+            return new SingleLocalizationInfo(section, name, placeholderSection, placeholderName);
+        }
+
+        public static LocalizationInfo Create(
+            string section, string name, List<string> placeholders)
+        {
+            return new MultiLocalizationInfo(section, name, placeholders);
+        }
+
+        private sealed class SingleLocalizationInfo : LocalizationInfo
+        {
+            private readonly string section;
+            private readonly string name;
+            private readonly string placeholderSection;
+            private readonly string placeholderName;
+
+            public SingleLocalizationInfo(
+                string section, string name, string placeholderSection, string placeholderName)
+            {
+                this.section = section;
+                this.name = name;
+                this.placeholderSection = placeholderSection;
+                this.placeholderName = placeholderName;
+            }
+
+            public override string Interpolate(LocalizedStringDictionary localized)
+            {
+                return localized[section, name]?.Replace(
+                    "__1__", localized[placeholderSection, placeholderName]);
+            }
+        }
+
+        private sealed class MultiLocalizationInfo : LocalizationInfo
+        {
+            private readonly string section;
+            private readonly string name;
+            private readonly List<string> placeholders;
+
+            public MultiLocalizationInfo(
+                string section, string name, List<string> placeholders)
+            {
+                this.section = section;
+                this.name = name;
+                this.placeholders = placeholders;
+            }
+
+            public override string Interpolate(LocalizedStringDictionary localized)
+            {
+                var str = localized[section, name];
+                if (str == null)
+                    return null;
+
+                for (int p = 1, i = 0, e = placeholders.Count / 2; i < e; ++p, i += 2) {
+                    str = str.Replace(
+                        $"__{p}__",
+                        localized[placeholders[i],
+                            placeholders[i + 1]]);
+                }
+
+                return str;
+            }
+        }
+    }
+
     public class DataCache
     {
         private static DataCache current = new DataCache();
@@ -72,8 +165,8 @@
             new Dictionary<BitmapSource, Color>();
         public BitmapSource UnknownIcon;
 
-        private Dictionary<string, Dictionary<string, string>> localeFiles =
-            new Dictionary<string, Dictionary<string, string>>();
+        private LocalizedStringDictionary localeFiles =
+            new LocalizedStringDictionary();
 
         public Dictionary<string, Exception> FailedFiles { get; } = new Dictionary<string, Exception>();
         public Dictionary<string, Exception> FailedPathDirectories { get; } = new Dictionary<string, Exception>();
@@ -496,10 +589,10 @@
             localeFiles = await LoadLocaleFilesAsync(newLocale, Mods, FailedFiles);
         }
 
-        private static async Task<Dictionary<string, Dictionary<string, string>>> LoadLocaleFilesAsync(
+        private static async Task<LocalizedStringDictionary> LoadLocaleFilesAsync(
             string locale, IEnumerable<Mod> mods, Dictionary<string, Exception> failedFiles = null)
         {
-            var localeFiles = new Dictionary<string, Dictionary<string, string>>();
+            var localeFiles = new LocalizedStringDictionary();
 
             foreach (Mod mod in mods.Where(m => m.Enabled)) {
                 var localDir = Path.Combine("locale", locale);
@@ -516,7 +609,7 @@
         }
 
         private static async Task LoadLocaleFileAsync(
-            string file, Dictionary<string, Dictionary<string, string>> newLocaleFiles)
+            string file, LocalizedStringDictionary newLocaleFiles)
         {
             using (var stream = new StreamReader(file)) {
                 string iniSection = "none";
@@ -531,12 +624,9 @@
                         continue;
                     }
 
-                    var entries = newLocaleFiles.GetOrAdd(
-                        iniSection, x => new Dictionary<string, string>());
-
                     string[] split = line.Split('=');
                     if (split.Length == 2)
-                        entries[split[0].Trim()] = split[1].Trim();
+                        newLocaleFiles[iniSection, split[0].Trim()] = split[1].Trim();
                 }
             }
         }
@@ -626,10 +716,57 @@
             }
 
             newItem.Icon = LoadImage(fileName);
+            newItem.LocalizedName = GetLocalizationInfo(values);
 
             if (!Items.ContainsKey(name)) {
                 Items.Add(name, newItem);
             }
+        }
+
+        private LocalizationInfo GetLocalizationInfo(LuaTable values)
+        {
+            var localizedTable = values.TableOrDefault("localised_name");
+            if (localizedTable == null || localizedTable.Values.Count != 2)
+                return null;
+
+            var name = localizedTable[1] as string;
+            var placeholders = localizedTable[2] as LuaTable;
+            if (name == null || placeholders == null)
+                return null;
+
+            if (!SplitKey(name, out var section, out name))
+                return null;
+
+            if (placeholders.Values.Count == 1) {
+                if (!SplitKey((string)placeholders[1], out var placeholderSection, out var placeholderName))
+                    return null;
+                return LocalizationInfo.Create(section, name, placeholderSection, placeholderName);
+            }
+
+            var e = new List<string>();
+            foreach (string placeholder in placeholders.Values) {
+                if (!SplitKey(placeholder, out var placeholderSection, out var placeholderName))
+                    return null;
+
+                e.Add(placeholderSection);
+                e.Add(placeholderName);
+            }
+
+            return LocalizationInfo.Create(section, name, e);
+        }
+
+        private bool SplitKey(string key, out string section, out string name)
+        {
+            int idx = key.IndexOf('.');
+            if (idx != -1) {
+                section = key.Substring(0, idx);
+                name = key.Substring(idx + 1);
+                return true;
+            }
+
+            section = null;
+            name = null;
+            return false;
         }
 
         private Item FindOrCreateUnknownItem(string itemName)
@@ -1004,16 +1141,14 @@
 
         public string GetLocalizedString(string category, string name)
         {
-            if (localeFiles.TryGetValue(category, out var strings) &&
-                strings.TryGetValue(name, out var localized))
+            if (localeFiles.TryGetValue(category, name, out var localized))
                 return localized;
             return name;
         }
 
         public bool TryGetLocalizedString(string category, string name, out string localized)
         {
-            if (localeFiles.TryGetValue(category, out var strings) &&
-                strings.TryGetValue(name, out localized))
+            if (localeFiles.TryGetValue(category, name, out localized))
                 return true;
             localized = null;
             return false;
@@ -1022,12 +1157,16 @@
         public string GetLocalizedString(string name)
         {
             foreach (string category in LocaleCategories) {
-                if (localeFiles.TryGetValue(category, out var strings) &&
-                    strings.TryGetValue(name, out var localized))
+                if (localeFiles.TryGetValue(category, name, out var localized))
                     return localized;
             }
 
             return name;
+        }
+
+        public string GetLocalizedString(string name, LocalizationInfo locInfo)
+        {
+            return locInfo?.Interpolate(localeFiles) ?? GetLocalizedString(name);
         }
     }
 

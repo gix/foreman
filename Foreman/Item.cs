@@ -9,7 +9,8 @@
         public HashSet<Recipe> Recipes { get; }
         public BitmapSource Icon { get; set; }
 
-        public string FriendlyName => DataCache.Current.GetLocalizedString(Name);
+        public LocalizationInfo LocalizedName { get; set; }
+        public string FriendlyName => DataCache.Current.GetLocalizedString(Name, LocalizedName);
 
         public bool IsMissingItem { get; set; }
 
