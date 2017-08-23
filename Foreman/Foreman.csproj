@@ -63,15 +63,15 @@
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="PresentationTheme.Aero, Version=0.1.6422.41845, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PresentationTheme.Aero.0.1.6422.41845\lib\net45\PresentationTheme.Aero.dll</HintPath>
+    <Reference Include="PresentationTheme.Aero, Version=0.1.6444.1133, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\PresentationTheme.Aero.0.1.6444.1133\lib\net45\PresentationTheme.Aero.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.ValueTuple, Version=4.0.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.3.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\net461\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
