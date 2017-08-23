@@ -284,7 +284,9 @@
                     "deconstruction-item",
                     "mining-tool",
                     "repair-tool",
-                    "tool"
+                    "tool",
+                    "item-with-entity-data",
+                    "rail-planner"
                 }) {
                     InterpretItems(lua, type);
                 }
