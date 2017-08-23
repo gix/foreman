@@ -137,6 +137,7 @@
         public ObservableCollection<Pin> Outputs { get; } = new ObservableCollection<Pin>();
 
         public IEnumerable<Pin> Pins => Inputs.Union(Outputs);
+        public IEnumerable<Connector> Connectors => Pins.SelectMany(x => x.Connectors);
 
         private void Initialize(ProductionNode node)
         {
@@ -152,8 +153,11 @@
         private void OnPositionChanged()
         {
             UpdatePinOrder();
-            foreach (var pin in Pins)
-                GetConnectedNode(pin)?.UpdatePinOrder();
+            foreach (var pin in Pins) {
+                var node = GetConnectedNode(pin);
+                if (node != this)
+                    node?.UpdatePinOrder();
+            }
         }
 
         public void Update()
@@ -221,8 +225,8 @@
             ShowNumber = ShowIcon;
 
             foreach (Pin pin in Pins) {
-                pin.Label = GetIconString(pin.Item, pin.Kind);
-                pin.FillColor = ChooseIconColor(pin.Item, pin.Kind);
+                pin.Label = GetPinLabel(pin.Item, pin.Kind);
+                pin.FillColor = ChoosePinColor(pin.Item, pin.Kind);
             }
         }
 
@@ -261,10 +265,10 @@
             return new DrawingImage(dg);
         }
 
-        private string GetIconString(Item item, PinKind linkType)
+        private string GetPinLabel(Item item, PinKind linkType)
         {
-            string line1Format = "{0:0.##}{1}";
-            string line2Format = "\n({0:0.##}{1})";
+            string line1Format = "{0:0.####}{1}";
+            string line2Format = "\n({0:0.####}{1})";
             string finalString = "";
 
             string unit = "";
@@ -299,7 +303,7 @@
             return finalString;
         }
 
-        private Color ChooseIconColor(Item item, PinKind linkType)
+        private Color ChoosePinColor(Item item, PinKind linkType)
         {
             var enough = Colors.White;
             var tooMuch = Color.FromArgb(255, 214, 226, 230);

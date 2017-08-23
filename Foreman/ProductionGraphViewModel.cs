@@ -315,19 +315,33 @@ namespace Foreman
             foreach (var element in elements) {
                 switch (element) {
                     case NodeElement node:
-                        node.DisplayedNode.Destroy();
-                        Elements.Remove(node);
-                        foreach (var connector in node.Pins.SelectMany(x => x.Connectors))
-                            Elements.Remove(connector);
+                        Delete(node);
                         break;
                     case Connector connector:
-                        connector.DisplayedLink.Destroy();
-                        Elements.Remove(connector);
+                        Delete(connector);
                         break;
                 }
             }
 
             Graph.UpdateNodeValues();
+        }
+
+        private void Delete(NodeElement node)
+        {
+            if (Elements.Remove(node)) {
+                node.DisplayedNode.Destroy();
+                foreach (var connector in node.Connectors.ToList())
+                    Delete(connector);
+            }
+        }
+
+        private void Delete(Connector connector)
+        {
+            if (Elements.Remove(connector)) {
+                connector.Source = null;
+                connector.Destination = null;
+                connector.DisplayedLink.Destroy();
+            }
         }
 
         public void Connect(Pin output, Pin input)
