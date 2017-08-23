@@ -481,6 +481,12 @@
             }
         }
 
+        private static string GetTempModPath(string modZipFile)
+        {
+            var name = Path.GetFileNameWithoutExtension(modZipFile);
+            return Path.Combine(Path.GetTempPath(), "ForemanMods", name);
+        }
+
         private void UnzipMod(string modZipFile)
         {
             string fullPath = Path.GetFullPath(modZipFile);
@@ -501,14 +507,14 @@
                 ZipHashes.Add(fullPath, hash);
             }
 
-            string outputDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(modZipFile));
+            string outputDir = GetTempModPath(modZipFile);
 
             if (needsExtraction) {
-                using (ZipStorer zip = ZipStorer.Open(modZipFile, FileAccess.Read)) {
-                    foreach (var fileEntry in zip.ReadCentralDir()) {
-                        zip.ExtractFile(fileEntry, Path.Combine(outputDir, fileEntry.FilenameInZip));
-                    }
+                try {
+                    Directory.Delete(outputDir, true);
+                } catch (DirectoryNotFoundException) {
                 }
+                ZipFile.ExtractToDirectory(modZipFile, outputDir);
             }
         }
 
@@ -516,7 +522,7 @@
         {
             UnzipMod(zipFile);
 
-            var path = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(zipFile));
+            var path = GetTempModPath(zipFile);
             string file = Directory.EnumerateFiles(
                 path, "info.json", SearchOption.AllDirectories).FirstOrDefault();
 
