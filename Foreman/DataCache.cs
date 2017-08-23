@@ -647,51 +647,66 @@
             }
         }
 
+        private BitmapSource LoadModImage(LuaTable values)
+        {
+            {
+                var iconPath = values.StringOrDefault("icon");
+                if (iconPath != null)
+                    return LoadModImage(iconPath);
+            }
+
+            var icons = values.TableOrDefault("icons");
+            if (icons != null) {
+                var baseImagePath = ((LuaTable)icons[1])?.String("icon");
+                var baseImage = LoadModImage(baseImagePath);
+                // FIXME: Handle composite icons
+                return baseImage;
+            }
+
+            return null;
+        }
+
         private BitmapSource LoadModImage(string filePath)
         {
-            if (string.IsNullOrEmpty(fileName))
-                return null;
+            if (TrySplitModPath(filePath, out string modName, out string relativePath)) {
+                var mod = Mods.FirstOrDefault(x => x.Name == modName);
+                return mod?.LoadImage(relativePath);
+            }
 
-            string fullPath = "";
-            if (File.Exists(fileName)) {
-                fullPath = fileName;
-            } else if (File.Exists(Application.StartupPath + "\\" + fileName)) {
-                fullPath = Application.StartupPath + "\\" + fileName;
-            } else {
-                string[] splitPath = fileName.Split('/');
-                splitPath[0] = splitPath[0].Trim('_');
-
-                if (Mods.Any(m => m.Name == splitPath[0])) {
-                    fullPath = Mods.First(m => m.Name == splitPath[0]).Dir;
-                }
-
-                if (!string.IsNullOrEmpty(fullPath)) {
-                    for (int i = 1;
-                         i < splitPath.Length;
-                         i++) //Skip the first split section because it's the mod name, not a directory
-                    {
-                        fullPath = Path.Combine(fullPath, splitPath[i]);
-                    }
-                }
+            if (!File.Exists(filePath)) {
+                filePath = Path.Combine(Application.StartupPath, filePath);
+                if (!File.Exists(filePath))
+                    return null;
             }
 
             try {
-                using (var stream = File.OpenRead(fullPath))
-                    return LoadImage(stream);
+                return ImagingExtensions.LoadImage(filePath);
             } catch (Exception) {
                 return null;
             }
         }
 
-        private static BitmapSource LoadImage(Stream source)
+        private static bool TrySplitModPath(
+            string filePath, out string modName, out string relativePath)
         {
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.StreamSource = source;
-            image.EndInit();
-            image.Freeze();
-            return image;
+            modName = null;
+            relativePath = null;
+
+            // "__a__/"
+            if (filePath.Length < 2 + 1 + 2 + 1)
+                return false;
+
+            int idx = filePath.IndexOf('/');
+            if (idx == -1 || idx < 5)
+                return false;
+
+            if (filePath[0] != '_' || filePath[1] != '_' ||
+                filePath[idx - 1] != '_' || filePath[idx - 2] != '_')
+                return false;
+
+            modName = filePath.Substring(2, idx - 4);
+            relativePath = filePath.Substring(idx + 1);
+            return true;
         }
 
         public static Color IconAverageColor(BitmapSource icon)
@@ -718,25 +733,14 @@
 
         private void InterpretLuaItem(string name, LuaTable values)
         {
-            if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name) || Items.ContainsKey(name))
                 return;
 
-            Item newItem = new Item(name);
-            var fileName = values.StringOrDefault("icon");
-            if (fileName == null) {
-                var icons = values.TableOrDefault("icons");
-                // TODO: Figure out how to either composite multiple icons
-                var first = (LuaTable)icons?[1];
-                if (first != null)
-                    fileName = first.StringOrDefault("icon");
-            }
-
-            newItem.Icon = LoadImage(fileName);
+            var newItem = new Item(name);
             newItem.LocalizedName = GetLocalizationInfo(values);
+            newItem.Icon = LoadModImage(values);
 
-            if (!Items.ContainsKey(name)) {
-                Items.Add(name, newItem);
-            }
+            Items.Add(name, newItem);
         }
 
         private LocalizationInfo GetLocalizationInfo(LuaTable values)
@@ -811,10 +815,7 @@
                 Recipe newRecipe = new Recipe(name, time == 0.0f ? defaultRecipeTime : time, ingredients, results);
 
                 newRecipe.Category = values.StringOrDefault("category", "crafting");
-
-                string iconFile = values.StringOrDefault("icon");
-                if (iconFile != null)
-                    newRecipe.Icon = LoadImage(iconFile);
+                newRecipe.Icon = LoadModImage(values);
 
                 foreach (Item result in results.Keys)
                     result.Recipes.Add(newRecipe);
@@ -829,7 +830,7 @@
 
         private void ReadAssemblerProperties(Assembler assembler, LuaTable values)
         {
-            assembler.Icon = LoadImage(values.StringOrDefault("icon"));
+            assembler.Icon = LoadModImage(values);
             assembler.MaxIngredients = values.IntOrDefault("ingredient_count");
             assembler.ModuleSlots = values.IntOrDefault("module_slots");
             if (assembler.ModuleSlots == 0) {
@@ -931,7 +932,7 @@
             try {
                 var newMiner = new Miner(name);
 
-                newMiner.Icon = LoadImage(values.StringOrDefault("icon"));
+                newMiner.Icon = LoadModImage(values);
                 newMiner.MiningPower = values.Float("mining_power");
                 newMiner.Speed = values.Float("mining_speed");
                 newMiner.ModuleSlots = values.IntOrDefault("module_slots");
@@ -1044,10 +1045,9 @@
         private void InterpretInserter(string name, LuaTable values)
         {
             try {
-                float rotationSpeed = values.Float("rotation_speed");
-                Inserter newInserter = new Inserter(name);
-                newInserter.RotationSpeed = rotationSpeed;
-                newInserter.Icon = LoadImage(values.StringOrDefault("icon"));
+                var newInserter = new Inserter(name);
+                newInserter.RotationSpeed = values.Float("rotation_speed");
+                newInserter.Icon = LoadModImage(values);
 
                 Inserters.Add(name, newInserter);
             } catch (MissingPrototypeValueException ex) {

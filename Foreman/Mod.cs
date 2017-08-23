@@ -4,6 +4,8 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Windows.Media.Imaging;
+    using Extensions;
 
     public class Mod
     {
@@ -62,6 +64,19 @@
                 return Directory.GetFiles(Path.Combine(Dir, relativePath), searchPattern);
 
             return Enumerable.Empty<string>();
+        }
+
+        public BitmapSource LoadImage(string filePath)
+        {
+            if (Dir != null) {
+                string fullPath = Path.Combine(Dir, filePath);
+                if (!File.Exists(fullPath))
+                    return null;
+
+                return ImagingExtensions.LoadImage(fullPath);
+            }
+
+            return null;
         }
     }
 

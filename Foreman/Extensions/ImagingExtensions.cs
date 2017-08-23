@@ -1,6 +1,7 @@
 ﻿namespace Foreman.Extensions
 {
     using System;
+    using System.IO;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
 
@@ -26,6 +27,23 @@
             var bytes = new byte[4];
             image.Resized(1, 1).CopyPixels(bytes, 4, 0);
             return Color.FromArgb(bytes[3], bytes[2], bytes[1], bytes[0]);
+        }
+
+        public static BitmapSource LoadImage(string filePath)
+        {
+            using (var stream = File.OpenRead(filePath))
+                return LoadImage(stream);
+        }
+
+        public static BitmapSource LoadImage(Stream source)
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.StreamSource = source;
+            image.EndInit();
+            image.Freeze();
+            return image;
         }
     }
 }
