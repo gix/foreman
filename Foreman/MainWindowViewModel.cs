@@ -528,6 +528,8 @@ namespace Foreman
             SaveEnabledObjects();
 
             if (dialog.ModsChanged) {
+                var mods = DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList();
+                await Task.Run(() => DataCache.Reload(mods));
                 await GraphViewModel.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewModel)));
                 UpdateControlValues();
             }

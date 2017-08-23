@@ -7,7 +7,6 @@
     using System.Linq;
     using System.Security.Cryptography;
     using System.Threading.Tasks;
-    using System.Windows.Forms;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
     using Extensions;
@@ -16,6 +15,8 @@
     using NLua;
     using Properties;
     using Units;
+    using Application = System.Windows.Forms.Application;
+    using Path = System.IO.Path;
 
     public class Language
     {
@@ -170,7 +171,7 @@
             new LocalizedStringDictionary();
 
         public Dictionary<string, Exception> FailedFiles { get; } = new Dictionary<string, Exception>();
-        public Dictionary<string, Exception> FailedPathDirectories { get; } = new Dictionary<string, Exception>();
+        public Dictionary<string, Exception> FailedModRegistrations { get; } = new Dictionary<string, Exception>();
 
         public Dictionary<string, byte[]> ZipHashes { get; } = new Dictionary<string, byte[]>();
 
@@ -205,7 +206,7 @@
                 FindAllMods(enabledMods);
 
                 AddLuaPackagePath(lua, Path.Combine(DataPath, "core", "lualib")); //Core lua functions
-                string basePackagePath = lua["package.path"] as string;
+                string basePackagePath = (string)lua["package.path"];
 
                 string dataloaderFile = Path.Combine(DataPath, "core", "lualib", "dataloader.lua");
                 try {
@@ -244,95 +245,25 @@
                     defines.direction.east = 2
                     defines.direction.south = 3
                     defines.direction.west = 4
+
+                    settings = {}
+                    settings.startup = {}
+                    setmetatable(settings.startup, {
+                        __index = function()
+                            return {value = 0}
+                        end
+                    })
 ");
 
                 foreach (Mod mod in Mods.Where(m => m.Enabled)) {
-                    foreach (string filename in new[] { "data.lua", "data-updates.lua", "data-final-fixes.lua" }) {
-                        //Mods use relative paths, but if more than one mod is in package.path at once this can be ambiguous
-                        lua["package.path"] = basePackagePath;
-                        AddLuaPackagePath(lua, mod.Dir);
-
-                        //Because many mods use the same path to refer to different files, we need to clear the 'loaded' table so Lua doesn't think they're already loaded
-                        lua.DoString(@"
-                            for k, v in pairs(package.loaded) do
-                                package.loaded[k] = false
-                            end");
-
-                        string dataFile = Path.Combine(mod.Dir, filename);
-                        if (File.Exists(dataFile)) {
-                            try {
-                                lua.DoFile(dataFile);
-                            } catch (Exception ex) {
-                                FailedFiles[dataFile] = ex;
-                            }
-                        }
-                    }
+                    LoadMod(lua, mod, basePackagePath);
                 }
 
                 //------------------------------------------------------------------------------------------
                 // Lua files have all been executed, now it's time to extract their data from the lua engine
                 //------------------------------------------------------------------------------------------
 
-                foreach (string type in new List<string> {
-                    "item",
-                    "fluid",
-                    "capsule",
-                    "module",
-                    "ammo",
-                    "gun",
-                    "armor",
-                    "blueprint",
-                    "deconstruction-item",
-                    "mining-tool",
-                    "repair-tool",
-                    "tool",
-                    "item-with-entity-data",
-                    "rail-planner"
-                }) {
-                    InterpretItems(lua, type);
-                }
-
-                var rawData = lua.GetTable("data.raw");
-
-                if (rawData["recipe"] is LuaTable recipeTable) {
-                    foreach (KeyValuePair<object, object> entry in recipeTable)
-                        InterpretLuaRecipe(entry.Key as string, entry.Value as LuaTable);
-                }
-
-                if (rawData["assembling-machine"] is LuaTable assemblerTable) {
-                    foreach (KeyValuePair<object, object> entry in assemblerTable)
-                        InterpretAssemblingMachine(entry.Key as string, entry.Value as LuaTable);
-                }
-
-                if (rawData["furnace"] is LuaTable furnaceTable) {
-                    foreach (KeyValuePair<object, object> entry in furnaceTable)
-                        InterpretFurnace(entry.Key as string, entry.Value as LuaTable);
-                }
-
-                if (rawData["rocket-silo"] is LuaTable rocketSiloTable) {
-                    foreach (KeyValuePair<object, object> entry in rocketSiloTable)
-                        InterpretRocketSilo(entry.Key as string, entry.Value as LuaTable);
-                }
-
-                if (rawData["mining-drill"] is LuaTable minerTable) {
-                    foreach (KeyValuePair<object, object> entry in minerTable)
-                        InterpretMiner(entry.Key as string, entry.Value as LuaTable);
-                }
-
-                if (rawData["resource"] is LuaTable resourceTable) {
-                    foreach (KeyValuePair<object, object> entry in resourceTable)
-                        InterpretResource(entry.Key as string, entry.Value as LuaTable);
-                }
-
-                if (rawData["module"] is LuaTable moduleTable) {
-                    foreach (KeyValuePair<object, object> entry in moduleTable)
-                        InterpretModule(entry.Key as string, entry.Value as LuaTable);
-                }
-
-                if (rawData["beacon"] is LuaTable beaconTable) {
-                    foreach (KeyValuePair<object, object> entry in beaconTable)
-                        InterpretBeacon(entry.Key as string, entry.Value as LuaTable);
-                }
+                InterpretRawData(lua.GetTable("data.raw"));
 
                 UnknownIcon = LoadUnknownIcon();
 
@@ -343,6 +274,81 @@
             MarkCyclicRecipes();
 
             ReportErrors();
+        }
+
+        private void LoadMod(Lua lua, Mod mod, string basePackagePath)
+        {
+            // Mods use relative paths, but if more than one mod is in package.path at once this can be ambiguous
+            lua["package.path"] = basePackagePath;
+            try {
+                mod.Register(lua);
+            } catch (Exception ex) {
+                FailedModRegistrations[mod.ModPath] = ex;
+                return;
+            }
+
+            try {
+                foreach (string filename in new[] { "data.lua", "data-updates.lua", "data-final-fixes.lua" }) {
+                    //Because many mods use the same path to refer to different files, we need to clear the 'loaded' table so Lua doesn't think they're already loaded
+                    lua.DoString(@"
+                            for k, v in pairs(package.loaded) do
+                                package.loaded[k] = false
+                            end");
+
+                    try {
+                        mod.Load(lua, filename);
+                    } catch (Exception ex) {
+                        FailedFiles[$"__{mod.Name}__/{filename}"] = ex;
+                    }
+                }
+            } finally {
+                mod.Unregister(lua);
+                lua["package.path"] = basePackagePath;
+            }
+        }
+
+        private void InterpretRawData(LuaTable rawData)
+        {
+            var itemTypes = new List<string> {
+                "item",
+                "fluid",
+                "capsule",
+                "module",
+                "ammo",
+                "gun",
+                "armor",
+                "blueprint",
+                "deconstruction-item",
+                "mining-tool",
+                "repair-tool",
+                "tool",
+                "item-with-entity-data",
+                "rail-planner"
+            };
+            foreach (string key in itemTypes) {
+                if (rawData[key] is LuaTable table) {
+                    foreach (KeyValuePair<object, object> entry in table)
+                        InterpretLuaItem(entry.Key as string, entry.Value as LuaTable);
+                }
+            }
+
+            var interpreters = new ValueTuple<string, Action<string, LuaTable>>[] {
+                ("recipe", InterpretLuaRecipe),
+                ("assembling-machine", InterpretAssemblingMachine),
+                ("furnace", InterpretFurnace),
+                ("rocket-silo", InterpretRocketSilo),
+                ("mining-drill", InterpretMiner),
+                ("resource", InterpretResource),
+                ("module", InterpretModule),
+                ("beacon", InterpretBeacon),
+            };
+
+            foreach (var (key, interpreter) in interpreters) {
+                if (rawData[key] is LuaTable table) {
+                    foreach (KeyValuePair<object, object> entry in table)
+                        interpreter(entry.Key as string, entry.Value as LuaTable);
+                }
+            }
         }
 
         private BitmapSource LoadUnknownIcon()
@@ -368,6 +374,17 @@
             var localeDirs = Directory.EnumerateDirectories(
                 Path.Combine(coreMod.Dir, "locale"));
 
+            foreach (var localeInfo in coreMod.EnumerateFiles("locale", "info.json")) {
+                var langCode = Path.GetDirectoryName(Path.GetFileName(localeInfo.Name));
+                var newLanguage = new Language(langCode);
+                try {
+                    string infoJson = localeInfo.ReadAllText();
+                    newLanguage.LocalName = (string)JObject.Parse(infoJson)["language-name"];
+                } catch {
+                }
+                Languages.Add(newLanguage);
+            }
+
             foreach (string dir in localeDirs) {
                 var newLanguage = new Language(Path.GetFileName(dir));
                 try {
@@ -392,17 +409,17 @@
             colorCache.Clear();
             localeFiles.Clear();
             FailedFiles.Clear();
-            FailedPathDirectories.Clear();
+            FailedModRegistrations.Clear();
             Inserters.Clear();
             Languages.Clear();
         }
 
         private void ReportErrors()
         {
-            if (FailedPathDirectories.Any()) {
-                ErrorLogging.LogLine("There were errors setting the lua path variable for the following directories:");
-                foreach (string dir in FailedPathDirectories.Keys)
-                    ErrorLogging.LogLine($"{dir} ({FailedPathDirectories[dir].Message})");
+            if (FailedModRegistrations.Any()) {
+                ErrorLogging.LogLine("There were errors setting the lua path variable or loader for the following mods:");
+                foreach (string dir in FailedModRegistrations.Keys)
+                    ErrorLogging.LogLine($"{dir} ({FailedModRegistrations[dir].Message})");
             }
 
             if (FailedFiles.Any()) {
@@ -420,7 +437,7 @@
                 luaCommand = luaCommand.Replace("\\", "\\\\");
                 lua.DoString(luaCommand);
             } catch (Exception ex) {
-                FailedPathDirectories[dir] = ex;
+                FailedModRegistrations[dir] = ex;
             }
         }
 
@@ -529,25 +546,36 @@
 
         private void ReadModInfoZip(string zipFile)
         {
-            UnzipMod(zipFile);
+            using (var archive = new ZipArchive(File.OpenRead(zipFile), ZipArchiveMode.Read)) {
+                var infoEntry = archive.GetEntry("info.json") ?? GetEntryIgnoreCaseSlow(archive, "info.json");
+                if (infoEntry != null)
+                    ReadModInfo(infoEntry.ReadAllText(), zipFile);
+            }
+        }
 
-            var path = GetTempModPath(zipFile);
-            string file = Directory.EnumerateFiles(
-                path, "info.json", SearchOption.AllDirectories).FirstOrDefault();
+        private ZipArchiveEntry GetEntryIgnoreCaseSlow(ZipArchive archive, string name)
+        {
+            foreach (var entry in archive.Entries) {
+                if (entry.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    return entry;
+            }
 
-            if (string.IsNullOrWhiteSpace(file))
-                return;
-
-            ReadModInfo(File.ReadAllText(file), Path.GetDirectoryName(file));
+            return null;
         }
 
         private void ReadModInfo(string json, string path)
         {
-            Mod newMod = JsonConvert.DeserializeObject<Mod>(json);
-            newMod.Dir = path;
+            var obj = JObject.Parse(json);
+            var newMod = new Mod(path, File.Exists(path)) {
+                Name = obj.Value<string>("name"),
+                Version = obj.Value<string>("version"),
+                Title = obj.Value<string>("title"),
+                Author = obj.Value<string>("author")
+            };
+            foreach (string dep in obj["dependencies"].Values<string>())
+                newMod.Dependencies.Add(dep);
 
-            Version parsedVersion;
-            if (!Version.TryParse(newMod.Version, out parsedVersion))
+            if (!Version.TryParse(newMod.Version, out var parsedVersion))
                 parsedVersion = new Version(0, 0, 0, 0);
 
             newMod.ParsedVersion = parsedVersion;
@@ -601,14 +629,6 @@
             }
         }
 
-        private void InterpretItems(Lua lua, string typeName)
-        {
-            if (lua.GetTable("data.raw")[typeName] is LuaTable itemTable) {
-                foreach (KeyValuePair<object, object> entry in itemTable)
-                    InterpretLuaItem(entry.Key as string, entry.Value as LuaTable);
-            }
-        }
-
         public async Task ChangeLocaleAsync(string newLocale)
         {
             localeFiles = await LoadLocaleFilesAsync(newLocale, Mods, FailedFiles);
@@ -620,12 +640,14 @@
             var localeFiles = new LocalizedStringDictionary();
 
             foreach (Mod mod in mods.Where(m => m.Enabled)) {
-                var localDir = Path.Combine("locale", locale);
-                foreach (string file in mod.EnumerateFiles(localDir, "*.cfg")) {
-                    try {
-                        await LoadLocaleFileAsync(file, localeFiles);
-                    } catch (Exception ex) when (failedFiles != null) {
-                        failedFiles[file] = ex;
+                var localeDir = Path.Combine("locale", locale);
+                foreach (var file in mod.EnumerateFiles(localeDir, "*.cfg")) {
+                    using (var stream = file.Open()) {
+                        try {
+                            await LoadLocaleFileAsync(stream, localeFiles);
+                        } catch (Exception ex) when (failedFiles != null) {
+                            failedFiles[file.Name] = ex;
+                        }
                     }
                 }
             }
@@ -634,7 +656,7 @@
         }
 
         private static async Task LoadLocaleFileAsync(
-            string file, LocalizedStringDictionary newLocaleFiles)
+            Stream file, LocalizedStringDictionary newLocaleFiles)
         {
             using (var stream = new StreamReader(file)) {
                 string iniSection = "none";
@@ -1317,6 +1339,12 @@
             if (table[key] != null)
                 return table[key] as LuaTable;
             return defaultValue;
+        }
+
+        public static IEnumerable<KeyValuePair<object, object>> AsEnumerable(this LuaTable table)
+        {
+            foreach (KeyValuePair<object, object> entry in table)
+                yield return entry;
         }
     }
 }

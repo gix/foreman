@@ -2,6 +2,7 @@
 {
     using System;
     using System.IO;
+    using System.IO.Compression;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
 
@@ -37,6 +38,13 @@
 
         public static BitmapSource LoadImage(Stream source)
         {
+            if (!source.CanSeek && source is DeflateStream deflateStream) {
+                // BitmapImage assumes that unseekable streams are downloaded
+                // from the web and starts a background thread. Cache the
+                // deflate stream manually.
+                source = CacheStream(deflateStream);
+            }
+
             var image = new BitmapImage();
             image.BeginInit();
             image.CacheOption = BitmapCacheOption.OnLoad;
@@ -44,6 +52,15 @@
             image.EndInit();
             image.Freeze();
             return image;
+        }
+
+        public static MemoryStream CacheStream(this Stream stream)
+        {
+            using (stream) {
+                var buffer = new MemoryStream();
+                stream.CopyTo(buffer);
+                return buffer;
+            }
         }
     }
 }
