@@ -9,7 +9,6 @@ namespace Foreman
     using System.Threading.Tasks;
     using System.Windows;
     using System.Windows.Controls.Primitives;
-    using Controls;
     using Extensions;
     using Microsoft.Win32;
     using Newtonsoft.Json;
@@ -21,6 +20,7 @@ namespace Foreman
     {
         private readonly IMainWindow view;
 
+        private string currentGraphFile;
         private List<Item> unfilteredItemList = new List<Item>();
         private List<Recipe> unfilteredRecipeList = new List<Recipe>();
         private Difficulty difficulty;
@@ -36,15 +36,20 @@ namespace Foreman
         public MainWindowViewModel(IMainWindow view)
         {
             this.view = view;
+            RecentGraphs = new MruCollection<string>();
 
             var graph = new ProductionGraph();
             GraphViewModel = new ProductionGraphViewModel(graph);
 
+            ExitCommand = new AsyncDelegateCommand(Exit);
             CompleteGraphCommand = new AsyncDelegateCommand(CompleteGraph);
             ClearGraphCommand = new AsyncDelegateCommand(ClearGraph);
             ArrangeNodesCommand = new AsyncDelegateCommand(ArrangeNodes);
+            NewGraphCommand = new AsyncDelegateCommand(NewGraph);
             SaveGraphCommand = new AsyncDelegateCommand(SaveGraph);
-            LoadGraphCommand = new AsyncDelegateCommand(LoadGraph);
+            SaveGraphAsCommand = new AsyncDelegateCommand(SaveGraphAs);
+            OpenGraphCommand = new AsyncDelegateCommand(LoadGraph);
+            LoadGraphCommand = new AsyncDelegateCommand<string>(LoadGraph);
             ExportImageCommand = new AsyncDelegateCommand(ExportImage);
             ChangeFactorioDirectoryCommand = new AsyncDelegateCommand(ChangeFactorioDirectory);
             ChangeModDirectoryCommand = new AsyncDelegateCommand(ChangeModDirectory);
@@ -56,11 +61,17 @@ namespace Foreman
 
         public ProductionGraphViewModel GraphViewModel { get; }
 
+        public MruCollection<string> RecentGraphs { get; }
+
+        public AsyncDelegateCommand ExitCommand { get; }
         public AsyncDelegateCommand CompleteGraphCommand { get; }
         public AsyncDelegateCommand ClearGraphCommand { get; }
         public AsyncDelegateCommand ArrangeNodesCommand { get; }
+        public AsyncDelegateCommand NewGraphCommand { get; }
         public AsyncDelegateCommand SaveGraphCommand { get; }
-        public AsyncDelegateCommand LoadGraphCommand { get; }
+        public AsyncDelegateCommand SaveGraphAsCommand { get; }
+        public AsyncDelegateCommand OpenGraphCommand { get; }
+        public AsyncDelegateCommand<string> LoadGraphCommand { get; }
         public AsyncDelegateCommand ExportImageCommand { get; }
         public AsyncDelegateCommand ChangeFactorioDirectoryCommand { get; }
         public AsyncDelegateCommand ChangeModDirectoryCommand { get; }
@@ -69,7 +80,16 @@ namespace Foreman
         public AsyncDelegateCommand<UIElement> AddItemsCommand { get; }
         public AsyncDelegateCommand AddRecipesCommand { get; }
 
-        public ObservableCollection<Language> Languages { get; } = new ObservableCollection<Language>();
+        public ObservableCollection<Language> Languages { get; } =
+            new ObservableCollection<Language>();
+
+        private string windowTitle = "Foreman";
+
+        public string WindowTitle
+        {
+            get => windowTitle;
+            set => SetProperty(ref windowTitle, value);
+        }
 
         public Language SelectedLanguage
         {
@@ -243,6 +263,12 @@ namespace Foreman
             Languages.AddRange(DataCache.Current.Languages);
             SelectedLanguage = DataCache.Current.Languages.FirstOrDefault(l => l.Name == Settings.Default.Language);
 
+            if (Settings.Default.RecentGraphs == null)
+                Settings.Default.RecentGraphs = new StringCollection();
+
+            foreach (var recentGraph in Settings.Default.RecentGraphs)
+                RecentGraphs.Add(recentGraph);
+
             UpdateControlValues();
         }
 
@@ -323,6 +349,12 @@ namespace Foreman
             GraphViewModel.Graph.SelectedUnit = SelectedRateUnit;
             GraphViewModel.Graph.UpdateNodeValues();
             GraphViewModel.UpdateNodes();
+        }
+
+        private Task Exit()
+        {
+            Application.Current.Shutdown();
+            return Task.CompletedTask;
         }
 
         private Task CompleteGraph()
@@ -407,31 +439,53 @@ namespace Foreman
             UpdateControlValues();
         }
 
+        private Task NewGraph()
+        {
+            ClearGraph();
+            currentGraphFile = null;
+            UpdateTitle();
+            return Task.CompletedTask;
+        }
+
         private Task SaveGraph()
+        {
+            if (currentGraphFile == null)
+                return SaveGraphAs();
+
+            SaveGraphToFile(currentGraphFile);
+            return Task.CompletedTask;
+        }
+
+        private Task SaveGraphAs()
         {
             var dialog = new SaveFileDialog();
             dialog.DefaultExt = ".json";
             dialog.Filter = "JSON Files (*.json)|*.json|All files (*.*)|*.*";
             dialog.AddExtension = true;
             dialog.OverwritePrompt = true;
-            dialog.FileName = "Flowchart.json";
+            dialog.FileName = currentGraphFile ?? "Flowchart.json";
             if (dialog.ShowDialog(view) != true)
                 return Task.CompletedTask;
 
-            var serialiser = JsonSerializer.Create();
-            serialiser.Formatting = Formatting.Indented;
-            var writer = new JsonTextWriter(new StreamWriter(dialog.FileName));
+            SaveGraphToFile(dialog.FileName);
+            currentGraphFile = dialog.FileName;
+            UpdateTitle();
+            return Task.CompletedTask;
+        }
+
+        private void SaveGraphToFile(string filePath)
+        {
+            var serializer = JsonSerializer.Create();
+            serializer.Formatting = Formatting.Indented;
+            var writer = new JsonTextWriter(new StreamWriter(filePath));
             try {
-                serialiser.Serialize(writer, GraphViewModel);
+                serializer.Serialize(writer, GraphViewModel);
             } catch (Exception exception) {
                 MessageBox.Show("Could not save this file. See log for more details");
-                ErrorLogging.LogLine(string.Format("Error saving file '{0}'. Error: '{1}'", dialog.FileName,
-                    exception.Message));
+                ErrorLogging.LogLine($"Error saving file '{filePath}'. Error: '{exception.Message}'");
             } finally {
                 writer.Close();
             }
-
-            return Task.CompletedTask;
         }
 
         private async Task LoadGraph()
@@ -442,14 +496,23 @@ namespace Foreman
             if (dialog.ShowDialog(view) != true)
                 return;
 
+            await LoadGraph(dialog.FileName);
+        }
+
+        private async Task LoadGraph(string filePath)
+        {
             try {
-                await GraphViewModel.LoadFromJson(JObject.Parse(File.ReadAllText(dialog.FileName)));
+                await GraphViewModel.LoadFromJson(JObject.Parse(File.ReadAllText(filePath)));
+
+                currentGraphFile = filePath;
+                RecentGraphs.Add(filePath);
             } catch (Exception exception) {
+                currentGraphFile = null;
                 MessageBox.Show("Could not load this file. See log for more details");
-                ErrorLogging.LogLine(string.Format("Error loading file '{0}'. Error: '{1}'", dialog.FileName,
-                    exception.Message));
+                ErrorLogging.LogLine($"Error loading file '{filePath}'. Error: '{exception.Message}'");
             }
 
+            UpdateTitle();
             UpdateControlValues();
         }
 
@@ -494,6 +557,14 @@ namespace Foreman
 
             Settings.Default.Language = newLocale;
             Settings.Default.Save();
+        }
+
+        private void UpdateTitle()
+        {
+            if (currentGraphFile != null)
+                WindowTitle = $"Foreman - {currentGraphFile}";
+            else
+                WindowTitle = "Foreman";
         }
 
         private void UpdateControlValues()

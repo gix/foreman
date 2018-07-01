@@ -105,6 +105,7 @@
     <Compile Include="GraphElement.cs" />
     <Compile Include="Infrastructure\Windows\Bind.cs" />
     <Compile Include="Infrastructure\Windows\FloatBinding.cs" />
+    <Compile Include="MruCollection.cs" />
     <Compile Include="NodeElement.cs" />
     <Compile Include="Pin.cs" />
     <Compile Include="HookUtils.cs" />
