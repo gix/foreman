@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Extensions;
     using Newtonsoft.Json.Linq;
 
     public abstract class ModuleSelector : ISerializable
@@ -47,8 +48,7 @@
                         var moduleKeys = token["Modules"].Values<string>();
                         filter = new ModuleSet(
                             moduleKeys
-                            .Where(x => DataCache.Current.Modules.ContainsKey(x))
-                            .Select(x => DataCache.Current.Modules[x]));
+                            .Select(x => x != null ? DataCache.Current.Modules.GetValueOrDefault(x) : null));
                     }
                     break;
             }
@@ -188,7 +188,7 @@
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue("ModuleFilterType", "Custom");
-            info.AddValue("Modules", modules.Select(x => x.Name).ToArray());
+            info.AddValue("Modules", modules.Select(x => x?.Name).ToArray());
         }
 
         protected override IEnumerable<Module> AvailableModules()
