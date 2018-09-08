@@ -489,12 +489,18 @@ namespace Foreman
 
             //Has to go first, as all other data depends on which mods are loaded
             var enabledMods = json["EnabledMods"].ToSet(t => (string)t);
+            bool modified = false;
             foreach (Mod mod in DataCache.Current.Mods) {
-                mod.Enabled = enabledMods.Contains(mod.Name);
+                var modEnabled = enabledMods.Contains(mod.Name);
+                if (modEnabled != mod.Enabled)
+                    modified = true;
+                mod.Enabled = modEnabled;
             }
 
-            var mods = DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList();
-            await Task.Run(() => DataCache.Reload(mods));
+            if (modified) {
+                var mods = DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList();
+                await Task.Run(() => DataCache.Reload(mods));
+            }
 
             Graph.SelectedAmountType = (AmountType)(int)json["AmountType"];
             Graph.SelectedUnit = (RateUnit)(int)json["Unit"];
