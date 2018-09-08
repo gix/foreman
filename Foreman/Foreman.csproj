@@ -248,13 +248,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Google.OrTools">
-      <Version>6.2.4388</Version>
-    </PackageReference>
-    <PackageReference Include="Google.Protobuf">
-      <Version>3.3.0</Version>
+      <Version>6.7.4973</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
-      <Version>10.0.3</Version>
+      <Version>11.0.2</Version>
     </PackageReference>
     <PackageReference Include="NLua">
       <Version>1.3.2.1</Version>
