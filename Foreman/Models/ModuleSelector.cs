@@ -1,5 +1,6 @@
 ﻿namespace Foreman
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
@@ -7,6 +8,7 @@
     using Extensions;
     using Newtonsoft.Json.Linq;
 
+    [Serializable]
     public abstract class ModuleSelector : ISerializable
     {
         public abstract void GetObjectData(SerializationInfo info, StreamingContext context);
@@ -85,6 +87,7 @@
             return new ModuleSpecificFilter(module);
         }
 
+        [Serializable]
         private class ModuleSpecificFilter : ModuleSelector
         {
             public Module Module { get; }
@@ -108,6 +111,7 @@
             }
         }
 
+        [Serializable]
         private class ModuleSelectorFastest : ModuleSelector
         {
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -123,6 +127,7 @@
             }
         }
 
+        [Serializable]
         private class ModuleSelectorProductivity : ModuleSelector
         {
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -138,6 +143,7 @@
             }
         }
 
+        [Serializable]
         private class ModuleSelectorEfficiency : ModuleSelector
         {
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -153,6 +159,7 @@
             }
         }
 
+        [Serializable]
         private class ModuleSelectorNone : ModuleSelector
         {
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -169,6 +176,7 @@
         }
     }
 
+    [Serializable]
     public class ModuleSet : ModuleSelector, IReadOnlyList<Module>
     {
         private readonly List<Module> modules;

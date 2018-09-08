@@ -12,6 +12,7 @@ namespace Foreman
     using Extensions;
     using Newtonsoft.Json.Linq;
 
+    [Serializable]
     public class ProductionGraphViewModel
         : ViewModel, IInteractiveCanvasViewModel, ISerializable
     {

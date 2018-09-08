@@ -13,6 +13,7 @@ namespace Foreman
     using Microsoft.Win32;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Newtonsoft.Json.Serialization;
     using Properties;
     using Views;
 
@@ -477,6 +478,9 @@ namespace Foreman
         {
             var serializer = JsonSerializer.Create();
             serializer.Formatting = Formatting.Indented;
+            serializer.ContractResolver = new DefaultContractResolver {
+                IgnoreSerializableAttribute = true
+            };
             var writer = new JsonTextWriter(new StreamWriter(filePath));
             try {
                 serializer.Serialize(writer, GraphViewModel);

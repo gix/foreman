@@ -214,6 +214,7 @@
         public abstract ProductionEntity ProductionEntity { get; set; }
     }
 
+    [Serializable]
     public class RecipeNode : EffectableNode
     {
         public Recipe BaseRecipe { get; }
@@ -361,6 +362,7 @@
         }
     }
 
+    [Serializable]
     public class SupplyNode : EffectableNode
     {
         private Resource resource;
@@ -483,6 +485,7 @@
         }
     }
 
+    [Serializable]
     public class ConsumerNode : ProductionNode
     {
         public Item ConsumedItem { get; }
@@ -551,6 +554,7 @@
         }
     }
 
+    [Serializable]
     public class PassthroughNode : ProductionNode
     {
         public Item PassedItem { get; }
