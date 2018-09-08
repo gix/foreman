@@ -93,10 +93,7 @@ namespace Foreman.Controls
             set => SetValue(ViewboxProperty, value);
         }
 
-        public Rect ActualViewbox
-        {
-            get => (Rect)GetValue(ActualViewboxProperty);
-        }
+        public Rect ActualViewbox => (Rect)GetValue(ActualViewboxProperty);
 
         public Panel ItemsHost => canvas;
 
@@ -360,9 +357,14 @@ namespace Foreman.Controls
             }
         }
 
-        public Point PointToCanvas(Point point)
+        public Point PointToCanvas(Point visualPoint)
         {
-            return canvas.PointToCanvas(point);
+            return canvas.PointToCanvas(visualPoint);
+        }
+
+        public Point PointFromCanvas(Point visualPoint)
+        {
+            return canvas.PointFromCanvas(visualPoint);
         }
 
         private InteractiveCanvasItem HitTestItem(Point point)
@@ -448,7 +450,6 @@ namespace Foreman.Controls
                 view.canvas.Offset = startOffset - delta;
 
                 view.ReleaseMouseCapture();
-                Reset();
             }
 
             public override void Reset()
@@ -615,11 +616,6 @@ namespace Foreman.Controls
                 }
             }
 
-            public override void HandleLostMouseCapture()
-            {
-                Reset();
-            }
-
             public override void Reset()
             {
                 IsActive = false;
@@ -649,7 +645,7 @@ namespace Foreman.Controls
                         view.Select(element);
                 }
 
-                Reset();
+                view.ReleaseMouseCapture();
             }
         }
     }

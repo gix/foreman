@@ -222,11 +222,12 @@ namespace Foreman
                 if (Directory.Exists(Path.Combine(Settings.Default.FactorioPath, "mods"))) {
                     Settings.Default.FactorioModPath =
                         Path.Combine(Settings.Default.FactorioPath, "mods");
-                } else if (Directory.Exists(Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "factorio", "mods"))) {
-                    Settings.Default.FactorioModPath =
-                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "factorio",
-                            "mods");
+                } else {
+                    var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    var modsPath = Path.Combine(appData, "factorio", "mods");
+                    if (Directory.Exists(modsPath)) {
+                        Settings.Default.FactorioModPath = modsPath;
+                    }
                 }
             }
 

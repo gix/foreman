@@ -357,6 +357,9 @@ namespace Foreman
             }
 
             var link = NodeLink.Create(output.Node.DisplayedNode, input.Node.DisplayedNode, input.Item);
+            if (link == null)
+                return;
+
             var connector = new Connector(link, output, input);
             Elements.Add(connector);
             Graph.UpdateNodeValues();
