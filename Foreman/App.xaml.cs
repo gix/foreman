@@ -1,5 +1,6 @@
 ﻿namespace Foreman
 {
+    using System.Threading;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
@@ -16,6 +17,8 @@
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            Thread.CurrentThread.CurrentCulture = Thread.CurrentThread.CurrentUICulture;
+
             base.OnStartup(e);
 
             ThemeManager.Install();

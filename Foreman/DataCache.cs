@@ -372,18 +372,7 @@
         private void LoadAllLanguages()
         {
             var localeDirs = Directory.EnumerateDirectories(
-                Path.Combine(coreMod.Dir, "locale"));
-
-            foreach (var localeInfo in coreMod.EnumerateFiles("locale", "info.json")) {
-                var langCode = Path.GetDirectoryName(Path.GetFileName(localeInfo.Name));
-                var newLanguage = new Language(langCode);
-                try {
-                    string infoJson = localeInfo.ReadAllText();
-                    newLanguage.LocalName = (string)JObject.Parse(infoJson)["language-name"];
-                } catch {
-                }
-                Languages.Add(newLanguage);
-            }
+                Path.Combine(coreMod.ModPath, "locale"));
 
             foreach (string dir in localeDirs) {
                 var newLanguage = new Language(Path.GetFileName(dir));
