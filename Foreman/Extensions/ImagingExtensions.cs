@@ -3,6 +3,7 @@
     using System;
     using System.IO;
     using System.IO.Compression;
+    using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
 
@@ -30,13 +31,13 @@
             return Color.FromArgb(bytes[3], bytes[2], bytes[1], bytes[0]);
         }
 
-        public static BitmapSource LoadImage(string filePath)
+        public static BitmapSource LoadImage(string filePath, int? iconSize = null)
         {
             using (var stream = File.OpenRead(filePath))
-                return LoadImage(stream);
+                return LoadImage(stream, iconSize);
         }
 
-        public static BitmapSource LoadImage(Stream source)
+        public static BitmapSource LoadImage(Stream source, int? iconSize = null)
         {
             if (!source.CanSeek && source is DeflateStream deflateStream) {
                 // BitmapImage assumes that unseekable streams are downloaded
@@ -49,6 +50,10 @@
             image.BeginInit();
             image.CacheOption = BitmapCacheOption.OnLoad;
             image.StreamSource = source;
+            if (iconSize != null) {
+                int s = iconSize.Value;
+                image.SourceRect = new Int32Rect(0, 0, s, s);
+            }
             image.EndInit();
             image.Freeze();
             return image;

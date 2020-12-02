@@ -100,7 +100,7 @@
 
             objective.SetMinimization();
 
-            if (solver.Solve() != Solver.OPTIMAL)
+            if (solver.Solve() != Solver.ResultStatus.OPTIMAL)
                 return null;
 
             var nodeSolutions = nodes

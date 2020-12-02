@@ -6,7 +6,7 @@
              xmlns:f="clr-namespace:Foreman"
              xmlns:c="clr-namespace:Foreman.Controls"
              xmlns:e="clr-namespace:Foreman.Extensions"
-             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+             xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:v="clr-namespace:Foreman.Views"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance {x:Type f:ProductionGraphViewModel}}"
@@ -109,7 +109,7 @@
                    Grid.Row="1"
                    Source="{Binding Icon}"
                    Width="32" Height="32" Margin="4"
-                   Stretch="None"
+                   Stretch="Uniform"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"/>
           </Grid>
@@ -156,10 +156,10 @@
                                Scale="{Binding Scale, Mode=TwoWay}"
                                Offset="{Binding Offset, Mode=TwoWay}"
                                Viewbox="{Binding Viewbox, Mode=TwoWay}">
-        <i:Interaction.Behaviors>
+        <b:Interaction.Behaviors>
           <c:PinConnectHandler/>
           <v:DragDropItemBehavior/>
-        </i:Interaction.Behaviors>
+        </b:Interaction.Behaviors>
         <e:PushBindings.Bindings>
           <e:PushBinding Path="ActualViewbox" TargetProperty="ActualViewbox"/>
           <e:PushBinding Path="ActualWidth" TargetProperty="ActualWidth"/>

@@ -670,9 +670,10 @@
         private BitmapSource LoadModImage(LuaTable values)
         {
             {
+                var iconSize = values.Int("icon_size");
                 var iconPath = values.StringOrDefault("icon");
                 if (iconPath != null)
-                    return LoadModImage(iconPath);
+                    return LoadModImage(iconPath, iconSize);
             }
 
             var icons = values.TableOrDefault("icons");
@@ -686,11 +687,11 @@
             return null;
         }
 
-        private BitmapSource LoadModImage(string filePath)
+        private BitmapSource LoadModImage(string filePath, int? iconSize = null)
         {
             if (TrySplitModPath(filePath, out string modName, out string relativePath)) {
                 var mod = Mods.FirstOrDefault(x => x.Name == modName);
-                return mod?.LoadImage(relativePath);
+                return mod?.LoadImage(relativePath, iconSize);
             }
 
             if (!File.Exists(filePath)) {
@@ -700,7 +701,7 @@
             }
 
             try {
-                return ImagingExtensions.LoadImage(filePath);
+                return ImagingExtensions.LoadImage(filePath, iconSize);
             } catch (Exception) {
                 return null;
             }
@@ -851,7 +852,7 @@
         private void ReadAssemblerProperties(Assembler assembler, LuaTable values)
         {
             assembler.Icon = LoadModImage(values);
-            assembler.MaxIngredients = values.IntOrDefault("ingredient_count");
+            assembler.MaxIngredients = values.IntOrDefault("ingredient_count", int.MaxValue);
             assembler.ModuleSlots = values.IntOrDefault("module_slots");
             if (assembler.ModuleSlots == 0) {
                 var moduleTable = values.TableOrDefault("module_specification");
@@ -958,7 +959,7 @@
                 var newMiner = new Miner(name);
 
                 newMiner.Icon = LoadModImage(values);
-                newMiner.MiningPower = values.Float("mining_power");
+                newMiner.MiningPower = 1; //values.Float("mining_power");
                 newMiner.Speed = values.Float("mining_speed");
                 newMiner.ModuleSlots = values.IntOrDefault("module_slots");
                 newMiner.EnergyUsage = ParsePower(values.String("energy_usage"));
@@ -998,7 +999,7 @@
 
                 var category = values.StringOrDefault("category", "basic-solid");
                 LuaTable minableTable = values.TableOrDefault("minable");
-                var hardness = minableTable.Float("hardness");
+                var hardness = 0; //minableTable.Float("hardness");
                 var miningTime = minableTable.Float("mining_time");
 
                 string result;
@@ -1289,6 +1290,19 @@
         {
             if (table[key] == null)
                 return defaultValue;
+
+            try {
+                return Convert.ToInt32(table[key]);
+            } catch (FormatException) {
+                throw new MissingPrototypeValueException(table, key,
+                    $"Expected an Int32, but the value ('{table[key]}') isn't one");
+            }
+        }
+
+        public static int? Int(this LuaTable table, string key)
+        {
+            if (table[key] == null)
+                return null;
 
             try {
                 return Convert.ToInt32(table[key]);

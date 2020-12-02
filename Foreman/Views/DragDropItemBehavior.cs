@@ -5,10 +5,10 @@ namespace Foreman.Views
     using System.Linq;
     using System.Windows;
     using System.Windows.Documents;
-    using System.Windows.Interactivity;
     using System.Windows.Media.Imaging;
     using Controls;
     using Extensions;
+    using Microsoft.Xaml.Behaviors;
 
     public class DragDropItemBehavior : Behavior<InteractiveCanvasView>
     {

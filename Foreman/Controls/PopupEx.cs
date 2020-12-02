@@ -89,7 +89,8 @@ namespace Foreman.Controls
         {
             private static void BuildWindow(
                 object psh, int x, int y, Visual placementTarget,
-                bool transparent, HwndSourceHook hook, AutoResizedEventHandler handler)
+                bool transparent, HwndSourceHook hook, AutoResizedEventHandler handler,
+                HwndDpiChangedEventHandler dpiChangedHandler)
             {
                 bool isChildPopup = (bool)pshIsChildPopupProperty.GetValue(psh);
 
@@ -164,6 +165,8 @@ namespace Foreman.Controls
 
                 // add AddAutoResizedEventHandler event handler
                 newWindow.AutoResized += handler;
+
+                newWindow.DpiChanged += dpiChangedHandler;
             }
 
             private static bool ConnectedToForegroundWindow(IntPtr window)

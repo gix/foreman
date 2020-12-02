@@ -180,12 +180,12 @@
             return $"{Name}_{Version}/{filePath}";
         }
 
-        public BitmapSource LoadImage(string filePath)
+        public BitmapSource LoadImage(string filePath, int? iconSize = null)
         {
             using (Stream input = OpenFile(filePath)) {
                 if (input == null)
                     return null;
-                return ImagingExtensions.LoadImage(input);
+                return ImagingExtensions.LoadImage(input, iconSize);
             }
         }
 

@@ -91,7 +91,7 @@
             return solver.Objective();
         }
 
-        internal int Solve()
+        internal Solver.ResultStatus Solve()
         {
             return solver.Solve();
         }

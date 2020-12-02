@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Windows;
     using System.Windows.Controls.Primitives;
     using System.Windows.Input;
@@ -19,7 +18,7 @@
         void Close();
     }
 
-    public class KeyDownEventTrigger : System.Windows.Interactivity.EventTrigger
+    public class KeyDownEventTrigger : Microsoft.Xaml.Behaviors.EventTrigger
     {
         public KeyDownEventTrigger()
             : base("KeyDown")
