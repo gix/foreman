@@ -33,12 +33,12 @@
         public Version ParsedVersion { get; set; }
         public string Description { get; set; } = "";
         public string Author { get; set; } = "";
-        public List<string> Dependencies { get; set; } = new List<string>();
-        public List<ModDependency> ParsedDependencies { get; set; } = new List<ModDependency>();
+        public List<string> Dependencies { get; set; } = new();
+        public List<ModDependency> ParsedDependencies { get; set; } = new();
         public bool Enabled { get; set; } = true;
 
         private ZipArchive Archive =>
-            archive ?? (archive = new ZipArchive(File.OpenRead(ModPath)));
+            archive ??= new ZipArchive(File.OpenRead(ModPath));
 
         public bool SatisfiesDependency(ModDependency dep)
         {
@@ -117,8 +117,8 @@
                 if (entry == null)
                     return File.ReadAllText(Name);
 
-                using (var reader = new StreamReader(entry.Open()))
-                    return reader.ReadToEnd();
+                using var reader = new StreamReader(entry.Open());
+                return reader.ReadToEnd();
             }
         }
 
@@ -182,11 +182,10 @@
 
         public BitmapSource LoadImage(string filePath, int? iconSize = null)
         {
-            using (Stream input = OpenFile(filePath)) {
-                if (input == null)
-                    return null;
-                return ImagingExtensions.LoadImage(input, iconSize);
-            }
+            using Stream input = OpenFile(filePath);
+            if (input == null)
+                return null;
+            return ImagingExtensions.LoadImage(input, iconSize);
         }
 
         public void Register(Lua lua)

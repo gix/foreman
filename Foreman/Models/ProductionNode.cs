@@ -23,7 +23,7 @@
     public class ModuleBag : IReadOnlyCollection<(Module Module, int Count)>
     {
         private const double DistributionEfficiency = 2.0;
-        private readonly Dictionary<Module, int> modules = new Dictionary<Module, int>();
+        private readonly Dictionary<Module, int> modules = new();
 
         public double? OverrideSpeedBonus { get; set; }
         public double? OverrideProductivityBonus { get; set; }
@@ -57,8 +57,7 @@
             if (module == null)
                 throw new ArgumentNullException(nameof(module));
 
-            int thisCount;
-            modules.TryGetValue(module, out thisCount);
+            modules.TryGetValue(module, out int thisCount);
             modules[module] = thisCount + count;
             ++Count;
         }
@@ -68,8 +67,7 @@
             if (module == null)
                 throw new ArgumentNullException(nameof(module));
 
-            int count;
-            if (modules.TryGetValue(module, out count)) {
+            if (modules.TryGetValue(module, out int count)) {
                 if (count == 1)
                     modules.Remove(module);
                 else
@@ -102,10 +100,10 @@
         public abstract string DisplayName { get; }
         public abstract IEnumerable<Item> Inputs { get; }
         public abstract IEnumerable<Item> Outputs { get; }
-        public ModuleBag BeaconModules { get; } = new ModuleBag();
+        public ModuleBag BeaconModules { get; } = new();
 
-        public List<NodeLink> InputLinks { get; } = new List<NodeLink>();
-        public List<NodeLink> OutputLinks { get; } = new List<NodeLink>();
+        public List<NodeLink> InputLinks { get; } = new();
+        public List<NodeLink> OutputLinks { get; } = new();
         public RateType RateType { get; set; } = RateType.Auto;
 
         // The rate the solver calculated is appropriate for this node.
@@ -233,14 +231,10 @@
 
         internal Dictionary<MachinePermutation, double> GetAssemblers()
         {
-            var assembler = Assembler;
-
-            if (assembler == null) {
-                assembler = GetAllowedAssemblers()
-                    .OrderByDescending(a => a.Speed)
-                    .ThenByDescending(a => a.ModuleSlots)
-                    .FirstOrDefault();
-            }
+            var assembler = Assembler ?? GetAllowedAssemblers()
+                .OrderByDescending(a => a.Speed)
+                .ThenByDescending(a => a.ModuleSlots)
+                .FirstOrDefault();
 
             var results = new Dictionary<MachinePermutation, double>();
 
@@ -370,9 +364,8 @@
         public Item SuppliedItem { get; }
 
         public Resource Resource =>
-            resource ?? (resource =
-                DataCache.Current.Resources.Values.FirstOrDefault(
-                    r => r.Result == SuppliedItem));
+            resource ??= DataCache.Current.Resources.Values.FirstOrDefault(
+                r => r.Result == SuppliedItem);
 
         protected SupplyNode(Item item, ProductionGraph graph)
             : base(graph)
@@ -422,14 +415,10 @@
             if (Resource == null)
                 return results;
 
-            var miner = Miner;
-
-            if (miner == null) {
-                miner = GetAllowedAssemblers()
-                    .OrderByDescending(a => a.Speed)
-                    .ThenByDescending(a => a.ModuleSlots)
-                    .FirstOrDefault();
-            }
+            var miner = Miner ?? GetAllowedAssemblers()
+                .OrderByDescending(a => a.Speed)
+                .ThenByDescending(a => a.ModuleSlots)
+                .FirstOrDefault();
 
             if (miner != null) {
                 var modules = Modules.For(miner, Resource, miner.ModuleSlots);
@@ -460,16 +449,16 @@
 
         public override float GetConsumeRate(Item item)
         {
-            Trace.Fail(string.Format("{0} supplier does not consume {1}, nothing should be asking for the rate!",
-                SuppliedItem.FriendlyName, item.FriendlyName));
+            Trace.Fail(
+                $"{SuppliedItem.FriendlyName} supplier does not consume {item.FriendlyName}, nothing should be asking for the rate!");
             return 0;
         }
 
         public override float GetSupplyRate(Item item)
         {
             if (SuppliedItem != item)
-                Trace.Fail(string.Format("{0} supplier does not supply {1}, nothing should be asking for the rate!",
-                    SuppliedItem.FriendlyName, item.FriendlyName));
+                Trace.Fail(
+                    $"{SuppliedItem.FriendlyName} supplier does not supply {item.FriendlyName}, nothing should be asking for the rate!");
 
             return (float)Math.Round(ActualRate, RoundingDP);
         }
@@ -529,16 +518,16 @@
         public override float GetConsumeRate(Item item)
         {
             if (ConsumedItem != item)
-                Trace.Fail(string.Format("{0} consumer does not consume {1}, nothing should be asking for the rate!",
-                    ConsumedItem.FriendlyName, item.FriendlyName));
+                Trace.Fail(
+                    $"{ConsumedItem.FriendlyName} consumer does not consume {item.FriendlyName}, nothing should be asking for the rate!");
 
             return (float)Math.Round(ActualRate, RoundingDP);
         }
 
         public override float GetSupplyRate(Item item)
         {
-            Trace.Fail(string.Format("{0} consumer does not supply {1}, nothing should be asking for the rate!",
-                ConsumedItem.FriendlyName, item.FriendlyName));
+            Trace.Fail(
+                $"{ConsumedItem.FriendlyName} consumer does not supply {item.FriendlyName}, nothing should be asking for the rate!");
 
             return 0;
         }

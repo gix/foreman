@@ -20,10 +20,10 @@
         }
 
         public bool ModsChanged { get; private set; }
-        public ObservableCollection<Assembler> Assemblers { get; } = new ObservableCollection<Assembler>();
-        public ObservableCollection<Mod> Mods { get; } = new ObservableCollection<Mod>();
-        public ObservableCollection<Miner> Miners { get; } = new ObservableCollection<Miner>();
-        public ObservableCollection<Module> Modules { get; } = new ObservableCollection<Module>();
+        public ObservableCollection<Assembler> Assemblers { get; } = new();
+        public ObservableCollection<Mod> Mods { get; } = new();
+        public ObservableCollection<Miner> Miners { get; } = new();
+        public ObservableCollection<Module> Modules { get; } = new();
 
         private void OnModChecked(object sender, RoutedEventArgs args)
         {

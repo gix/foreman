@@ -1,20 +1,20 @@
 ﻿namespace Foreman.Units
 {
-    public partial struct Power
+    public readonly partial struct Power
     {
         public static Power FromKilowatts(double kilowatts)
         {
-            return new Power(kilowatts * 1000.0);
+            return new(kilowatts * 1000.0);
         }
 
         public static Power FromMegawatts(double megawatts)
         {
-            return new Power(megawatts * 1000.0 * 1000.0);
+            return new(megawatts * 1000.0 * 1000.0);
         }
 
         public static Power FromGigawatts(double gigawatts)
         {
-            return new Power(gigawatts * 1000.0 * 1000.0 * 1000.0);
+            return new(gigawatts * 1000.0 * 1000.0 * 1000.0);
         }
 
         public double Kilowatts => Watts / 1000.0;

@@ -36,7 +36,7 @@
             if (ReferenceEquals(item1, item2)) {
                 return true;
             }
-            if ((object)item1 == null || (object)item2 == null) {
+            if (item1 is null || item2 is null) {
                 return false;
             }
 
@@ -50,7 +50,7 @@
 
         public override string ToString()
         {
-            return string.Format("Item: {0}", Name);
+            return $"Item: {Name}";
         }
     }
 }

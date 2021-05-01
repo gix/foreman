@@ -1,6 +1,5 @@
 ﻿namespace Foreman.Extensions
 {
-    using System;
     using System.Windows;
 
     /// <summary>Provides extension methods for <see cref="Rect"/>.</summary>
@@ -13,7 +12,7 @@
         /// </returns>
         public static Point GetCenter(this Rect rect)
         {
-            return new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+            return new(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
         }
 
         /// <summary>

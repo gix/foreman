@@ -20,7 +20,7 @@
     {
         private int[,] adjacencyMatrixCache;
 
-        public List<ProductionNode> Nodes { get; } = new List<ProductionNode>();
+        public List<ProductionNode> Nodes { get; } = new();
 
         public RateUnit SelectedUnit { get; set; } = RateUnit.PerSecond;
 
@@ -227,7 +227,7 @@
             public ProductionNode SourceNode { get; }
             public int Index { get; set; } = -1;
             public int LowLink { get; set; } = -1;
-            public HashSet<TarjanNode> Links { get; } = new HashSet<TarjanNode>(); //Links to other nodes
+            public HashSet<TarjanNode> Links { get; } = new(); //Links to other nodes
 
             public TarjanNode(ProductionNode sourceNode)
             {
@@ -317,9 +317,9 @@
             }
 
             {
-                TarjanNode w = null;
                 if (v.LowLink == v.Index) {
                     strongList.Add(new List<ProductionNode>());
+                    TarjanNode w;
                     do {
                         w = S.Pop();
                         strongList.Last().Add(w.SourceNode);

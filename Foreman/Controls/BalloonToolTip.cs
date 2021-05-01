@@ -262,7 +262,7 @@
             }
         }
 
-        public static BalloonToolTipService Current { get; } = new BalloonToolTipService();
+        public static BalloonToolTipService Current { get; } = new();
 
         private IInputElement LastMouseDirectlyOver
         {
@@ -380,8 +380,7 @@
 
         private bool LocateNearestToolTip(ref DependencyObject o)
         {
-            var element = o as IInputElement;
-            if (element != null) {
+            if (o is IInputElement element) {
                 var args = new FindBalloonEventArgs();
                 element.RaiseEvent(args);
                 if (args.TargetElement != null) {

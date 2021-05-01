@@ -389,12 +389,12 @@
 
         private static Size CollapseThickness(Thickness th)
         {
-            return new Size(th.Left + th.Right, th.Top + th.Bottom);
+            return new(th.Left + th.Right, th.Top + th.Bottom);
         }
 
         private static Rect DeflateRect(Rect rect, Thickness thickness)
         {
-            return new Rect(
+            return new(
                 rect.Left + thickness.Left,
                 rect.Top + thickness.Top,
                 Math.Max(0.0, rect.Width - thickness.Left - thickness.Right),
@@ -402,7 +402,7 @@
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct Radii
+        private readonly struct Radii
         {
             public readonly double LeftTop;
             public readonly double TopLeft;

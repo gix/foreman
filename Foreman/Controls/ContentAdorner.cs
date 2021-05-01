@@ -9,13 +9,12 @@ namespace Foreman.Controls
     public class ContentAdorner : Adorner
     {
         private readonly FrameworkElement child;
-        private readonly object content;
         private Point position;
 
         public ContentAdorner(UIElement adornedElement, object content)
             : base(adornedElement)
         {
-            this.content = content;
+            Content = content;
             child = new ContentPresenter {
                 IsHitTestVisible = false,
                 Content = content,
@@ -26,7 +25,7 @@ namespace Foreman.Controls
             AddLogicalChild(child);
         }
 
-        public object Content => content;
+        public object Content { get; }
 
         protected override IEnumerator LogicalChildren
         {

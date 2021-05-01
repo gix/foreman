@@ -125,7 +125,7 @@
 
         public override string ToString()
         {
-            return string.Format("Assembler: {0}", Name);
+            return $"Assembler: {Name}";
         }
 
         public double GetRate(float recipeTime, double beaconBonus, IEnumerable<Module> modules = null)

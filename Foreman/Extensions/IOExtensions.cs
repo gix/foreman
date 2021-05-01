@@ -8,14 +8,14 @@
     {
         public static string ReadAllText(this Stream stream)
         {
-            using (var reader = new StreamReader(stream, Encoding.UTF8, true, 1024, true))
-                return reader.ReadToEnd();
+            using var reader = new StreamReader(stream, Encoding.UTF8, true, 1024, true);
+            return reader.ReadToEnd();
         }
 
         public static string ReadAllText(this ZipArchiveEntry entry)
         {
-            using (var stream = entry.Open())
-                return stream.ReadAllText();
+            using var stream = entry.Open();
+            return stream.ReadAllText();
         }
     }
 }

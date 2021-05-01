@@ -5,7 +5,7 @@
 
     public class DependencyGraph
     {
-        private readonly List<Mod> mods = new List<Mod>();
+        private readonly List<Mod> mods;
         private int[,] adjacencyMatrix;
 
         public DependencyGraph(List<Mod> mods)

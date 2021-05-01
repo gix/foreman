@@ -8,20 +8,20 @@
     // A fluid interface for building up production graphs for testing. See references for usage.
     public class GraphBuilder
     {
-        private static int counter = 0;
+        private static int counter;
         protected static int GetSequence()
         {
             counter += 1;
             return counter;
         }
 
-        private List<Tuple<ProductionNodeBuilder, ProductionNodeBuilder>> links;
-        private ISet<ProductionNodeBuilder> nodes;
+        private readonly List<Tuple<ProductionNodeBuilder, ProductionNodeBuilder>> links;
+        private readonly ISet<ProductionNodeBuilder> nodes;
 
         protected GraphBuilder()
         {
-            this.links = new List<Tuple<ProductionNodeBuilder, ProductionNodeBuilder>>();
-            this.nodes = new HashSet<ProductionNodeBuilder>();
+            links = new List<Tuple<ProductionNodeBuilder, ProductionNodeBuilder>>();
+            nodes = new HashSet<ProductionNodeBuilder>();
         }
 
         public static GraphBuilder Create()
@@ -32,7 +32,7 @@
         internal SingletonNodeBuilder Supply(string item)
         {
             var node = new SingletonNodeBuilder(SupplyNode.Create).Item(item);
-            this.nodes.Add(node);
+            nodes.Add(node);
             return node;
         }
 
@@ -40,21 +40,21 @@
         public SingletonNodeBuilder Consumer(string item)
         {
             var node = new SingletonNodeBuilder(ConsumerNode.Create).Item(item);
-            this.nodes.Add(node);
+            nodes.Add(node);
             return node;
         }
 
         internal RecipeBuilder Recipe(string name = null)
         {
             var node = new RecipeBuilder(name);
-            this.nodes.Add(node);
+            nodes.Add(node);
             return node;
         }
 
         internal SingletonNodeBuilder Passthrough(string item)
         {
             var node = new SingletonNodeBuilder(PassthroughNode.Create).Item(item);
-            this.nodes.Add(node);
+            nodes.Add(node);
             return node;
         }
 
@@ -65,19 +65,19 @@
             var bs = ((IEnumerable<ProductionNodeBuilder>)nodeBuilders);
             var pairs = bs.Zip(bs.Skip(1), Tuple.Create);
 
-            this.links.AddRange(pairs);
+            links.AddRange(pairs);
         }
 
         internal BuiltData Build()
         {
             var graph = new ProductionGraph();
 
-            foreach (var node in this.nodes)
+            foreach (var node in nodes)
             {
                 node.Build(graph);
             }
 
-            foreach (var link in this.links)
+            foreach (var link in links)
             {
                 var lhs = link.Item1;
                 var rhs = link.Item2;
@@ -90,11 +90,11 @@
             return new BuiltData(graph);
         }
 
-        abstract public class ProductionNodeBuilder
+        public abstract class ProductionNodeBuilder
         {
 
             public ProductionNode Built { get; protected set; } // TODO: Build if not already
-            abstract internal void Build(ProductionGraph graph);
+            internal abstract void Build(ProductionGraph graph);
         }
 
         public class SingletonNodeBuilder : ProductionNodeBuilder
@@ -103,7 +103,7 @@
 
             public SingletonNodeBuilder(Func<Item, ProductionGraph, ProductionNode> f)
             {
-                this.createFunction = f;
+                createFunction = f;
             }
 
             public string itemName { get; private set; }
@@ -111,7 +111,7 @@
 
             internal SingletonNodeBuilder Item(string item)
             {
-                this.itemName = item;
+                itemName = item;
                 return this;
             }
 
@@ -123,15 +123,15 @@
 
             internal override void Build(ProductionGraph graph)
             {
-                Built = this.createFunction(new Item(itemName), graph);
+                Built = createFunction(new Item(itemName), graph);
 
                 if (target > 0)
                 {
-                    this.Built.DesiredRate = target;
-                    this.Built.RateType = RateType.Manual;
+                    Built.DesiredRate = target;
+                    Built.RateType = RateType.Manual;
                 } else
                 {
-                    this.Built.RateType = RateType.Auto;
+                    Built.RateType = RateType.Auto;
                 }
             }
         }
@@ -147,8 +147,8 @@
 
             internal RecipeBuilder(string name)
             {
-                this.inputs = new Dictionary<string, float>();
-                this.outputs = new Dictionary<string, float>();
+                inputs = new Dictionary<string, float>();
+                outputs = new Dictionary<string, float>();
                 this.name = name;
             }
 
@@ -160,15 +160,15 @@
 
                 Recipe recipe = new Recipe(name, duration, itemizeKeys(inputs), itemizeKeys(outputs));
                 Built = RecipeNode.Create(recipe, graph);
-                this.Built.BeaconModules.OverrideProductivityBonus = efficiency;
+                Built.BeaconModules.OverrideProductivityBonus = efficiency;
 
                 if (target > 0)
                 {
-                    this.Built.DesiredRate = target;
-                    this.Built.RateType = RateType.Manual;
+                    Built.DesiredRate = target;
+                    Built.RateType = RateType.Manual;
                 } else
                 {
-                    this.Built.RateType = RateType.Auto;
+                    Built.RateType = RateType.Auto;
                 }
             }
 
@@ -192,7 +192,7 @@
 
             internal RecipeBuilder Efficiency(double bonus)
             {
-                this.efficiency = bonus;
+                efficiency = bonus;
                 return this;
             }
 
@@ -208,7 +208,7 @@
 
             public BuiltData(ProductionGraph graph)
             {
-                this.Graph = graph;
+                Graph = graph;
             }
 
             public float SupplyRate(string itemName)
@@ -234,7 +234,7 @@
             public float RecipeRate(string name)
             {
                 return Graph.Nodes
-                   .Where(x => x is RecipeNode && ((RecipeNode)x).BaseRecipe.Name == name)
+                   .Where(x => x is RecipeNode node && node.BaseRecipe.Name == name)
                    .Select(x => x.ActualRate)
                    .Sum();
             }
@@ -242,7 +242,7 @@
             internal double RecipeInputRate(string name, string itemName)
             {
                 return Graph.Nodes
-                   .Where(x => x is RecipeNode && ((RecipeNode)x).BaseRecipe.Name == name)
+                   .Where(x => x is RecipeNode node && node.BaseRecipe.Name == name)
                    .Select(x => (RecipeNode)x)
                    .First()
                    .GetSuppliedRate(new Item(itemName));

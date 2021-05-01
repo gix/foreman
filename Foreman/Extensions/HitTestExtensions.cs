@@ -13,8 +13,7 @@ namespace Foreman.Extensions
 
             HitTestResultBehavior Callback(HitTestResult r)
             {
-                var value = r.VisualHit as T;
-                if (value != null)
+                if (r.VisualHit is T value)
                     result.Add(value);
                 return HitTestResultBehavior.Continue;
             }
@@ -31,8 +30,7 @@ namespace Foreman.Extensions
 
             HitTestFilterBehavior Filter(DependencyObject d)
             {
-                var value = d as T;
-                if (value != null)
+                if (d is T value)
                     result.Add(value);
                 return HitTestFilterBehavior.Continue;
             }
@@ -55,8 +53,7 @@ namespace Foreman.Extensions
 
             HitTestFilterBehavior Filter(DependencyObject d)
             {
-                var value = d as T;
-                if (value != null)
+                if (d is T value)
                     result = value;
                 return HitTestFilterBehavior.Continue;
             }

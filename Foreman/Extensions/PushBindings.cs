@@ -60,7 +60,7 @@
     {
         private Binding binding;
 
-        protected Binding Binding => binding ?? (binding = new Binding());
+        protected Binding Binding => binding ??= new Binding();
 
         [DefaultValue(null)]
         public object AsyncState

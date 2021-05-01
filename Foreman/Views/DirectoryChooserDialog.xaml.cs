@@ -18,16 +18,15 @@
 
         private void BrowseButton_Click(object sender, EventArgs e)
         {
-            using (var dialog = new System.Windows.Forms.FolderBrowserDialog()) {
-                if (Directory.Exists(SelectedPath)) {
-                    dialog.SelectedPath = SelectedPath;
-                }
-                var result = dialog.ShowDialog();
+            using var dialog = new System.Windows.Forms.FolderBrowserDialog();
+            if (Directory.Exists(SelectedPath)) {
+                dialog.SelectedPath = SelectedPath;
+            }
+            var result = dialog.ShowDialog();
 
-                if (result == System.Windows.Forms.DialogResult.OK) {
-                    DirTextBox.Text = dialog.SelectedPath;
-                    SelectedPath = dialog.SelectedPath;
-                }
+            if (result == System.Windows.Forms.DialogResult.OK) {
+                DirTextBox.Text = dialog.SelectedPath;
+                SelectedPath = dialog.SelectedPath;
             }
         }
 

@@ -58,11 +58,11 @@
         // Used to ensure uniqueness of variables names
         private int counter;
 
-        enum EndpointType
+        private enum EndpointType
         {
-            SUPPLY,
-            CONSUME,
-            ERROR
+            Supply,
+            Consume,
+            Error
         }
 
         public ProductionSolver()
@@ -110,7 +110,7 @@
             // less than this if the consumer is buffering.
             var linkSolutions = nodes
                 .SelectMany(x => x.OutputLinks)
-                .ToDictionary(x => x, x => SolutionFor(Tuple.Create(x, EndpointType.SUPPLY)));
+                .ToDictionary(x => x, x => SolutionFor(Tuple.Create(x, EndpointType.Supply)));
 
             return new Solution(nodeSolutions, linkSolutions);
         }
@@ -145,7 +145,7 @@
         {
             Debug.Assert(links.All(x => x.Supplier == node));
 
-            AddRatio(node, item, links, rate * node.ProductivityMultiplier(), EndpointType.SUPPLY);
+            AddRatio(node, item, links, rate * node.ProductivityMultiplier(), EndpointType.Supply);
         }
 
         // Constrain a ratio on the input side of a node
@@ -153,7 +153,7 @@
         {
             Debug.Assert(links.All(x => x.Consumer == node));
 
-            AddRatio(node, item, links, rate, EndpointType.CONSUME);
+            AddRatio(node, item, links, rate, EndpointType.Consume);
         }
 
         // Constrain input to a node for a particular item so that the node does not consume more
@@ -167,9 +167,9 @@
             // Each item input/output to a recipe has one varible per link. These variables should be
             // related to one another using one of the other Ratio methods.
             foreach (var link in links) {
-                var supplierVariable = VariableFor(link, EndpointType.SUPPLY);
-                var consumerVariable = VariableFor(link, EndpointType.CONSUME);
-                var errorVariable = VariableFor(link, EndpointType.ERROR);
+                var supplierVariable = VariableFor(link, EndpointType.Supply);
+                var consumerVariable = VariableFor(link, EndpointType.Consume);
+                var errorVariable = VariableFor(link, EndpointType.Error);
 
                 {
                     // The consuming end of the link must be no greater than the supplying end.
@@ -282,16 +282,12 @@
 
         private static string GetNodePrefix(ProductionNode node)
         {
-            switch (node) {
-                case SupplyNode _:
-                    return "supply";
-                case RecipeNode _:
-                    return "recipe";
-                case ConsumerNode _:
-                    return "demand";
-                default:
-                    return "node";
-            }
+            return node switch {
+                SupplyNode => "supply",
+                RecipeNode => "recipe",
+                ConsumerNode => "demand",
+                _ => "node"
+            };
         }
 
         private double SolutionFor(object key)

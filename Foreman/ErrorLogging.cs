@@ -10,7 +10,8 @@
             try {
                 File.AppendAllText(Path.Combine(Application.StartupPath, "errorlog.txt"), message + "\n");
             } catch {
-            } //Not good.
+                // ignored
+            }
         }
     }
 }

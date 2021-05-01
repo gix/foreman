@@ -7,7 +7,7 @@ namespace Foreman
 
     public class MruCollection<T> : IReadOnlyList<T>, INotifyCollectionChanged
     {
-        private readonly ObservableCollection<T> items = new ObservableCollection<T>();
+        private readonly ObservableCollection<T> items = new();
         private int capacity = 10;
 
         public event NotifyCollectionChangedEventHandler CollectionChanged

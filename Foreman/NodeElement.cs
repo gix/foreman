@@ -133,8 +133,8 @@
         public override bool IsDraggable => true;
         public override bool IsSelectable => true;
 
-        public ObservableCollection<Pin> Inputs { get; } = new ObservableCollection<Pin>();
-        public ObservableCollection<Pin> Outputs { get; } = new ObservableCollection<Pin>();
+        public ObservableCollection<Pin> Inputs { get; } = new();
+        public ObservableCollection<Pin> Outputs { get; } = new();
 
         public IEnumerable<Pin> Pins => Inputs.Union(Outputs);
         public IEnumerable<Connector> Connectors => Pins.SelectMany(x => x.Connectors);
@@ -269,12 +269,12 @@
         {
             string line1Format = "{0:0.####}{1}";
             string line2Format = "\n({0:0.####}{1})";
-            string finalString = "";
+            string finalString;
 
             string unit = "";
 
-            var actualAmount = 0.0;
-            var suppliedAmount = 0.0;
+            double actualAmount;
+            double suppliedAmount = 0.0;
 
             if (linkType == PinKind.Input) {
                 actualAmount = DisplayedNode.GetConsumeRate(item);

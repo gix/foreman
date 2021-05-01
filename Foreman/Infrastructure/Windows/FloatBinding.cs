@@ -56,7 +56,7 @@ namespace Foreman.Infrastructure.Windows
         }
 
         private string EffectiveStringFormat =>
-            effectiveStringFormat ?? (effectiveStringFormat = GetEffectiveStringFormat(StringFormat));
+            effectiveStringFormat ??= GetEffectiveStringFormat(StringFormat);
 
         object IValueConverter.ConvertBack(
             object value, Type targetType, object parameter, CultureInfo culture)

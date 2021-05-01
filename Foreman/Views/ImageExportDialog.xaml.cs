@@ -110,7 +110,7 @@
             bounds.Width *= scale;
             bounds.Height *= scale;
             bounds.Width += margin.Left + margin.Right;
-            bounds.Height +=  margin.Top + margin.Bottom;
+            bounds.Height += margin.Top + margin.Bottom;
 
             graph.Offset = new Vector(bounds.X, bounds.Y);
             viewer.Width = bounds.Width;
@@ -124,23 +124,25 @@
         {
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
-            using (var output = File.Create(path))
-                encoder.Save(output);
+            using var output = File.Create(path);
+            encoder.Save(output);
         }
 
         private static BitmapSource RenderElement(FrameworkElement element)
         {
             var rootVisual = VisualTreeHelper.GetParent(element) == null ? element : null;
 
-            using (new HwndSource(new HwndSourceParameters()) { RootVisual = rootVisual }) {
-                element.Dispatcher.Flush(DispatcherPriority.Render);
+            using var source = new HwndSource(new HwndSourceParameters()) {
+                RootVisual = rootVisual
+            };
 
-                var width = (int)element.ActualWidth;
-                var height = (int)element.ActualHeight;
-                var rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
-                rtb.Render(element);
-                return rtb;
-            }
+            element.Dispatcher.Flush(DispatcherPriority.Render);
+
+            var width = (int)element.ActualWidth;
+            var height = (int)element.ActualHeight;
+            var rtb = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+            rtb.Render(element);
+            return rtb;
         }
     }
 }

@@ -14,7 +14,7 @@
 
         public static GoogleSolver Create()
         {
-            return new GoogleSolver();
+            return new();
         }
 
         public GoogleSolver()

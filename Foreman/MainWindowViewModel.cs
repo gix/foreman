@@ -22,8 +22,8 @@ namespace Foreman
         private readonly IMainWindow view;
 
         private string currentGraphFile;
-        private List<Item> unfilteredItemList = new List<Item>();
-        private List<Recipe> unfilteredRecipeList = new List<Recipe>();
+        private List<Item> unfilteredItemList = new();
+        private List<Recipe> unfilteredRecipeList = new();
         private Difficulty difficulty;
         private Language selectedLanguage;
         private Item selectedItem;
@@ -82,7 +82,7 @@ namespace Foreman
         public AsyncDelegateCommand AddRecipesCommand { get; }
 
         public ObservableCollection<Language> Languages { get; } =
-            new ObservableCollection<Language>();
+            new();
 
         private string windowTitle = "Foreman";
 
@@ -102,7 +102,7 @@ namespace Foreman
             }
         }
 
-        public ObservableCollection<Item> ItemList { get; } = new ObservableCollection<Item>();
+        public ObservableCollection<Item> ItemList { get; } = new();
 
         public Item SelectedItem
         {
@@ -110,7 +110,7 @@ namespace Foreman
             set => SetProperty(ref selectedItem, value);
         }
 
-        public ObservableCollection<Recipe> RecipeList { get; } = new ObservableCollection<Recipe>();
+        public ObservableCollection<Recipe> RecipeList { get; } = new();
         public IList<Recipe> SelectedRecipes { get; } = new ObservableCollection<Recipe>();
 
         public Difficulty Difficulty
@@ -231,14 +231,10 @@ namespace Foreman
                 }
             }
 
-            if (Settings.Default.EnabledMods == null)
-                Settings.Default.EnabledMods = new StringCollection();
-            if (Settings.Default.EnabledAssemblers == null)
-                Settings.Default.EnabledAssemblers = new StringCollection();
-            if (Settings.Default.EnabledMiners == null)
-                Settings.Default.EnabledMiners = new StringCollection();
-            if (Settings.Default.EnabledModules == null)
-                Settings.Default.EnabledModules = new StringCollection();
+            Settings.Default.EnabledMods ??= new StringCollection();
+            Settings.Default.EnabledAssemblers ??= new StringCollection();
+            Settings.Default.EnabledMiners ??= new StringCollection();
+            Settings.Default.EnabledModules ??= new StringCollection();
 
             switch (Settings.Default.FactorioDifficulty) {
                 case "normal":
@@ -265,8 +261,7 @@ namespace Foreman
             Languages.AddRange(DataCache.Current.Languages);
             SelectedLanguage = DataCache.Current.Languages.FirstOrDefault(l => l.Name == Settings.Default.Language);
 
-            if (Settings.Default.RecentGraphs == null)
-                Settings.Default.RecentGraphs = new StringCollection();
+            Settings.Default.RecentGraphs ??= new StringCollection();
 
             foreach (var recentGraph in Settings.Default.RecentGraphs)
                 RecentGraphs.Add(recentGraph);
@@ -309,13 +304,13 @@ namespace Foreman
                 optionList.Add(itemOutputOption);
                 foreach (Recipe recipe in DataCache.Current.RecipesSupplying(item)) {
                     optionList.Add(new RecipeChoice(recipe,
-                        string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
+                        $"Create '{recipe.FriendlyName}' recipe node", recipe.FriendlyName));
                 }
                 optionList.Add(itemSupplyOption);
 
                 foreach (Recipe recipe in DataCache.Current.RecipesConsuming(item)) {
                     optionList.Add(new RecipeChoice(recipe,
-                        string.Format("Create '{0}' recipe node", recipe.FriendlyName), recipe.FriendlyName));
+                        $"Create '{recipe.FriendlyName}' recipe node", recipe.FriendlyName));
                 }
 
                 var c = await optionList.ChooseAsync(source, PlacementMode.Right);

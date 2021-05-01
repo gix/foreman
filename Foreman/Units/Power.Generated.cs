@@ -9,7 +9,7 @@ namespace Foreman.Units
     using System;
     using System.Globalization;
 
-    public partial struct Power
+    public readonly partial struct Power
       : IQuantity<Power>
     {
         public Power(double watts)

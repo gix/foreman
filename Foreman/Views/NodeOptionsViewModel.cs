@@ -13,9 +13,9 @@ namespace Foreman.Views
     public class NodeOptionsViewModel : ViewModel
     {
         private readonly BindableCollection<ModuleSlot> modules =
-            new BindableCollection<ModuleSlot>();
+            new();
         private readonly BeaconModuleList beaconModules =
-            new BeaconModuleList(true);
+            new(true);
 
         private bool canEditAssembler;
         private RateType rateType;
@@ -219,7 +219,7 @@ namespace Foreman.Views
 
         private void UpdateModules()
         {
-            if (BaseNode is EffectableNode node && node.Modules is ModuleSet moduleSet) {
+            if (BaseNode is EffectableNode { Modules: ModuleSet moduleSet }) {
                 moduleSet.Resize(modules.Count);
                 for (int i = 0; i < modules.Count; ++i)
                     moduleSet[i] = modules[i].Module;

@@ -2,7 +2,6 @@
 {
     using System;
     using System.IO;
-    using System.IO.Compression;
     using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
@@ -33,17 +32,17 @@
 
         public static BitmapSource LoadImage(string filePath, int? iconSize = null)
         {
-            using (var stream = File.OpenRead(filePath))
-                return LoadImage(stream, iconSize);
+            using var stream = File.OpenRead(filePath);
+            return LoadImage(stream, iconSize);
         }
 
         public static BitmapSource LoadImage(Stream source, int? iconSize = null)
         {
-            if (!source.CanSeek && source is DeflateStream deflateStream) {
+            if (!source.CanSeek) {
                 // BitmapImage assumes that unseekable streams are downloaded
                 // from the web and starts a background thread. Cache the
                 // deflate stream manually.
-                source = CacheStream(deflateStream);
+                source = CacheStream(source);
             }
 
             var image = new BitmapImage();
@@ -61,11 +60,9 @@
 
         public static MemoryStream CacheStream(this Stream stream)
         {
-            using (stream) {
-                var buffer = new MemoryStream();
-                stream.CopyTo(buffer);
-                return buffer;
-            }
+            var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            return buffer;
         }
     }
 }

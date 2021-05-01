@@ -11,7 +11,7 @@
         public string Category { get; set; }
         public Dictionary<Item, float> Results { get; }
         public Dictionary<Item, float> Ingredients { get; }
-        public bool IsMissingRecipe { get; set; } = false;
+        public bool IsMissingRecipe { get; set; }
         public bool IsCyclic { get; set; }
         private BitmapSource uniqueIcon;
 
@@ -60,11 +60,11 @@
 
         public override bool Equals(object obj)
         {
-            if (!(obj is Recipe)) {
+            if (obj is not Recipe recipe) {
                 return false;
             }
 
-            return (obj as Recipe) == this;
+            return recipe == this;
         }
 
         public static bool operator ==(Recipe recipe1, Recipe recipe2)
@@ -73,7 +73,7 @@
                 return true;
             }
 
-            if ((object)recipe1 == null || (object)recipe2 == null) {
+            if (recipe1 is null || recipe2 is null) {
                 return false;
             }
 

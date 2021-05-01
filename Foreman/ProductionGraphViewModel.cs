@@ -40,10 +40,10 @@ namespace Foreman
         }
 
         public ObservableCollection<GraphElement> Elements { get; } =
-            new ObservableCollection<GraphElement>();
+            new();
 
         public ObservableCollection<GraphElement> SelectedItems { get; } =
-            new ObservableCollection<GraphElement>();
+            new();
 
         public ProductionGraph Graph
         {
@@ -245,13 +245,13 @@ namespace Foreman
                     optionList.Add(itemOutputOption);
                     foreach (Recipe recipe in DataCache.Current.RecipesSupplying(item).Where(IsEligible)) {
                         optionList.Add(new RecipeChoice(recipe,
-                            string.Format("Create '{0}' recipe node", recipe.FriendlyName),
+                            $"Create '{recipe.FriendlyName}' recipe node",
                             recipe.FriendlyName));
                     }
                     optionList.Add(itemSupplyOption);
                     foreach (Recipe recipe in DataCache.Current.RecipesConsuming(item)) {
                         optionList.Add(new RecipeChoice(recipe,
-                            string.Format("Create '{0}' recipe node", recipe.FriendlyName),
+                            $"Create '{recipe.FriendlyName}' recipe node",
                             recipe.FriendlyName));
                     }
 
@@ -572,7 +572,7 @@ namespace Foreman
                                 }
                             }
 
-                        ((RecipeNode)newNode).Modules = ModuleSelector.Load(node);
+                            ((RecipeNode)newNode).Modules = ModuleSelector.Load(node);
                             break;
                         }
                     default: {
@@ -671,8 +671,7 @@ namespace Foreman
 
         private Rect ComputeGraphBounds(Thickness? margin = null)
         {
-            if (margin == null)
-                margin = new Thickness(80);
+            margin ??= new Thickness(80);
 
             var pos = new Point(double.MaxValue, double.MaxValue);
             foreach (NodeElement element in Elements.OfType<NodeElement>())

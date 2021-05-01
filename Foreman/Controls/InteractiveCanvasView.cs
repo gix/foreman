@@ -100,7 +100,7 @@ namespace Foreman.Controls
         private IInteractiveCanvasViewModel ViewModel => DataContext as IInteractiveCanvasViewModel;
 
         private List<InteractiveCanvasItem> SelectedItems { get; } =
-            new List<InteractiveCanvasItem>();
+            new();
 
         private IEnumerable<UIElement> SelectedDraggables
         {
@@ -463,7 +463,7 @@ namespace Foreman.Controls
         private class DragHandler : MouseGestureHandler
         {
             private readonly InteractiveCanvasView view;
-            private readonly List<Entry> draggedElements = new List<Entry>();
+            private readonly List<Entry> draggedElements = new();
 
             private InteractiveCanvasItem deferredSelectElement;
             private Point startPosition;
@@ -530,7 +530,7 @@ namespace Foreman.Controls
                 draggedElements.Clear();
             }
 
-            private struct Entry
+            private readonly struct Entry
             {
                 private readonly UIElement element;
                 private readonly Point startingPosition;

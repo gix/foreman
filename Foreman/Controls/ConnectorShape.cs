@@ -23,7 +23,7 @@
         ///   Cached pen based on <see cref="Thickness"/> to widen the line
         ///   geometry.
         /// </summary>
-        private Pen wideningPen = new Pen(Brushes.Black, 2.0);
+        private Pen wideningPen = new(Brushes.Black, 2.0);
 
         protected Pen WideningPen => wideningPen;
 

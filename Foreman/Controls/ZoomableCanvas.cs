@@ -138,7 +138,7 @@
         /// </returns>
         private static object CoerceRenderTransform(DependencyObject d, object value)
         {
-            if (d is ZoomableCanvas canvas && canvas.ApplyTransform) {
+            if (d is ZoomableCanvas { ApplyTransform: true }) {
                 var transform = new TransformGroup();
                 transform.Children.Add(new ScaleTransform());
                 transform.Children.Add(new TranslateTransform());

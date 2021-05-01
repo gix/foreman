@@ -13,7 +13,7 @@
 
     public class Pin : GraphElement
     {
-        private readonly HashSet<Connector> connectors = new HashSet<Connector>();
+        private readonly HashSet<Connector> connectors = new();
         private string label;
         private ImageSource icon;
         private Point hotspot;

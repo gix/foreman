@@ -163,10 +163,10 @@ namespace Foreman
         {
             if (IsExecuting)
                 return false;
-            if (parameter is T)
-                return canExecute((T)parameter);
+            if (parameter is T t)
+                return canExecute(t);
             if (parameter == null && default(T) == null)
-                return canExecute(default(T));
+                return canExecute(default);
             return false;
         }
 

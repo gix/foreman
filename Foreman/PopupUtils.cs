@@ -63,7 +63,7 @@ namespace Foreman
         private static Stack<Popup> nestedPopups;
 
         private static Stack<Popup> NestedPopups =>
-            nestedPopups ?? (nestedPopups = new Stack<Popup>());
+            nestedPopups ??= new Stack<Popup>();
 
         public static Popup CreatePopup(object content)
         {
@@ -125,8 +125,7 @@ namespace Foreman
 
         private static void FocusContent(Popup popup)
         {
-            if (popup.Child is Border root &&
-                root.Child is ContentPresenter presenter &&
+            if (popup.Child is Border { Child: ContentPresenter presenter } root &&
                 VisualTreeHelper.GetChildrenCount(presenter) > 0 &&
                 VisualTreeHelper.GetChild(presenter, 0) is IInputElement ie) {
                 FocusManager.SetFocusedElement(root, ie);

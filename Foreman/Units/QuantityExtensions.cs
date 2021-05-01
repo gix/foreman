@@ -21,7 +21,7 @@
            where T : IQuantity
         {
             IEnumerable<double> values = enumerable.Select(x => x.RawValue);
-            double average = Enumerable.Average(values);
+            double average = values.Average();
             return (T)Activator.CreateInstance(typeof(T), average);
         }
 

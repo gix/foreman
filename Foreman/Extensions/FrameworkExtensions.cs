@@ -45,8 +45,8 @@ namespace Foreman.Extensions
             if (owner is Window window)
                 return dialog.ShowDialog(window);
 
-            using (var hwndSource = HwndSource.FromHwnd(owner.Handle))
-                return dialog.ShowDialog(hwndSource?.RootVisual as Window);
+            using var hwndSource = HwndSource.FromHwnd(owner.Handle);
+            return dialog.ShowDialog(hwndSource?.RootVisual as Window);
         }
 
         public static T GetRootVisual<T>(this DependencyObject obj) where T : Visual
@@ -154,8 +154,7 @@ namespace Foreman.Extensions
 
             for (obj = obj.GetVisualOrLogicalParent(); obj != null;
                  obj = obj.GetVisualOrLogicalParent()) {
-                var ancestor = obj as TAncestor;
-                if (ancestor != null && predicate(ancestor))
+                if (obj is TAncestor ancestor && predicate(ancestor))
                     return ancestor;
             }
 
@@ -189,7 +188,7 @@ namespace Foreman.Extensions
             where T : DependencyObject
         {
             if (obj == null)
-                return default(T);
+                return default;
 
             for (int idx = 0; idx < VisualTreeHelper.GetChildrenCount(obj); ++idx) {
                 DependencyObject child = VisualTreeHelper.GetChild(obj, idx);

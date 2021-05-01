@@ -38,7 +38,7 @@
     public class LocalizedStringDictionary
     {
         private readonly Dictionary<(string, string), string> dictionary =
-            new Dictionary<(string, string), string>();
+            new();
 
         public void Clear()
         {
@@ -130,7 +130,7 @@
 
     public class DataCache
     {
-        private static DataCache current = new DataCache();
+        private static DataCache current = new();
 
         public static DataCache Current
         {
@@ -147,33 +147,33 @@
         private string ModPath => Settings.Default.FactorioModPath;
 
         private Mod coreMod;
-        public List<Mod> Mods { get; set; } = new List<Mod>();
-        public List<Language> Languages { get; } = new List<Language>();
+        public List<Mod> Mods { get; set; } = new();
+        public List<Language> Languages { get; } = new();
 
         public string Difficulty { get; set; } = "normal";
         private const string DefaultLocale = "en";
 
-        public Dictionary<string, Item> Items { get; } = new Dictionary<string, Item>();
-        public Dictionary<string, Recipe> Recipes { get; } = new Dictionary<string, Recipe>();
-        public Dictionary<string, Assembler> Assemblers { get; } = new Dictionary<string, Assembler>();
-        public Dictionary<string, Miner> Miners { get; } = new Dictionary<string, Miner>();
-        public Dictionary<string, Resource> Resources { get; } = new Dictionary<string, Resource>();
-        public Dictionary<string, Module> Modules { get; } = new Dictionary<string, Module>();
-        public Dictionary<string, Beacon> Beacons { get; } = new Dictionary<string, Beacon>();
-        public Dictionary<string, Inserter> Inserters { get; } = new Dictionary<string, Inserter>();
+        public Dictionary<string, Item> Items { get; } = new();
+        public Dictionary<string, Recipe> Recipes { get; } = new();
+        public Dictionary<string, Assembler> Assemblers { get; } = new();
+        public Dictionary<string, Miner> Miners { get; } = new();
+        public Dictionary<string, Resource> Resources { get; } = new();
+        public Dictionary<string, Module> Modules { get; } = new();
+        public Dictionary<string, Beacon> Beacons { get; } = new();
+        public Dictionary<string, Inserter> Inserters { get; } = new();
 
-        private const float defaultRecipeTime = 0.5f;
+        private const float DefaultRecipeTime = 0.5f;
         private static readonly Dictionary<BitmapSource, Color> colorCache =
-            new Dictionary<BitmapSource, Color>();
+            new();
         public BitmapSource UnknownIcon;
 
         private LocalizedStringDictionary localeFiles =
-            new LocalizedStringDictionary();
+            new();
 
-        public Dictionary<string, Exception> FailedFiles { get; } = new Dictionary<string, Exception>();
-        public Dictionary<string, Exception> FailedModRegistrations { get; } = new Dictionary<string, Exception>();
+        public Dictionary<string, Exception> FailedFiles { get; } = new();
+        public Dictionary<string, Exception> FailedModRegistrations { get; } = new();
 
-        public Dictionary<string, byte[]> ZipHashes { get; } = new Dictionary<string, byte[]>();
+        public Dictionary<string, byte[]> ZipHashes { get; } = new();
 
         public IEnumerable<Recipe> RecipesSupplying(Item item)
         {
@@ -400,7 +400,9 @@
                     string infoJson = File.ReadAllText(Path.Combine(dir, "info.json"));
                     newLanguage.LocalName = (string)JObject.Parse(infoJson)["language-name"];
                 } catch {
+                    // ignored
                 }
+
                 Languages.Add(newLanguage);
             }
         }
@@ -441,8 +443,8 @@
         private void AddLuaPackagePath(Lua lua, string dir)
         {
             try {
-                string luaCommand = string.Format("package.path = package.path .. ';{0}{1}?.lua'", dir,
-                    Path.DirectorySeparatorChar);
+                string luaCommand =
+                    $"package.path = package.path .. ';{dir}{Path.DirectorySeparatorChar}?.lua'";
                 luaCommand = luaCommand.Replace("\\", "\\\\");
                 lua.DoString(luaCommand);
             } catch (Exception ex) {
@@ -555,11 +557,10 @@
 
         private void ReadModInfoZip(string zipFile)
         {
-            using (var archive = new ZipArchive(File.OpenRead(zipFile), ZipArchiveMode.Read)) {
-                var infoEntry = archive.GetEntry("info.json") ?? GetEntryIgnoreCaseSlow(archive, "info.json");
-                if (infoEntry != null)
-                    ReadModInfo(infoEntry.ReadAllText(), zipFile);
-            }
+            using var archive = new ZipArchive(File.OpenRead(zipFile), ZipArchiveMode.Read);
+            var infoEntry = archive.GetEntry("info.json") ?? GetEntryIgnoreCaseSlow(archive, "info.json");
+            if (infoEntry != null)
+                ReadModInfo(infoEntry.ReadAllText(), zipFile);
         }
 
         private ZipArchiveEntry GetEntryIgnoreCaseSlow(ZipArchive archive, string name)
@@ -651,12 +652,11 @@
             foreach (Mod mod in mods.Where(m => m.Enabled)) {
                 var localeDir = Path.Combine("locale", locale);
                 foreach (var file in mod.EnumerateFiles(localeDir, "*.cfg")) {
-                    using (var stream = file.Open()) {
-                        try {
-                            await LoadLocaleFileAsync(stream, localeFiles);
-                        } catch (Exception ex) when (failedFiles != null) {
-                            failedFiles[file.Name] = ex;
-                        }
+                    using var stream = file.Open();
+                    try {
+                        await LoadLocaleFileAsync(stream, localeFiles);
+                    } catch (Exception ex) when (failedFiles != null) {
+                        failedFiles[file.Name] = ex;
                     }
                 }
             }
@@ -667,23 +667,22 @@
         private static async Task LoadLocaleFileAsync(
             Stream file, LocalizedStringDictionary newLocaleFiles)
         {
-            using (var stream = new StreamReader(file)) {
-                string iniSection = "none";
+            using var stream = new StreamReader(file);
+            string iniSection = "none";
 
-                while (!stream.EndOfStream) {
-                    string line = await stream.ReadLineAsync();
-                    if (line == null)
-                        break;
+            while (!stream.EndOfStream) {
+                string line = await stream.ReadLineAsync();
+                if (line == null)
+                    break;
 
-                    if (line.StartsWith("[") && line.EndsWith("]")) {
-                        iniSection = line.Trim('[', ']');
-                        continue;
-                    }
-
-                    string[] split = line.Split('=');
-                    if (split.Length == 2)
-                        newLocaleFiles[iniSection, split[0].Trim()] = split[1].Trim();
+                if (line.StartsWith("[") && line.EndsWith("]")) {
+                    iniSection = line.Trim('[', ']');
+                    continue;
                 }
+
+                string[] split = line.Split('=');
+                if (split.Length == 2)
+                    newLocaleFiles[iniSection, split[0].Trim()] = split[1].Trim();
             }
         }
 
@@ -755,8 +754,7 @@
             if (icon == null)
                 return Colors.LightGray;
 
-            Color result;
-            if (colorCache.TryGetValue(icon, out result))
+            if (colorCache.TryGetValue(icon, out Color result))
                 return result;
 
             result = icon.ComputeAvgColor();
@@ -851,9 +849,8 @@
                 Dictionary<Item, float> ingredients = ExtractIngredientsFromLuaRecipe(values);
                 Dictionary<Item, float> results = ExtractResultsFromLuaRecipe(values);
 
-                if (name == null)
-                    name = results.ElementAt(0).Key.Name;
-                Recipe newRecipe = new Recipe(name, time == 0.0f ? defaultRecipeTime : time, ingredients, results);
+                name ??= results.ElementAt(0).Key.Name;
+                Recipe newRecipe = new Recipe(name, time == 0.0f ? DefaultRecipeTime : time, ingredients, results);
 
                 newRecipe.Category = values.StringOrDefault("category", "crafting");
                 newRecipe.Icon = LoadModImage(values);
@@ -1104,12 +1101,11 @@
 
                 var effectivity = values.FloatOrDefault("distribution_effectivity", 1);
 
-                int moduleSlots = values.IntOrDefault("module_slots");
+                int moduleSlots;
                 if (values["module_specification"] is LuaTable t)
                     moduleSlots = t.IntOrDefault("module_slots");
-                else {
+                else
                     moduleSlots = values.IntOrDefault("module_slots");
-                }
 
                 var beacon = new Beacon(
                     name, allowedEffects, effectivity, moduleSlots);
@@ -1232,7 +1228,7 @@
         }
 
         public static readonly List<string> LocaleCategories =
-            new List<string> { "item-name", "fluid-name", "entity-name", "equipment-name" };
+            new() { "item-name", "fluid-name", "entity-name", "equipment-name" };
 
         public string GetLocalizedString(string category, string name)
         {

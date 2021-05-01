@@ -7,7 +7,7 @@ namespace Foreman
 
     public sealed class PositionConverter : TypeConverter
     {
-        private readonly LengthConverter lengthConverter = new LengthConverter();
+        private readonly LengthConverter lengthConverter = new();
 
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {

@@ -2,6 +2,7 @@ namespace Foreman.Controls
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Security;
     using System.Security.Permissions;
@@ -12,7 +13,7 @@ namespace Foreman.Controls
 
     public class PopupEx : Popup
     {
-        private static readonly object Mutex = new object();
+        private static readonly object Mutex = new();
         private static PropertyInfo pshIsChildPopupProperty;
         private static MethodInfo pshConnectedToForegroundWindowMethod;
         private static FieldInfo pshWindowField;
@@ -87,6 +88,8 @@ namespace Foreman.Controls
 
         private static class PopupSecurityHelper
         {
+            [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members",
+                Justification = "Used by reflection")]
             private static void BuildWindow(
                 object psh, int x, int y, Visual placementTarget,
                 bool transparent, HwndSourceHook hook, AutoResizedEventHandler handler,
@@ -157,7 +160,8 @@ namespace Foreman.Controls
                 }
 
                 // initialize the private critical window object
-                pshWindowField.SetValue(psh, securityCriticalDataClassOfWindowCtor.Invoke(new object[] { newWindow }));
+                pshWindowField.SetValue(psh, securityCriticalDataClassOfWindowCtor.Invoke(
+                    new object[] { newWindow }));
 
                 // Set background color
                 var hwndTarget = newWindow.CompositionTarget;

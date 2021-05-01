@@ -26,11 +26,11 @@
         private const int BottomRight = 8;
         private const double ShadowDepth = 5;
 
-        private static readonly object Mutex = new object();
+        private static readonly object Mutex = new();
         private static Brush[] commonBrushes;
         private static CornerRadius commonCornerRadius;
 
-        private Brush[] brushes;
+        private Brush[] roundedBrushes;
 
         /// <summary>
         ///   Identifies the <see cref="Color"/> dependency property.
@@ -137,7 +137,7 @@
 
         private static void ClearBrushes(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((SystemDropShadowChrome)d).brushes = null;
+            ((SystemDropShadowChrome)d).roundedBrushes = null;
         }
 
         private static Brush[] CreateBrushes(Color c, CornerRadius cornerRadius)
@@ -247,7 +247,7 @@
         {
             double gradientScale = 1.0 / (cornerRadius + ShadowDepth);
             var stops = new GradientStopCollection {
-                new GradientStop(c, (0.5 + cornerRadius) * gradientScale)
+                new(c, (0.5 + cornerRadius) * gradientScale)
             };
 
             Color color = c;
@@ -283,11 +283,11 @@
 
             if (c == ((SolidColorBrush)commonBrushes[Center]).Color &&
                 cornerRadius == commonCornerRadius) {
-                brushes = null;
+                roundedBrushes = null;
                 return commonBrushes;
             }
 
-            return brushes ?? (brushes = CreateBrushes(c, cornerRadius));
+            return roundedBrushes ??= CreateBrushes(c, cornerRadius);
         }
 
         /// <inheritdoc/>

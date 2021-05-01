@@ -18,13 +18,13 @@
 
         public static HashSet<T> ToSet<T>(this IEnumerable<T> enumerable)
         {
-            return new HashSet<T>(enumerable);
+            return new(enumerable);
         }
 
         public static HashSet<TValue> ToSet<T, TValue>(
             this IEnumerable<T> enumerable, Func<T, TValue> selector)
         {
-            return new HashSet<TValue>(enumerable.Select(selector));
+            return new(enumerable.Select(selector));
         }
 
         public static int RemoveWhere<T>(this ICollection<T> collection, Predicate<T> match)
@@ -68,10 +68,9 @@
         }
 
         public static TValue GetValueOrDefault<TKey, TValue>(
-            this IDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue = default(TValue))
+            this IDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue = default)
         {
-            TValue value;
-            if (dictionary.TryGetValue(key, out value))
+            if (dictionary.TryGetValue(key, out TValue value))
                 return value;
             return defaultValue;
         }
@@ -80,8 +79,7 @@
             this IDictionary<TKey, TValue> dictionary, TKey key,
             Func<TKey, TValue> defaultValueFactory)
         {
-            TValue value;
-            if (dictionary.TryGetValue(key, out value))
+            if (dictionary.TryGetValue(key, out TValue value))
                 return value;
             return defaultValueFactory(key);
         }
@@ -89,8 +87,7 @@
         public static TValue GetOrAdd<TKey, TValue>(
             this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
         {
-            TValue existingValue;
-            if (dictionary.TryGetValue(key, out existingValue))
+            if (dictionary.TryGetValue(key, out TValue existingValue))
                 return existingValue;
             dictionary.Add(key, value);
             return value;
@@ -100,10 +97,9 @@
             this IDictionary<TKey, TValue> dictionary, TKey key,
             Func<TKey, TValue> valueFactory)
         {
-            TValue existingValue;
-            if (dictionary.TryGetValue(key, out existingValue))
+            if (dictionary.TryGetValue(key, out TValue existingValue))
                 return existingValue;
-            var value = valueFactory(key);
+            TValue value = valueFactory(key);
             dictionary.Add(key, value);
             return value;
         }

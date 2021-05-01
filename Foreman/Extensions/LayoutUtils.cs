@@ -24,7 +24,7 @@
 
         public static Thickness RoundLayoutValue(Thickness value, DpiScale dpi)
         {
-            return new Thickness(
+            return new(
                 RoundLayoutValue(value.Left, dpi.DpiScaleX),
                 RoundLayoutValue(value.Top, dpi.DpiScaleY),
                 RoundLayoutValue(value.Right, dpi.DpiScaleX),
