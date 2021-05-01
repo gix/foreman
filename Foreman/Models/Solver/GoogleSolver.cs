@@ -19,7 +19,7 @@
 
         public GoogleSolver()
         {
-            solver = Solver.CreateSolver("Foreman", "GLOP_LINEAR_PROGRAMMING");
+            solver = Solver.CreateSolver("GLOP_LINEAR_PROGRAMMING");
             variables = new List<Variable>();
             constraints = new List<Constraint>();
         }

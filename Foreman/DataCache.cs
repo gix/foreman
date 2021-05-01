@@ -206,6 +206,7 @@
                 FindAllMods(enabledMods);
 
                 AddLuaPackagePath(lua, Path.Combine(DataPath, "core", "lualib")); //Core lua functions
+                AddLuaPackagePath(lua, Path.Combine(DataPath, "base")); // Base mod
                 string basePackagePath = (string)lua["package.path"];
 
                 string dataloaderFile = Path.Combine(DataPath, "core", "lualib", "dataloader.lua");
@@ -219,6 +220,25 @@
                 }
 
                 lua.DoString(@"
+                    local orig_require = require
+
+                    function relative_require(modname)
+                      if string.match(modname, '__.+__[/%.]') then
+                        return orig_require(string.gsub(modname, '__.+__[/%.]', ''))
+                      end
+                      local regular_loader = package.searchers[2]
+                      local loader = function(inner)
+                        if string.match(modname, '(.*)%.') then
+                          return regular_loader(string.match(modname, '(.*)%.') .. '.' .. inner)
+                        end
+                      end
+                      table.insert(package.searchers, 1, loader)
+                      local result = orig_require(modname)
+                      table.remove(package.searchers, 1)
+                      return result
+                    end
+                    _G.require = relative_require
+
                     function module(modname,...)
                     end
 
