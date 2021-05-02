@@ -89,6 +89,12 @@
         <Separator/>
         <MenuItem Header="E_xit" Command="{Binding ExitCommand}" InputGestureText="Alt+F4"/>
       </MenuItem>
+      <MenuItem Header="_Data">
+        <MenuItem Header="_Reload" Command="{Binding ReloadDataCommand}"/>
+      </MenuItem>
+      <MenuItem Header="_Help">
+        <MenuItem Header="Show Lua Log" Command="{Binding ShowLuaLogCommand}"/>
+      </MenuItem>
     </Menu>
     <Grid>
       <Grid.ColumnDefinitions>
@@ -205,9 +211,9 @@
               <RowDefinition/>
               <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <TextBox Margin="3"
+            <TextBox Grid.Row="0" Margin="3"
                      Text="{Binding ItemFilterText, UpdateSourceTrigger=PropertyChanged}"
-                     KeyDown="FilterTextBox_KeyDown"/>
+                     PreviewKeyDown="FilterTextBox_KeyDown"/>
             <ListBox x:Name="ItemListView" Grid.Row="1" Margin="3"
                      ItemsSource="{Binding ItemList}"
                      SelectedItem="{Binding SelectedItem}"
@@ -219,10 +225,10 @@
                   <b:InvokeCommandAction Command="{Binding AddItemsCommand}"
                                          CommandParameter="{Binding ElementName=ItemListView}"/>
                 </b:EventTrigger>
-                <v:KeyDownEventTrigger Key="Enter">
+                <b:KeyTrigger Key="Enter">
                   <b:InvokeCommandAction Command="{Binding AddItemsCommand}"
                                          CommandParameter="{Binding ElementName=ItemListView}"/>
-                </v:KeyDownEventTrigger>
+                </b:KeyTrigger>
               </b:Interaction.Triggers>
             </ListBox>
             <Button x:Name="AddItemButton" Grid.Row="2" Margin="2" Content="Add Item"
@@ -251,9 +257,9 @@
                 <b:EventTrigger EventName="MouseDoubleClick">
                   <b:InvokeCommandAction Command="{Binding AddRecipesCommand}"/>
                 </b:EventTrigger>
-                <v:KeyDownEventTrigger Key="Enter">
+                <b:KeyTrigger Key="Enter">
                   <b:InvokeCommandAction Command="{Binding AddRecipesCommand}"/>
-                </v:KeyDownEventTrigger>
+                </b:KeyTrigger>
               </b:Interaction.Triggers>
               <b:Interaction.Behaviors>
                 <f:SelectedItemsBehavior SelectedItems="{Binding SelectedRecipes}"/>

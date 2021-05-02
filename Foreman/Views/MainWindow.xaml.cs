@@ -12,22 +12,6 @@ namespace Foreman.Views
         void Close();
     }
 
-    public class KeyDownEventTrigger : Microsoft.Xaml.Behaviors.EventTrigger
-    {
-        public KeyDownEventTrigger()
-            : base("KeyDown")
-        {
-        }
-
-        public Key Key { get; set; }
-
-        protected override void OnEvent(EventArgs eventArgs)
-        {
-            if (eventArgs is KeyEventArgs e && e.Key == Key)
-                InvokeActions(eventArgs);
-        }
-    }
-
     public partial class MainWindow : IMainWindow
     {
         public MainWindow()
@@ -37,67 +21,38 @@ namespace Foreman.Views
 
         private void FilterTextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (ItemListView.Items.Count == 0) {
+            if (ItemListView.Items.Count == 0)
                 return;
-            }
-            //int currentSelection;
-            //if (ItemListView.SelectedIndices.Count == 0) {
-            //    currentSelection = -1;
-            //} else {
-            //    currentSelection = ItemListView.SelectedIndices[0];
-            //}
+
             if (e.Key == Key.Down) {
-                //int newSelection = currentSelection + 1;
-                //if (newSelection >= ItemListView.Items.Count) newSelection = ItemListView.Items.Count - 1;
-                //if (newSelection <= 0) newSelection = 0;
-                //ItemListView.SelectedIndices.Clear();
-                //ItemListView.SelectedIndices.Add(newSelection);
+                ItemListView.SelectedIndex = Math.Min(
+                    ItemListView.SelectedIndex + 1, ItemListView.Items.Count);
                 e.Handled = true;
             } else if (e.Key == Key.Up) {
-                //int newSelection = currentSelection - 1;
-                //if (newSelection == -1) newSelection = 0;
-                //ItemListView.SelectedIndices.Clear();
-                //ItemListView.SelectedIndices.Add(newSelection);
+                ItemListView.SelectedIndex = Math.Max(
+                    ItemListView.SelectedIndex - 1, 0);
                 e.Handled = true;
             } else if (e.Key == Key.Enter) {
-                AddItemButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                AddItemButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent, this));
             }
         }
 
         private void RecipeFilterTextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            //if (RecipeListView.Items.Count == 0)
-            //    return;
+            if (RecipeListView.Items.Count == 0)
+                return;
 
-            //int currentSelection;
-            //if (RecipeListView.SelectedIndices.Count == 0) {
-            //    currentSelection = -1;
-            //} else {
-            //    currentSelection = RecipeListView.SelectedIndices[0];
-            //}
             if (e.Key == Key.Down) {
-                RecipeListView.SelectedIndex += 1;
-                //    int newSelection = currentSelection + 1;
-                //    if (newSelection >= RecipeListView.Items.Count) newSelection = RecipeListView.Items.Count - 1;
-                //    if (newSelection <= 0) newSelection = 0;
-                //    RecipeListView.SelectedIndices.Clear();
-                //    RecipeListView.SelectedIndices.Add(newSelection);
+                RecipeListView.SelectedIndex = Math.Min(
+                    RecipeListView.SelectedIndex + 1, RecipeListView.Items.Count);
                 e.Handled = true;
             } else if (e.Key == Key.Up) {
-                RecipeListView.SelectedIndex -= 1;
-                //    int newSelection = currentSelection - 1;
-                //    if (newSelection == -1) newSelection = 0;
-                //    RecipeListView.SelectedIndices.Clear();
-                //    RecipeListView.SelectedIndices.Add(newSelection);
+                RecipeListView.SelectedIndex = Math.Max(
+                    RecipeListView.SelectedIndex - 1, 0);
                 e.Handled = true;
             } else if (e.Key == Key.Enter) {
-                AddRecipeButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                AddRecipeButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent, this));
             }
-        }
-
-        private void ItemListView_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            AddItemButton.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
         }
 
         private void ItemListViewItem_MouseMove(object sender, MouseEventArgs e)

@@ -8,7 +8,10 @@ namespace Foreman
     using System.Linq;
     using System.Threading.Tasks;
     using System.Windows;
+    using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
+    using System.Windows.Data;
+    using System.Windows.Media;
     using Extensions;
     using Microsoft.Win32;
     using Newtonsoft.Json;
@@ -17,7 +20,7 @@ namespace Foreman
     using Properties;
     using Views;
 
-    public class MainWindowViewModel : ViewModel
+    public class MainWindowViewModel : ViewModel, ILogger
     {
         private readonly IMainWindow view;
 
@@ -33,6 +36,7 @@ namespace Foreman
         private string recipeFilterText = string.Empty;
         private AmountType amountType = AmountType.FixedAmount;
         private RateUnit selectedRateUnit = RateUnit.PerSecond;
+        private string luaOutput = string.Empty;
 
         public MainWindowViewModel(IMainWindow view)
         {
@@ -55,9 +59,11 @@ namespace Foreman
             ChangeFactorioDirectoryCommand = new AsyncDelegateCommand(ChangeFactorioDirectory);
             ChangeModDirectoryCommand = new AsyncDelegateCommand(ChangeModDirectory);
             ReloadCommand = new AsyncDelegateCommand(Reload);
+            ReloadDataCommand = new AsyncDelegateCommand(ReloadData);
             EnableDisableCommand = new AsyncDelegateCommand(EnableDisable);
             AddItemsCommand = new AsyncDelegateCommand<UIElement>(AddItems, CanAddItems);
             AddRecipesCommand = new AsyncDelegateCommand(AddRecipes, CanAddRecipes);
+            ShowLuaLogCommand = new AsyncDelegateCommand(ShowLuaLog);
         }
 
         public ProductionGraphViewModel GraphViewModel { get; }
@@ -77,12 +83,13 @@ namespace Foreman
         public AsyncDelegateCommand ChangeFactorioDirectoryCommand { get; }
         public AsyncDelegateCommand ChangeModDirectoryCommand { get; }
         public AsyncDelegateCommand ReloadCommand { get; }
+        public AsyncDelegateCommand ReloadDataCommand { get; }
         public AsyncDelegateCommand EnableDisableCommand { get; }
         public AsyncDelegateCommand<UIElement> AddItemsCommand { get; }
         public AsyncDelegateCommand AddRecipesCommand { get; }
+        public AsyncDelegateCommand ShowLuaLogCommand { get; }
 
-        public ObservableCollection<Language> Languages { get; } =
-            new();
+        public ObservableCollection<Language> Languages { get; } = new();
 
         private string windowTitle = "Foreman";
 
@@ -183,6 +190,18 @@ namespace Foreman
             }
         }
 
+        public string LuaOutput
+        {
+            get => luaOutput;
+            set => SetProperty(ref luaOutput, value);
+        }
+
+        void ILogger.Log(string format, params object?[] args)
+        {
+            string item = string.Format(format, args);
+            LuaOutput += item.Trim() + '\n';
+        }
+
         public async Task Load()
         {
             //I changed the name of the variable, so this copies the value over for people who are upgrading their Foreman version
@@ -193,8 +212,8 @@ namespace Foreman
 
             if (!Directory.Exists(Settings.Default.FactorioPath)) {
                 foreach (string defaultPath in new[] {
-                    Path.Combine(Environment.GetEnvironmentVariable("PROGRAMFILES(X86)"), "Factorio"),
-                    Path.Combine(Environment.GetEnvironmentVariable("ProgramW6432"), "Factorio"),
+                    Path.Combine(Environment.GetEnvironmentVariable("ProgramFiles(x86)")!, "Factorio"),
+                    Path.Combine(Environment.GetEnvironmentVariable("ProgramW6432")!, "Factorio"),
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "Applications",
                         "factorio.app", "Contents")
                 }) //Not actually tested on a Mac
@@ -235,6 +254,8 @@ namespace Foreman
             Settings.Default.EnabledAssemblers ??= new StringCollection();
             Settings.Default.EnabledMiners ??= new StringCollection();
             Settings.Default.EnabledModules ??= new StringCollection();
+
+            DataCache.Current.Logger = this;
 
             switch (Settings.Default.FactorioDifficulty) {
                 case "normal":
@@ -497,7 +518,7 @@ namespace Foreman
 
         private async Task LoadGraph()
         {
-            OpenFileDialog dialog = new OpenFileDialog();
+            var dialog = new OpenFileDialog();
             dialog.Filter = "JSON Files (*.json)|*.json|All files (*.*)|*.*";
             dialog.CheckFileExists = true;
             if (dialog.ShowDialog(view) != true)
@@ -512,7 +533,8 @@ namespace Foreman
                 return;
 
             try {
-                await GraphViewModel.LoadFromJson(JObject.Parse(File.ReadAllText(filePath)));
+                var text = await File.ReadAllTextAsync(filePath);
+                await GraphViewModel.LoadFromJson(JObject.Parse(text));
 
                 currentGraphFile = filePath;
                 RecentGraphs.Add(filePath);
@@ -523,6 +545,13 @@ namespace Foreman
             }
 
             UpdateTitle();
+            UpdateControlValues();
+        }
+
+        private async Task ReloadData()
+        {
+            var mods = DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList();
+            await Task.Run(() => DataCache.Reload(mods));
             UpdateControlValues();
         }
 
@@ -548,13 +577,13 @@ namespace Foreman
             Settings.Default.EnabledModules.Clear();
 
             Settings.Default.EnabledMods.AddRange(DataCache.Current.Mods
-                .Select(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
+                .Select(m => m.Name + "|" + m.Enabled).ToArray());
             Settings.Default.EnabledAssemblers.AddRange(DataCache.Current.Assemblers.Values
-                .Select(a => a.Name + "|" + a.Enabled.ToString()).ToArray());
+                .Select(a => a.Name + "|" + a.Enabled).ToArray());
             Settings.Default.EnabledMiners.AddRange(DataCache.Current.Miners.Values
-                .Select(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
+                .Select(m => m.Name + "|" + m.Enabled).ToArray());
             Settings.Default.EnabledModules.AddRange(DataCache.Current.Modules.Values
-                .Select(m => m.Name + "|" + m.Enabled.ToString()).ToArray());
+                .Select(m => m.Name + "|" + m.Enabled).ToArray());
 
             Settings.Default.Save();
         }
@@ -643,6 +672,47 @@ namespace Foreman
             JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
             await GraphViewModel.LoadFromJson(savedGraph);
             UpdateControlValues();
+        }
+
+        private Window? luaLogWindow;
+
+        private Task ShowLuaLog()
+        {
+            if (luaLogWindow == null) {
+                var textBox = new TextBox {
+                    IsReadOnly = true,
+                    BorderThickness = new Thickness(0),
+                    Background = Brushes.White,
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Visible,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Visible,
+                    FontFamily = new FontFamily("Consolas"),
+                    FontSize = 12,
+                };
+                BindingOperations.SetBinding(
+                    textBox, TextBox.TextProperty,
+                    new Binding(nameof(LuaOutput)) {
+                        Mode = BindingMode.OneWay
+                    });
+
+                var window = new Window {
+                    Owner = Application.Current.MainWindow,
+                    DataContext = this,
+                    Content = textBox,
+                    ResizeMode = ResizeMode.CanResizeWithGrip,
+                    Title = "Lua Log",
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                    Width = 700,
+                    Height = 800,
+                    MinHeight = 100,
+                    MinWidth = 100
+                };
+                window.Closed += (_, _) => luaLogWindow = null;
+                window.Show();
+
+                luaLogWindow = window;
+            }
+
+            return Task.CompletedTask;
         }
     }
 }

@@ -2,6 +2,7 @@ namespace Foreman
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
@@ -15,8 +16,8 @@ namespace Foreman
     {
         private bool registered;
         private bool loaderRegistered;
-        private Lua currLua;
-        private ZipArchive archive;
+        private Lua? currLua;
+        private ZipArchive? archive;
 
         public Mod(string modPath, bool isZippedMod)
         {
@@ -27,14 +28,15 @@ namespace Foreman
         public string ModPath { get; }
         public bool IsZippedMod { get; }
 
-        public string Name { get; set; } = "";
-        public string Title { get; set; } = "";
-        public string Version { get; set; } = "";
-        public Version ParsedVersion { get; set; }
-        public string Description { get; set; } = "";
-        public string Author { get; set; } = "";
-        public List<string> Dependencies { get; set; } = new();
-        public List<ModDependency> ParsedDependencies { get; set; } = new();
+        public string Name { get; init; } = "";
+        public string Version { get; init; } = "";
+        public Version ParsedVersion { get; init; } = new();
+        public string? Title { get; init; }
+        public string? Author { get; init; }
+
+        public List<string> Dependencies { get; } = new();
+        public List<ModDependency> ParsedDependencies { get; } = new();
+
         public bool Enabled { get; set; } = true;
 
         private ZipArchive Archive =>
@@ -81,13 +83,13 @@ namespace Foreman
 
         public void Dispose()
         {
-            archive.Dispose();
+            archive?.Dispose();
         }
 
         public readonly struct ModFile
         {
-            private readonly ZipArchiveEntry entry;
-            private readonly string path;
+            private readonly ZipArchiveEntry? entry;
+            private readonly string? path;
 
             public ModFile(string name, string path)
             {
@@ -108,7 +110,7 @@ namespace Foreman
             public Stream Open()
             {
                 if (entry == null)
-                    return File.OpenRead(path);
+                    return File.OpenRead(path!);
                 return entry.Open();
             }
 
@@ -132,33 +134,58 @@ namespace Foreman
                 yield break;
             }
 
-            Regex regex = ConvertPatternToRegex(searchPattern);
+            Regex regex = ConvertPatternToRegex(relativePath, searchPattern);
             foreach (var entry in Archive.Entries) {
-                if (entry.FullName == relativePath && regex.IsMatch(entry.Name))
+                if (regex.IsMatch(entry.FullName))
                     yield return new ModFile(entry);
             }
         }
 
-        private static Regex ConvertPatternToRegex(string pattern)
+        private static Regex ConvertPatternToRegex(string relativePath, string searchPattern)
         {
-            pattern = pattern.Replace(".", "\\.").Replace("*", ".*");
+            searchPattern = searchPattern.Replace(".", "\\.").Replace("*", ".*");
+            string pattern = relativePath.Replace('\\', '/') + '/' + searchPattern;
             return new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
         }
 
-        public void Load(Lua lua, string filePath)
+        public bool Load(Lua lua, string filePath)
         {
             if (!IsZippedMod) {
                 string dataFile = Path.Combine(ModPath, filePath);
-                if (File.Exists(dataFile))
+                if (File.Exists(dataFile)) {
                     lua.DoFile(dataFile);
+                    return true;
+                }
             } else {
                 var entry = Archive.GetEntry(MakeEntryName(filePath));
-                if (entry != null)
-                    lua.DoString(entry.ReadAllText());
+                if (entry != null) {
+                    var code = entry.ReadAllText();
+                    lua.DoString(code);
+                    return true;
+                }
             }
+
+            return false;
         }
 
-        public Stream OpenFile(string filePath)
+        public object? Loader(Lua lua, string entryName)
+        {
+            if (!IsZippedMod) {
+                string dataFile = Path.Combine(ModPath, entryName);
+                if (File.Exists(dataFile))
+                    return lua.DoFile(dataFile)?[0];
+            } else {
+                var entry = Archive.GetEntry(entryName);
+                if (entry != null) {
+                    var code = entry.ReadAllText();
+                    return lua.DoString(code)?[0];
+                }
+            }
+
+            return null;
+        }
+
+        public Stream? OpenFile(string filePath)
         {
             if (IsZippedMod)
                 return TryGetArchiveEntry(filePath)?.Open();
@@ -170,7 +197,7 @@ namespace Foreman
             return null;
         }
 
-        private ZipArchiveEntry TryGetArchiveEntry(string filePath)
+        private ZipArchiveEntry? TryGetArchiveEntry(string filePath)
         {
             return Archive.GetEntry(MakeEntryName(filePath));
         }
@@ -180,9 +207,9 @@ namespace Foreman
             return $"{Name}_{Version}/{filePath}";
         }
 
-        public BitmapSource LoadImage(string filePath, int? iconSize = null)
+        public BitmapSource? LoadImage(string filePath, int? iconSize = null)
         {
-            using Stream input = OpenFile(filePath);
+            using Stream? input = OpenFile(filePath);
             if (input == null)
                 return null;
             return ImagingExtensions.LoadImage(input, iconSize);
@@ -193,10 +220,10 @@ namespace Foreman
             if (registered)
                 return;
 
-            if (!IsZippedMod)
-                AddPackagePath(lua);
-            else
-                AddPackageSearcher(lua);
+            //if (!IsZippedMod)
+            //    AddPackagePath(lua);
+            //else
+            //    AddPackageSearcher(lua);
 
             currLua = lua;
             registered = true;
@@ -207,10 +234,10 @@ namespace Foreman
             if (!registered)
                 return;
 
-            if (!IsZippedMod)
-                RemovePackagePath(lua);
-            else
-                RemovePackageSearcher(lua);
+            //if (!IsZippedMod)
+            //    RemovePackagePath(lua);
+            //else
+            //    RemovePackageSearcher(lua);
 
             currLua = null;
             registered = false;
@@ -234,7 +261,9 @@ namespace Foreman
         }
 
         private string ReqPath => $"foreman.mods.req.{Name}";
-        private string SearcherPath => $"foreman.mods.req.{Name}.search";
+        private string SearcherPath => $"{ReqPath}.search";
+        private LuaFunction? searcher;
+        private LuaFunction? loader;
 
         private void AddPackageSearcher(Lua lua)
         {
@@ -242,18 +271,18 @@ namespace Foreman
                 lua.DoString($@"
                     if not foreman then foreman = {{}} end
                     if not foreman.mods then foreman.mods = {{}} end
-                    if not foreman.mods.searchers then foreman.mods.req = {{}} end
-                    if not foreman.mods.searchers then foreman.mods.req.{Name} = {{}} end
+                    if not foreman.mods.req then foreman.mods.req = {{}} end
+                    if not foreman.mods.req.{Name} then foreman.mods.req.{Name} = {{}} end
                 ");
 
-                lua.RegisterFunction(ReqPath + ".search_impl", this,
-                    GetType().GetMethod(nameof(PackageSearch), BindingFlags.Instance | BindingFlags.NonPublic));
-                lua.RegisterFunction(ReqPath + ".load_impl", this,
-                    GetType().GetMethod(nameof(PackageLoader), BindingFlags.Instance | BindingFlags.NonPublic));
+                searcher = lua.RegisterFunction(ReqPath + ".search_impl", this,
+                    GetType().GetMethod(nameof(ZipPackageSearch), BindingFlags.Instance | BindingFlags.NonPublic));
+                loader = lua.RegisterFunction(ReqPath + ".load_impl", this,
+                    GetType().GetMethod(nameof(ZipPackageLoader), BindingFlags.Instance | BindingFlags.NonPublic));
 
                 lua.DoString($@"
                     {ReqPath}.load = function(mod, arg)
-                        {ReqPath}.load_impl(mod, arg)
+                        return {ReqPath}.load_impl(mod, arg)
                     end
                     {ReqPath}.search = function(mod)
                         local loader, arg = {ReqPath}.search_impl(mod)
@@ -271,8 +300,15 @@ namespace Foreman
 
         private void RemovePackageSearcher(Lua lua)
         {
+            loader?.Dispose();
+            loader = null;
+            searcher?.Dispose();
+            searcher = null;
+
             lua.DoString($@"
-              for k, v in pairs(package.searchers) do
+              foreman.mods.req.{Name} = nil
+
+              for k, v in ipairs(package.searchers) do
                 if v == {SearcherPath} then
                   table.remove(package.searchers, k)
                   break
@@ -281,7 +317,32 @@ namespace Foreman
             ");
         }
 
-        private object PackageSearch(string modulePath, out object loaderArg)
+        public bool Search(string modulePath, out object? loaderArg)
+        {
+            loaderArg = null;
+            if (IsZippedMod) {
+                string relPath = modulePath.Replace('.', '/') + ".lua";
+
+                var entryName = MakeEntryName(relPath);
+                var entry = Archive.GetEntry(entryName);
+                if (entry == null)
+                    return false;
+
+                loaderArg = entryName;
+            } else {
+                string relPath = modulePath.Replace('.', Path.DirectorySeparatorChar) + ".lua";
+
+                string fullPath = Path.Combine(ModPath, relPath);
+                if (!File.Exists(fullPath))
+                    return false;
+
+                loaderArg = fullPath;
+            }
+
+            return true;
+        }
+
+        private object? ZipPackageSearch(string modulePath, out object? loaderArg)
         {
             var entryName = MakeEntryName(modulePath.Replace('.', '/') + ".lua");
             var entry = Archive.GetEntry(entryName);
@@ -291,36 +352,53 @@ namespace Foreman
             }
 
             loaderArg = entryName;
-            return null;
+            return loader;
         }
 
-        private void PackageLoader(string name, string entryName)
+        private object? ZipPackageLoader(string name, string entryName)
         {
             var entry = Archive.GetEntry(entryName);
-            currLua.DoString(entry.ReadAllText());
+            if (entry == null)
+                return null;
+            var code = entry.ReadAllText();
+            var result = currLua!.DoString(code);
+            return result?[0];
         }
     }
 
     public class ModDependency
     {
-        public ModDependency(string modName, Version version, bool optional, DependencyType versionType)
+        public ModDependency(
+            string modName, ModDependencyKind kind, Version? version, DependencyType versionType)
         {
             ModName = modName;
+            Kind = kind;
             Version = version;
-            Optional = optional;
             VersionType = versionType;
         }
 
         public string ModName { get; }
-        public Version Version { get; }
-        public bool Optional { get; }
+        public ModDependencyKind Kind { get; }
+        public Version? Version { get; }
+        public bool Optional => Kind == ModDependencyKind.Optional || Kind == ModDependencyKind.HiddenOptional;
         public DependencyType VersionType { get; }
+    }
+
+    public enum ModDependencyKind
+    {
+        Required,
+        Optional,
+        HiddenOptional,
+        DoesNotAffectLoaderOrder,
+        Incompatible,
     }
 
     public enum DependencyType
     {
         EqualTo,
         GreaterThan,
-        GreaterThanOrEqual
+        GreaterThanOrEqual,
+        LessThan,
+        LessThanOrEqual
     }
 }

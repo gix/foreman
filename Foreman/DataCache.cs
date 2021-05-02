@@ -2,11 +2,14 @@ namespace Foreman
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
+    using System.Reflection;
     using System.Security.Cryptography;
+    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
@@ -39,8 +42,7 @@ namespace Foreman
 
     public class LocalizedStringDictionary
     {
-        private readonly Dictionary<(string, string), string> dictionary =
-            new();
+        private readonly Dictionary<(string, string), string> dictionary = new();
 
         public void Clear()
         {
@@ -131,6 +133,19 @@ namespace Foreman
         }
     }
 
+    public interface ILogger
+    {
+        void Log(string format, params object?[] args);
+    }
+
+    public class DebugLogger : ILogger
+    {
+        public void Log(string format, params object?[] args)
+        {
+            Debugger.Log(0, null, string.Format(format, args));
+        }
+    }
+
     public class DataCache
     {
         private static DataCache current = new();
@@ -174,7 +189,15 @@ namespace Foreman
         private static readonly Dictionary<BitmapSource, Color> colorCache = new();
         public BitmapSource UnknownIcon { get; }
 
+        [AllowNull]
+        public ILogger Logger
+        {
+            get => logger;
+            set => logger = value ?? new DebugLogger();
+        }
+
         private LocalizedStringDictionary localeFiles = new();
+        private ILogger logger = new DebugLogger();
 
         public Dictionary<string, Exception> FailedFiles { get; } = new();
         public Dictionary<string, Exception> FailedModRegistrations { get; } = new();
@@ -199,20 +222,258 @@ namespace Foreman
         public static async Task Reload(List<string>? enabledMods)
         {
             var newData = new DataCache();
+            newData.Logger = Current.Logger;
             newData.Difficulty = Current.Difficulty;
             await newData.LoadAllData(enabledMods);
             Current = newData;
         }
 
+        private class FactorioLua : Lua
+        {
+            private readonly ILogger logger;
+            private readonly LuaFunction print;
+            private readonly LuaFunction log;
+            private readonly LuaFunction tableSize;
+            private readonly LuaFunction searcher;
+            private readonly LuaFunction loader;
+            private Mod? currentMod;
+            private Dictionary<string, Mod> mods = new();
+
+            public FactorioLua(ILogger logger)
+            {
+                this.logger = logger;
+                logger.Log("LUA: Initializing new interpreter");
+
+                print = RegisterFunction(
+                    "print",
+                    this,
+                    typeof(FactorioLua).GetMethod(
+                        nameof(Print), BindingFlags.Instance | BindingFlags.NonPublic));
+                log = RegisterFunction(
+                    "log",
+                    this,
+                    typeof(FactorioLua).GetMethod(
+                        nameof(Log), BindingFlags.Instance | BindingFlags.NonPublic));
+
+                tableSize = RegisterFunction(
+                    "table_size",
+                    typeof(FactorioLua).GetMethod(
+                        nameof(TableSize), BindingFlags.Static | BindingFlags.NonPublic));
+
+                // Remove all-in-one loader searcher
+                DoString(@"table.remove(package.searchers, 4)");
+                // Remove package.cpath searcher
+                DoString(@"table.remove(package.searchers, 3)");
+                // Remove package.path searcher
+                DoString(@"table.remove(package.searchers, 2)");
+                // Remove package.preload searcher
+                DoString(@"table.remove(package.searchers, 1)");
+
+                searcher = RegisterFunction("__foreman_searcher__", this,
+                    GetType().GetMethod(nameof(PackageSearcher), BindingFlags.Instance | BindingFlags.NonPublic));
+                loader = RegisterFunction("__foreman_loader__", this,
+                    GetType().GetMethod(nameof(PackageLoader), BindingFlags.Instance | BindingFlags.NonPublic));
+
+                DoString(@"
+                    local loader_wrapper = function(modname, arg)
+                        return __foreman_loader__(modname, arg)
+                    end
+                    local searcher_wrapper = function(modname)
+                        local loader, arg = __foreman_searcher__(modname)
+                        if not loader or type(loader) == 'string' then
+                            return loader
+                        end
+                        return loader_wrapper, arg
+                    end
+                    table.insert(package.searchers, searcher_wrapper)
+                ");
+
+                DoString("serpent = require('serpent')");
+            }
+
+            public override void Dispose()
+            {
+                loader.Dispose();
+                searcher.Dispose();
+                tableSize.Dispose();
+                base.Dispose();
+            }
+
+            public void SetMods(List<Mod> mods)
+            {
+                this.mods = mods.ToDictionary(x => x.Name);
+
+                // https://lua-api.factorio.com/latest/Data-Lifecycle.html:
+                //   Additionally, a global table named mods exists that contains
+                //   a mapping of mod name to mod version for all enabled mods.
+
+                NewTable("mods");
+                using var table = GetTable("mods");
+                foreach (Mod mod in mods)
+                    table[mod.Name] = mod.Version;
+            }
+
+            private void Print(params object[] args)
+            {
+                string fmt = args.Length switch {
+                    0 => "\n",
+                    1 => "{0}\n",
+                    2 => "{0}, {1}\n",
+                    3 => "{0}, {1}, {2}\n",
+                    4 => "{0}, {1}, {2}, {3}\n",
+                    { } n => string.Join(", ", Enumerable.Range(0, n - 1).Select(x => "{" + x + '}')) + '\n',
+                };
+
+                logger.Log(fmt, args);
+            }
+
+            private void Log(params object[] args)
+            {
+                string fmt = args.Length switch {
+                    0 => "\n",
+                    1 => "{0}\n",
+                    2 => "{0}, {1}\n",
+                    3 => "{0}, {1}, {2}\n",
+                    4 => "{0}, {1}, {2}, {3}\n",
+                    { } n => string.Join(", ", Enumerable.Range(0, n - 1).Select(x => "{" + x + '}')) + '\n',
+                };
+
+                logger.Log(fmt, args);
+            }
+
+            private static int TableSize(LuaTable table)
+            {
+                return table.Keys.Count;
+            }
+
+            private object? PackageSearcher(string module, out object? loaderArg)
+            {
+                loaderArg = null;
+
+                if (module == "serpent") {
+                    logger.Log("LUA: Resolving [{0}] '{1}' with: <internal module>", currentMod?.Name, module);
+                    return loader;
+                }
+
+                if (module.StartsWith("__")) {
+                    var match = Regex.Match(module, @"\A__(?<mod>[^\\/\.]+)__[/%.](?<path>.+)\z");
+                    if (match.Success) {
+                        string modName = match.Groups["mod"].Value;
+                        string path = match.Groups["path"].Value;
+                        if (mods.TryGetValue(modName, out var explicitMod)) {
+                            if (explicitMod.Search(path, out loaderArg)) {
+                                logger.Log("LUA: Resolving [{0}] '{1}' with: mod='{2}', entry='{3}'", currentMod?.Name, module, explicitMod.Name, loaderArg);
+                                return loader;
+                            }
+                        }
+
+                        logger.Log("LUA: Resolving [{0}] '{1}' with: NOT FOUND!", currentMod?.Name, module);
+                        return null;
+                    }
+                }
+
+                if (currentMod != null && currentMod.Search(module, out loaderArg)) {
+                    logger.Log("LUA: Resolving [{0}] '{1}' with: mod='{2}', entry='{3}'", currentMod.Name, module, currentMod.Name, loaderArg);
+                    return loader;
+                }
+
+                if (mods.TryGetValue("core", out Mod? coreMod)) {
+                    string relPath = module.Replace('.', '/') + ".lua";
+                    string path = Path.Combine(coreMod.ModPath, "lualib", relPath);
+                    if (File.Exists(path)) {
+                        loaderArg = path;
+                        logger.Log("LUA: Resolving [{0}] '{1}' with: mod='{2}', entry='{3}'", currentMod?.Name, module, coreMod.Name, loaderArg);
+                        return loader;
+                    }
+                }
+
+                logger.Log("LUA: Resolving [{0}] '{1}' with: NOT FOUND!", currentMod?.Name, module);
+                return null;
+            }
+
+            private object? PackageLoader(string module, string path)
+            {
+                if (module == "serpent") {
+                    using var stream = GetType().Assembly
+                        .GetManifestResourceStream(typeof(Resources), "Serpent.lua");
+                    return DoString(stream!.ReadAllText())?[0];
+                }
+
+                if (currentMod == null)
+                    return null;
+
+                object? result;
+                if (Path.IsPathRooted(path) && File.Exists(path)) {
+                    //result = DoFile(path)?[0];
+                    result = DoString(File.ReadAllText(path))?[0];
+                } else {
+                    result = currentMod.Loader(this, path);
+                }
+
+                return result;
+            }
+
+            public void PushMod(Mod mod)
+            {
+                currentMod = mod;
+                mod.Register(this);
+            }
+
+            public void PopMod(Mod mod)
+            {
+                mod.Unregister(this);
+                currentMod = null;
+            }
+        }
+
+        private FactorioLua CreateFactorioLua(ILogger logger)
+        {
+            var lua = new FactorioLua(logger);
+
+            var asm = GetType().Assembly;
+            using (var stream = asm.GetManifestResourceStream(typeof(Resources), "FactorioDefines.lua")) {
+                lua.DoString(stream!.ReadAllText());
+            }
+
+            //            lua.DoString(@"
+            //                local orig_require = require
+            //
+            //                function relative_require(modname)
+            //                  if string.match(modname, '__.+__[/%.]') then
+            //                    return orig_require(string.gsub(modname, '__.+__[/%.]', ''))
+            //                  end
+            //
+            //                  local regular_searcher = package.searchers[1]
+            //                  local searcher = function(inner)
+            //                    if string.match(modname, '(.*)%.') then
+            //                      return regular_searcher(string.match(modname, '(.*)%.') .. '.' .. inner)
+            //                    end
+            //                  end
+            //                  table.insert(package.searchers, 1, searcher)
+            //                  local result = orig_require(modname)
+            //                  table.remove(package.searchers, 1)
+            //                  return result
+            //                end
+            //                _G.require = relative_require
+            //");
+
+            //AddLuaPackagePath(lua, Path.Combine(DataPath, "core", "lualib")); // Core lua functions
+            //AddLuaPackagePath(lua, Path.Combine(DataPath, "base")); // Base mod
+
+            return lua;
+        }
+
         private async Task LoadAllData(List<string>? enabledMods)
         {
             Clear();
+            FindAllMods(enabledMods);
 
-            using (var lua = new Lua()) {
-                FindAllMods(enabledMods);
+            var orderedMods = Mods.Where(m => m.Enabled).ToList();
 
-                AddLuaPackagePath(lua, Path.Combine(DataPath, "core", "lualib")); //Core lua functions
-                AddLuaPackagePath(lua, Path.Combine(DataPath, "base")); // Base mod
+            Dictionary<string, Dictionary<string, object>> settingsMap;
+
+            // 1. settings stage
+            using (var lua = CreateFactorioLua(Logger)) {
                 string basePackagePath = (string)lua["package.path"];
 
                 string dataloaderFile = Path.Combine(DataPath, "core", "lualib", "dataloader.lua");
@@ -225,52 +486,46 @@ namespace Foreman
                     return;
                 }
 
+                lua.SetMods(orderedMods);
+
+                lua["package.path"] = basePackagePath;
+                foreach (Mod mod in orderedMods)
+                    mod.Load(lua, "settings.lua");
+                foreach (Mod mod in orderedMods)
+                    mod.Load(lua, "settings-updates.lua");
+                foreach (Mod mod in orderedMods)
+                    mod.Load(lua, "settings-final-fixes.lua");
+
+                settingsMap = ExtractSettings(lua);
+            }
+
+            using (var lua = CreateFactorioLua(Logger)) {
+                string basePackagePath = (string)lua["package.path"];
+
+                string dataloaderFile = Path.Combine(DataPath, "core", "lualib", "dataloader.lua");
+                try {
+                    lua.DoFile(dataloaderFile);
+                } catch (Exception ex) {
+                    FailedFiles[dataloaderFile] = ex;
+                    ErrorLogging.LogLine(
+                        $"Error loading dataloader.lua. This file is required to load any values from the prototypes. Message: '{ex.Message}'");
+                    return;
+                }
+
+                lua.SetMods(orderedMods);
+
                 lua.DoString(@"
-                    local orig_require = require
+                    --function module(modname,...)
+                    --end
 
-                    function relative_require(modname)
-                      if string.match(modname, '__.+__[/%.]') then
-                        return orig_require(string.gsub(modname, '__.+__[/%.]', ''))
-                      end
-                      local regular_loader = package.searchers[2]
-                      local loader = function(inner)
-                        if string.match(modname, '(.*)%.') then
-                          return regular_loader(string.match(modname, '(.*)%.') .. '.' .. inner)
-                        end
-                      end
-                      table.insert(package.searchers, 1, loader)
-                      local result = orig_require(modname)
-                      table.remove(package.searchers, 1)
-                      return result
-                    end
-                    _G.require = relative_require
-
-                    function module(modname,...)
-                    end
-
-                    require ""util""
-                    util = {}
-                    util.table = {}
-                    util.table.deepcopy = table.deepcopy
-                    util.multiplystripes = multiplystripes
-                    util.by_pixel = by_pixel
-                    util.format_number = format_number
-                    util.increment = increment
-
-                    function log(...)
-                    end
-
-                    defines = {}
-                    defines.difficulty_settings = {}
-                    defines.difficulty_settings.recipe_difficulty = {}
-                    defines.difficulty_settings.technology_difficulty = {}
-                    defines.difficulty_settings.recipe_difficulty.normal = 1
-                    defines.difficulty_settings.technology_difficulty.normal = 1
-                    defines.direction = {}
-                    defines.direction.north = 1
-                    defines.direction.east = 2
-                    defines.direction.south = 3
-                    defines.direction.west = 4
+                    --require ""util""
+                    --util = {}
+                    --util.table = {}
+                    --util.table.deepcopy = table.deepcopy
+                    --util.multiplystripes = multiplystripes
+                    --util.by_pixel = by_pixel
+                    --util.format_number = format_number
+                    --util.increment = increment
 
                     settings = {}
                     settings.startup = {}
@@ -281,16 +536,25 @@ namespace Foreman
                     })
 ");
 
-                foreach (Mod mod in Mods.Where(m => m.Enabled)) {
-                    LoadMod(lua, mod, basePackagePath);
+                lua.NewTable("settings");
+                foreach (var entry in settingsMap) {
+                    var key = $"settings.{entry.Key}";
+                    lua.NewTable(key);
+                    using var settingsForType = lua.GetTable(key);
+                    foreach (var subEntry in entry.Value) {
+                        using var t = (LuaTable)lua.DoString("return {}")[0];
+                        t["value"] = subEntry.Value;
+                        settingsForType[subEntry.Key] = t;
+                    }
                 }
+
+                LoadMods(lua, orderedMods, basePackagePath);
 
                 //------------------------------------------------------------------------------------------
                 // Lua files have all been executed, now it's time to extract their data from the lua engine
                 //------------------------------------------------------------------------------------------
 
                 InterpretRawData(lua.GetTable("data.raw"));
-
                 LoadAllLanguages();
                 await ChangeLocaleAsync(DefaultLocale);
             }
@@ -300,33 +564,58 @@ namespace Foreman
             ReportErrors();
         }
 
-        private void LoadMod(Lua lua, Mod mod, string basePackagePath)
+        private static Dictionary<string, Dictionary<string, object>> ExtractSettings(FactorioLua lua)
+        {
+            var map = new Dictionary<string, Dictionary<string, object>>();
+
+            using var data = lua.GetTable("data.raw");
+            foreach (LuaTable settingTable in data.Values) {
+                foreach (LuaTable setting in settingTable.Values) {
+                    string name = setting.String("name");
+                    string type = setting.String("setting_type");
+                    var value = setting["default_value"];
+                    var s = map.GetOrAdd(type, _ => new Dictionary<string, object>());
+                    s.Add(name, value);
+                }
+            }
+
+            return map;
+        }
+
+        private void LoadMods(FactorioLua lua, List<Mod> mods, string basePackagePath)
+        {
+            foreach (string filename in new[] { "data.lua", "data-updates.lua", "data-final-fixes.lua" }) {
+                foreach (var mod in mods) {
+                    LoadMod(lua, mod, basePackagePath, filename);
+                }
+            }
+        }
+
+        private void LoadMod(FactorioLua lua, Mod mod, string basePackagePath, string filename)
         {
             // Mods use relative paths, but if more than one mod is in package.path at once this can be ambiguous
             lua["package.path"] = basePackagePath;
             try {
-                mod.Register(lua);
+                lua.PushMod(mod);
             } catch (Exception ex) {
                 FailedModRegistrations[mod.ModPath] = ex;
                 return;
             }
 
             try {
-                foreach (string filename in new[] { "data.lua", "data-updates.lua", "data-final-fixes.lua" }) {
-                    //Because many mods use the same path to refer to different files, we need to clear the 'loaded' table so Lua doesn't think they're already loaded
-                    lua.DoString(@"
+                //Because many mods use the same path to refer to different files, we need to clear the 'loaded' table so Lua doesn't think they're already loaded
+                lua.DoString(@"
                             for k, v in pairs(package.loaded) do
                                 package.loaded[k] = false
                             end");
 
-                    try {
-                        mod.Load(lua, filename);
-                    } catch (Exception ex) {
-                        FailedFiles[$"__{mod.Name}__/{filename}"] = ex;
-                    }
+                try {
+                    mod.Load(lua, filename);
+                } catch (Exception ex) {
+                    FailedFiles[$"__{mod.Name}__/{filename}"] = ex;
                 }
             } finally {
-                mod.Unregister(lua);
+                lua.PopMod(mod);
                 lua["package.path"] = basePackagePath;
             }
         }
@@ -580,19 +869,27 @@ namespace Foreman
         private void ReadModInfo(string json, string path)
         {
             var obj = JObject.Parse(json);
+
+            string? name = obj.Value<string>("name");
+            string? version = obj.Value<string>("version");
+
+            if (version == null || !Version.TryParse(version, out var parsedVersion))
+                parsedVersion = new Version(0, 0, 0, 0);
+
             var newMod = new Mod(path, File.Exists(path)) {
-                Name = obj.Value<string>("name"),
-                Version = obj.Value<string>("version"),
+                Name = name ?? Path.GetFileName(path),
+                Version = version ?? "",
+                ParsedVersion = parsedVersion,
                 Title = obj.Value<string>("title"),
                 Author = obj.Value<string>("author")
             };
-            foreach (string dep in obj["dependencies"].Values<string>())
-                newMod.Dependencies.Add(dep);
 
-            if (!Version.TryParse(newMod.Version, out var parsedVersion))
-                parsedVersion = new Version(0, 0, 0, 0);
+            JToken? deps = obj["dependencies"];
+            if (deps != null) {
+                foreach (string? dep in deps.Values<string>().NotNull())
+                    newMod.Dependencies.Add(dep);
+            }
 
-            newMod.ParsedVersion = parsedVersion;
             ParseModDependencies(newMod);
 
             Mods.Add(newMod);
@@ -604,42 +901,47 @@ namespace Foreman
                 mod.Dependencies.Add("core");
 
             foreach (string depString in mod.Dependencies) {
-                int token = 0;
+                var match = Regex.Match(depString,
+                    @"\A(?:(?<prefix>\?|\(\?\)|~|!)\ *)?
+                        (?<name>\S.+?)
+                        (?:\ +(?<op><|<=|=|>=|>)\ (?<version>\d+(?:\.\d+)*))?\z",
+                    RegexOptions.IgnorePatternWhitespace);
 
-                string[] split = depString.Split(' ');
+                if (!match.Success)
+                    continue;
 
-                bool optional = false;
-                if (split[token] == "?") {
-                    optional = true;
-                    token++;
-                }
-
-                string modName = split[token];
-                token++;
-
-                Version version = null;
+                Version? version = null;
                 DependencyType versionType = DependencyType.EqualTo;
-                if (split.Length == token + 2) {
-                    switch (split[token]) {
-                        case "=":
-                            versionType = DependencyType.EqualTo;
-                            break;
-                        case ">":
-                            versionType = DependencyType.GreaterThan;
-                            break;
-                        case ">=":
-                            versionType = DependencyType.GreaterThanOrEqual;
-                            break;
-                    }
-                    token++;
 
-                    if (!Version.TryParse(split[token], out version)) {
+                if (match.Groups["version"].Success) {
+                    if (!Version.TryParse(match.Groups["version"].Value, out version))
                         version = new Version(0, 0, 0, 0);
-                    }
-                    token++;
+
+                    versionType = match.Groups["op"]?.Value switch {
+                        "=" => DependencyType.EqualTo,
+                        ">" => DependencyType.GreaterThan,
+                        ">=" => DependencyType.GreaterThanOrEqual,
+                        "<" => DependencyType.LessThan,
+                        "<=" => DependencyType.LessThanOrEqual,
+                        _ => DependencyType.EqualTo
+                    };
                 }
 
-                mod.ParsedDependencies.Add(new ModDependency(modName, version, optional, versionType));
+                ModDependencyKind kind = ModDependencyKind.Required;
+
+                if (match.Groups["prefix"].Success) {
+                    kind = match.Groups["prefix"].Value switch {
+                        "?" => ModDependencyKind.Optional,
+                        "(?)" => ModDependencyKind.HiddenOptional,
+                        "~" => ModDependencyKind.DoesNotAffectLoaderOrder,
+                        "!" => ModDependencyKind.Incompatible,
+                        _ => kind
+                    };
+                }
+
+                var modName = match.Groups["name"].Value;
+                var dep = new ModDependency(modName, kind, version, versionType);
+                mod.ParsedDependencies.Add(dep);
             }
         }
 
@@ -656,7 +958,7 @@ namespace Foreman
             foreach (Mod mod in mods.Where(m => m.Enabled)) {
                 var localeDir = Path.Combine("locale", locale);
                 foreach (var file in mod.EnumerateFiles(localeDir, "*.cfg")) {
-                    using var stream = file.Open();
+                    await using var stream = file.Open();
                     try {
                         await LoadLocaleFileAsync(stream, localeFiles);
                     } catch (Exception ex) when (failedFiles != null) {

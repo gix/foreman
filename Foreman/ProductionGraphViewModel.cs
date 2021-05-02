@@ -275,6 +275,7 @@ namespace Foreman
                         newElement.Position = position;
                         Elements.Add(newElement);
                         Graph.UpdateNodeValues();
+                        position += new Vector(75, 75);
                     }
                 }
             } else if (data.IsDataPresent<HashSet<Recipe>>()) {
@@ -629,6 +630,7 @@ namespace Foreman
 
                 string itemName = (string)nodeLink["Item"]!;
                 if (!DataCache.Current.Items.ContainsKey(itemName)) {
+                    var missingItem = new Item(itemName);
                     missingItem.IsMissingItem = true;
                     DataCache.Current.Items.Add(itemName, missingItem);
                 }
