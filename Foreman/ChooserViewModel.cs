@@ -160,13 +160,25 @@
         {
             Recipe = recipe;
             Inputs = Recipe.Ingredients.Keys.Select(
-                x => $"{x.FriendlyName} ({Recipe.Ingredients[x]})").ToList();
+                x => new ItemQuantity(x, Recipe.Ingredients[x])).ToList();
             Outputs = Recipe.Results.Keys.Select(
-                x => $"{x.FriendlyName} ({Recipe.Results[x]})").ToList();
+                x => new ItemQuantity(x, Recipe.Results[x])).ToList();
         }
 
         public Recipe Recipe { get; }
-        public IReadOnlyList<string> Inputs { get; }
-        public IReadOnlyList<string> Outputs { get; }
+        public IReadOnlyList<ItemQuantity> Inputs { get; }
+        public IReadOnlyList<ItemQuantity> Outputs { get; }
+    }
+
+    public class ItemQuantity
+    {
+        public ItemQuantity(Item item, float quantity)
+        {
+            Item = item;
+            Quantity = quantity;
+        }
+
+        public Item Item { get; }
+        public float Quantity { get; }
     }
 }

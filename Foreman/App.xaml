@@ -123,6 +123,16 @@
       </Grid>
     </DataTemplate>
 
+    <DataTemplate DataType="{x:Type f:ItemQuantity}">
+      <TextBlock>
+        <InlineUIContainer BaselineAlignment="Bottom">
+          <Image Source="{Binding Item.Icon, Mode=OneTime}" Height="16"/>
+        </InlineUIContainer>
+        <Run Text="{Binding Quantity, Mode=OneTime, StringFormat='{}{0}x'}"/>
+        <Run Text="{Binding Item.FriendlyName, Mode=OneTime}"/>
+      </TextBlock>
+    </DataTemplate>
+
     <DataTemplate DataType="{x:Type f:ChooserViewModel}">
       <Grid Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
             FocusManager.IsFocusScope="True"
