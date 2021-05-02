@@ -915,13 +915,13 @@
 
         private static Power ParsePower(string value)
         {
-            if (value.EndsWith("GW"))
+            if (value.EndsWith("GW", StringComparison.OrdinalIgnoreCase))
                 return Power.FromGigawatts(double.Parse(value.Substring(0, value.Length - 2)));
-            if (value.EndsWith("MW"))
+            if (value.EndsWith("MW", StringComparison.OrdinalIgnoreCase))
                 return Power.FromMegawatts(double.Parse(value.Substring(0, value.Length - 2)));
-            if (value.EndsWith("kW"))
+            if (value.EndsWith("kW", StringComparison.OrdinalIgnoreCase))
                 return Power.FromKilowatts(double.Parse(value.Substring(0, value.Length - 2)));
-            if (value.EndsWith("W"))
+            if (value.EndsWith("W", StringComparison.OrdinalIgnoreCase))
                 return new Power(double.Parse(value.Substring(0, value.Length - 1)));
 
             throw new ArgumentException($"Invalid power value '{value}'");
