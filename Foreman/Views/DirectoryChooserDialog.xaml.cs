@@ -6,10 +6,11 @@
 
     public partial class DirectoryChooserDialog
     {
-        public DirectoryChooserDialog(string defaultDirectory)
+        public DirectoryChooserDialog(string defaultDirectory, string title)
         {
             InitializeComponent();
 
+            Title = title;
             SelectedPath = defaultDirectory;
             DirTextBox.Text = SelectedPath;
         }

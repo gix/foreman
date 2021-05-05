@@ -208,7 +208,7 @@ namespace Foreman
             }
 
             if (!Directory.Exists(Settings.Default.FactorioPath)) {
-                var dialog = new DirectoryChooserDialog("");
+                var dialog = new DirectoryChooserDialog("", "Select Factorio directory");
                 if (dialog.ShowDialog(view) == true) {
                     Settings.Default.FactorioPath = dialog.SelectedPath;
                     Settings.Default.Save();
@@ -404,7 +404,7 @@ namespace Foreman
 
         private async Task ChangeFactorioDirectory()
         {
-            var dialog = new DirectoryChooserDialog(Settings.Default.FactorioPath);
+            var dialog = new DirectoryChooserDialog(Settings.Default.FactorioPath, "Select Factorio directory");
             dialog.Title = "Locate the Factorio directory";
             if (dialog.ShowDialog(view.Handle) == true) {
                 Settings.Default.FactorioPath = dialog.SelectedPath;
@@ -418,7 +418,7 @@ namespace Foreman
 
         private async Task ChangeModDirectory()
         {
-            var dialog = new DirectoryChooserDialog(Settings.Default.FactorioModPath);
+            var dialog = new DirectoryChooserDialog(Settings.Default.FactorioModPath, "Select Factorio mods directory");
             dialog.Title = "Locate the mods directory";
             if (dialog.ShowDialog(view) == true) {
                 Settings.Default.FactorioModPath = dialog.SelectedPath;

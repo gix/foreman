@@ -12,6 +12,7 @@
         Width="360"
         SizeToContent="Height"
         ShowInTaskbar="False"
+        ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         e:WindowExtensions.ShowIcon="False">
   <Grid Margin="3">
