@@ -1,14 +1,12 @@
 namespace Foreman
 {
-    using System;
-
     public static class GameUtils
     {
         public static double RoundToNearestTick(double value)
         {
             return value;
             // This seems to give values different from in-game statistics
-            return Math.Ceiling(value * 60d) / 60d;
+            //return Math.Ceiling(value * 60d) / 60d;
         }
 
         public static double GetRate(float recipeTime, double speed)

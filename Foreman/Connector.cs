@@ -26,6 +26,11 @@ namespace Foreman
         public override bool IsDraggable => false;
         public override bool IsSelectable => true;
 
+        protected override GraphElement CreateInstanceCore()
+        {
+            return new Connector(DisplayedLink, Source, Destination);
+        }
+
         public NodeLink DisplayedLink { get; }
 
         public Pin? Source

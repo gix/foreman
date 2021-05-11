@@ -137,8 +137,8 @@ namespace Foreman
 
         public bool CanUltimatelyTakeFrom(ProductionNode node)
         {
-            Queue<ProductionNode> Q = new Queue<ProductionNode>();
-            HashSet<ProductionNode> V = new HashSet<ProductionNode>();
+            var Q = new Queue<ProductionNode>();
+            var V = new HashSet<ProductionNode>();
 
             V.Add(this);
             Q.Enqueue(this);
@@ -260,7 +260,7 @@ namespace Foreman
 
         public static RecipeNode Create(Recipe baseRecipe, ProductionGraph graph)
         {
-            RecipeNode node = new RecipeNode(baseRecipe, graph);
+            var node = new RecipeNode(baseRecipe, graph);
             node.Graph.Nodes.Add(node);
             node.Graph.InvalidateCaches();
             return node;
@@ -382,7 +382,7 @@ namespace Foreman
 
         public static SupplyNode Create(Item item, ProductionGraph graph)
         {
-            SupplyNode node = new SupplyNode(item, graph);
+            var node = new SupplyNode(item, graph);
             node.Graph.Nodes.Add(node);
             node.Graph.InvalidateCaches();
             return node;
@@ -421,7 +421,7 @@ namespace Foreman
                 .FirstOrDefault();
 
             if (miner != null) {
-                var modules = Modules.For(miner, Resource, miner.ModuleSlots);
+                var modules = Modules.For(miner, Resource, miner.ModuleSlots).ToList();
                 var permutation = new MachinePermutation(miner, modules);
                 var required = ActualRate / miner.GetRate(Resource, BeaconModules.GetSpeedBonus(), modules);
                 results.Add(permutation, required);
@@ -498,7 +498,7 @@ namespace Foreman
 
         public static ConsumerNode Create(Item item, ProductionGraph graph)
         {
-            ConsumerNode node = new ConsumerNode(item, graph);
+            var node = new ConsumerNode(item, graph);
             node.Graph.Nodes.Add(node);
             node.Graph.InvalidateCaches();
             return node;
@@ -560,7 +560,7 @@ namespace Foreman
 
         public static PassthroughNode Create(Item item, ProductionGraph graph)
         {
-            PassthroughNode node = new PassthroughNode(item, graph);
+            var node = new PassthroughNode(item, graph);
             node.Graph.Nodes.Add(node);
             node.Graph.InvalidateCaches();
             return node;

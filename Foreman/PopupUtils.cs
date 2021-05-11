@@ -100,7 +100,7 @@ namespace Foreman
         private static void EstablishNestedPopupCapture(Popup popup)
         {
             var popupRoot = GetPopupRoot(popup);
-            if (Mouse.Captured != popupRoot) {
+            if (!ReferenceEquals(Mouse.Captured, popupRoot)) {
                 Mouse.Capture(popupRoot, CaptureMode.SubTree);
                 PopupCacheValidSetter(popup, 1, true);
             }
@@ -155,7 +155,7 @@ namespace Foreman
                 typeof(Popup).GetField("_cacheValid", BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (cacheValidField == null || cacheValidField.FieldType != typeof(BitVector32))
-                return (p, i, v) => { };
+                return (_, _, _) => { };
 
             var popup = Expression.Parameter(typeof(Popup));
             var flagParameter = Expression.Parameter(typeof(int));

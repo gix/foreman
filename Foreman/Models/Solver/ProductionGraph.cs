@@ -67,7 +67,7 @@ namespace Foreman
 
         public void LinkUpAllInputs()
         {
-            HashSet<ProductionNode> nodesToVisit = new HashSet<ProductionNode>(Nodes);
+            var nodesToVisit = new HashSet<ProductionNode>(Nodes);
 
             while (nodesToVisit.Any()) {
                 ProductionNode currentNode = nodesToVisit.First();
@@ -168,7 +168,7 @@ namespace Foreman
         //Returns any nodes that are created
         public IEnumerable<ProductionNode> CreateOrLinkAllPossibleRecipeNodes(ProductionNode node)
         {
-            List<ProductionNode> createdNodes = new List<ProductionNode>();
+            var createdNodes = new List<ProductionNode>();
 
             foreach (Item item in node.Inputs) {
                 var recipePool =
@@ -196,7 +196,7 @@ namespace Foreman
         //Returns any nodes that are created
         public IEnumerable<ProductionNode> CreateOrLinkAllPossibleSupplyNodes(ProductionNode node)
         {
-            List<ProductionNode> createdNodes = new List<ProductionNode>();
+            var createdNodes = new List<ProductionNode>();
 
             var unlinkedItems = node.Inputs.Where(i => node.InputLinks.All(nl => nl.Item != i));
 
@@ -240,8 +240,8 @@ namespace Foreman
         //Each individual node counts as a SCC by itself, but we're only interested in groups so there is a parameter to ignore them
         public IEnumerable<IEnumerable<ProductionNode>> GetStronglyConnectedComponents(bool ignoreSingles)
         {
-            List<List<ProductionNode>> strongList = new List<List<ProductionNode>>();
-            Stack<TarjanNode> S = new Stack<TarjanNode>();
+            var strongList = new List<List<ProductionNode>>();
+            var S = new Stack<TarjanNode>();
             int indexCounter = 0;
 
             var tNodes = Nodes.ToDictionary(n => n, n => new TarjanNode(n));
@@ -268,13 +268,13 @@ namespace Foreman
 
         public IEnumerable<IEnumerable<ProductionNode>> GetConnectedComponents()
         {
-            HashSet<ProductionNode> unvisitedNodes = new HashSet<ProductionNode>(Nodes);
+            var unvisitedNodes = new HashSet<ProductionNode>(Nodes);
 
-            List<HashSet<ProductionNode>> connectedComponents = new List<HashSet<ProductionNode>>();
+            var connectedComponents = new List<HashSet<ProductionNode>>();
 
             while (unvisitedNodes.Any()) {
                 connectedComponents.Add(new HashSet<ProductionNode>());
-                HashSet<ProductionNode> toVisitNext = new HashSet<ProductionNode>();
+                var toVisitNext = new HashSet<ProductionNode>();
                 toVisitNext.Add(unvisitedNodes.First());
 
                 while (toVisitNext.Any()) {
@@ -331,7 +331,7 @@ namespace Foreman
         public List<ProductionNode> GetTopologicalSort()
         {
             int[,] matrix = AdjacencyMatrix;
-            List<ProductionNode> L = new List<ProductionNode>(); //Final sorted list
+            List<ProductionNode> L = new(); //Final sorted list
             List<ProductionNode> S = GetInputlessNodes().ToList();
 
             while (S.Any()) {

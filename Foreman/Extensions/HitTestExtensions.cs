@@ -35,7 +35,7 @@ namespace Foreman.Extensions
                 return HitTestFilterBehavior.Continue;
             }
 
-            HitTestResultBehavior Callback(HitTestResult r)
+            static HitTestResultBehavior Callback(HitTestResult r)
             {
                 return HitTestResultBehavior.Continue;
             }

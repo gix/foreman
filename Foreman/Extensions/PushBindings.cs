@@ -312,9 +312,9 @@ namespace Foreman.Extensions
 
             TargetPropertyValueChanged();
             if (targetObject is FrameworkElement fe)
-                fe.Loaded += (s, e) => TargetPropertyValueChanged();
+                fe.Loaded += (_, _) => TargetPropertyValueChanged();
             else if (targetObject is FrameworkContentElement fce)
-                fce.Loaded += (s, e) => TargetPropertyValueChanged();
+                fce.Loaded += (_, _) => TargetPropertyValueChanged();
         }
 
         private void TargetPropertyValueChanged()

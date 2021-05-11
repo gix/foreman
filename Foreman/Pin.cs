@@ -93,6 +93,11 @@ namespace Foreman
             set => SetProperty(ref isHighlighted, value);
         }
 
+        protected override GraphElement CreateInstanceCore()
+        {
+            return new Pin(Kind, Item, Node);
+        }
+
         internal void RaiseConnectionChanged()
         {
             ConnectionChanged?.Invoke(this, EventArgs.Empty);

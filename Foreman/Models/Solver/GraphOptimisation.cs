@@ -22,7 +22,7 @@ namespace Foreman
 
         public static void OptimiseNodeGroup(IEnumerable<ProductionNode> nodeGroup)
         {
-            ProductionSolver solver = new ProductionSolver();
+            var solver = new ProductionSolver();
 
             foreach (var node in nodeGroup) {
                 node.AddConstraints(solver);

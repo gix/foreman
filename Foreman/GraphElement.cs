@@ -30,10 +30,7 @@ namespace Foreman
             return cloned;
         }
 
-        protected virtual GraphElement CreateInstanceCore()
-        {
-            return null;
-        }
+        protected abstract GraphElement CreateInstanceCore();
 
         protected virtual void CloneCore(GraphElement source)
         {

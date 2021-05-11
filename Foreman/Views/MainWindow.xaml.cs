@@ -7,12 +7,6 @@ namespace Foreman.Views
     using System.Windows.Input;
     using System.Windows.Interop;
 
-    public enum Difficulty
-    {
-        Normal,
-        Expensive
-    }
-
     public interface IMainWindow : IWin32Window
     {
         void Close();
@@ -109,7 +103,7 @@ namespace Foreman.Views
         private void ItemListViewItem_MouseMove(object sender, MouseEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed) {
-                HashSet<Item> draggedItems = new HashSet<Item>();
+                var draggedItems = new HashSet<Item>();
                 foreach (Item item in ItemListView.SelectedItems)
                     draggedItems.Add(item);
                 DragDrop.DoDragDrop(ItemListView, draggedItems, DragDropEffects.Copy);
@@ -119,7 +113,7 @@ namespace Foreman.Views
         private void RecipeListViewItem_MouseMove(object sender, MouseEventArgs e)
         {
             if (e.LeftButton == MouseButtonState.Pressed) {
-                HashSet<Recipe> draggedRecipes = new HashSet<Recipe>();
+                var draggedRecipes = new HashSet<Recipe>();
                 foreach (Recipe recipe in RecipeListView.SelectedItems)
                     draggedRecipes.Add(recipe);
                 DragDrop.DoDragDrop(RecipeListView, draggedRecipes, DragDropEffects.Copy);

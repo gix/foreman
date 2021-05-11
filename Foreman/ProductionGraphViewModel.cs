@@ -559,7 +559,7 @@ namespace Foreman
                                 Item item = DataCache.Current.Items[itemName];
                                 newNode = PassthroughNode.Create(item, Graph);
                             } else {
-                                Item missingItem = new Item(itemName);
+                                var missingItem = new Item(itemName);
                                 missingItem.IsMissingItem = true;
                                 DataCache.Current.Items.Add(itemName, missingItem);
                                 newNode = PassthroughNode.Create(missingItem, Graph);
@@ -572,7 +572,7 @@ namespace Foreman
                                 Recipe recipe = DataCache.Current.Recipes[recipeName];
                                 newNode = RecipeNode.Create(recipe, Graph);
                             } else {
-                                Recipe missingRecipe = new Recipe(recipeName, 0f, new Dictionary<Item, float>(),
+                                var missingRecipe = new Recipe(recipeName, 0f, new Dictionary<Item, float>(),
                                     new Dictionary<Item, float>());
                                 missingRecipe.IsMissingRecipe = true;
                                 DataCache.Current.Recipes.Add(recipeName, missingRecipe);

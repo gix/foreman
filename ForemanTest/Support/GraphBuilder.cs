@@ -99,7 +99,7 @@ namespace ForemanTest
 
         public class SingletonNodeBuilder : ProductionNodeBuilder
         {
-            private Func<Item, ProductionGraph, ProductionNode> createFunction;
+            private readonly Func<Item, ProductionGraph, ProductionNode> createFunction;
 
             public SingletonNodeBuilder(Func<Item, ProductionGraph, ProductionNode> f)
             {
