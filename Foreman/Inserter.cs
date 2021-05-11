@@ -1,4 +1,4 @@
-﻿namespace Foreman
+namespace Foreman
 {
     using System.Windows.Media.Imaging;
 

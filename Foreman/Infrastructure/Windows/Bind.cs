@@ -1,4 +1,4 @@
-﻿namespace Foreman.Infrastructure.Windows
+namespace Foreman.Infrastructure.Windows
 {
     using System.Globalization;
     using System.Windows;

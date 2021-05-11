@@ -1,4 +1,4 @@
-﻿namespace Foreman
+namespace Foreman
 {
     using System;
     using System.Windows;

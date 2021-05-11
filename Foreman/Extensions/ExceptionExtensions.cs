@@ -1,4 +1,4 @@
-﻿namespace Foreman.Extensions
+namespace Foreman.Extensions
 {
     using System;
     using System.Reflection;

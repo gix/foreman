@@ -1,4 +1,4 @@
-﻿namespace Foreman
+namespace Foreman
 {
     using System.Collections;
     using System.Collections.Specialized;

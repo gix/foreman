@@ -1,4 +1,4 @@
-﻿namespace Foreman.Extensions
+namespace Foreman.Extensions
 {
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;

@@ -1,4 +1,4 @@
-﻿namespace Foreman.Units
+namespace Foreman.Units
 {
     using System;
     using System.Collections.Generic;

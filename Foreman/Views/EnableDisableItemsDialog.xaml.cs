@@ -1,4 +1,4 @@
-﻿namespace Foreman.Views
+namespace Foreman.Views
 {
     using System.Collections.ObjectModel;
     using System.Linq;

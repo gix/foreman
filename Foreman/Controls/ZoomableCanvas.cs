@@ -1,4 +1,4 @@
-﻿namespace Foreman.Controls
+namespace Foreman.Controls
 {
     using System;
     using System.Diagnostics.CodeAnalysis;

@@ -1,4 +1,4 @@
-﻿namespace Foreman.Views
+namespace Foreman.Views
 {
     public partial class ProductionGraphViewer
     {

@@ -1,4 +1,4 @@
-﻿namespace Foreman.Units
+namespace Foreman.Units
 {
     public readonly partial struct Power
     {
