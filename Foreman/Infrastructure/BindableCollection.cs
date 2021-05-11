@@ -7,9 +7,9 @@ namespace Foreman.Infrastructure
     public delegate void ItemPropertyChangedHandler<in T>(T item, PropertyChangedEventArgs args);
 
     public class BindableCollection<T> : ObservableCollection<T>
-        where T : INotifyPropertyChanged
+        where T : class, INotifyPropertyChanged
     {
-        public event ItemPropertyChangedHandler<T> ItemPropertyChanged;
+        public event ItemPropertyChangedHandler<T>? ItemPropertyChanged;
 
         protected override void ClearItems()
         {
@@ -31,22 +31,22 @@ namespace Foreman.Infrastructure
             }
         }
 
-        protected virtual void AttachToChild(T item)
+        protected virtual void AttachToChild(T? item)
         {
             if (item != null)
                 item.PropertyChanged += OnItemPropertyChanged;
         }
 
-        protected virtual void DetachFromChild(T item)
+        protected virtual void DetachFromChild(T? item)
         {
             if (item != null)
                 item.PropertyChanged -= OnItemPropertyChanged;
         }
 
         private void OnItemPropertyChanged(
-            object sender, PropertyChangedEventArgs args)
+            object? sender, PropertyChangedEventArgs args)
         {
-            OnItemPropertyChanged((T)sender, args);
+            OnItemPropertyChanged((T)sender!, args);
         }
 
         protected virtual void OnItemPropertyChanged(

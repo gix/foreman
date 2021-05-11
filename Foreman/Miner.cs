@@ -33,13 +33,13 @@ namespace Foreman
         public float MiningPower { get; set; }
 
         public Miner(string name)
+            : base(name)
         {
-            Name = name;
             ResourceCategories = new List<string>();
             Enabled = true;
         }
 
-        public double GetRate(Resource resource, double beaconBonus, IEnumerable<Module> modules = null)
+        public double GetRate(Resource resource, double beaconBonus, IEnumerable<Module>? modules = null)
         {
             return GameUtils.GetMiningRate(resource, MiningPower, GetSpeed(beaconBonus, modules));
         }

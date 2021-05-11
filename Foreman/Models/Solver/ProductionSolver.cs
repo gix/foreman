@@ -3,6 +3,7 @@ namespace Foreman
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Google.OrTools.LinearSolver;
 
@@ -92,7 +93,7 @@ namespace Foreman
         // Returns null if no optimal solution can be found. Technically GLOP can return non-optimal
         // solutions, but since I don't have any inputs that generate those I'm opting on the side of
         // safety by treating those as non-solutions.
-        public Solution Solve()
+        public Solution? Solve()
         {
             // TODO: Can we return an empty solution instead?
             if (nodes.Count == 0)
@@ -272,8 +273,9 @@ namespace Foreman
         }
 
         private Variable VariableFor<T>(T key, Func<T, string> name)
+            where T : class
         {
-            if (allVariables.TryGetValue(key, out Variable variable))
+            if (allVariables.TryGetValue(key, out Variable? variable))
                 return variable;
             var newVar = solver.MakeNumVar(0.0, double.PositiveInfinity, name(key) + ":" + GetSequence());
             allVariables[key] = newVar;

@@ -12,7 +12,7 @@ namespace Foreman.Controls
         private Point deferredSelectOrigin = new(double.PositiveInfinity, double.PositiveInfinity);
 
         private InteractiveCanvasView ParentCanvas =>
-            ItemsControl.ItemsControlFromItemContainer(this) as InteractiveCanvasView;
+            (InteractiveCanvasView)ItemsControl.ItemsControlFromItemContainer(this);
 
         static InteractiveCanvasItem()
         {

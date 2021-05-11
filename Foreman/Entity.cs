@@ -10,6 +10,6 @@ namespace Foreman
         }
 
         public string Name { get; }
-        public BitmapSource Icon { get; set; }
+        public BitmapSource? Icon { get; set; }
     }
 }

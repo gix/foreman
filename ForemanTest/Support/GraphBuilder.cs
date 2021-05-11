@@ -1,4 +1,4 @@
-﻿namespace ForemanTest
+namespace ForemanTest
 {
     using System;
     using System.Collections.Generic;
@@ -44,7 +44,7 @@
             return node;
         }
 
-        internal RecipeBuilder Recipe(string name = null)
+        internal RecipeBuilder Recipe(string? name = null)
         {
             var node = new RecipeBuilder(name);
             nodes.Add(node);
@@ -93,7 +93,7 @@
         public abstract class ProductionNodeBuilder
         {
 
-            public ProductionNode Built { get; protected set; } // TODO: Build if not already
+            public ProductionNode Built { get; protected set; } = null!; // TODO: Build if not already
             internal abstract void Build(ProductionGraph graph);
         }
 
@@ -106,7 +106,7 @@
                 createFunction = f;
             }
 
-            public string itemName { get; private set; }
+            public string itemName { get; private set; } = "";
             public float target { get; private set; }
 
             internal SingletonNodeBuilder Item(string item)
@@ -140,12 +140,12 @@
         {
             private Dictionary<string, float> inputs;
             private Dictionary<string, float> outputs;
-            private string name;
+            private string? name;
             private double efficiency;
 
             public float target { get; private set; }
 
-            internal RecipeBuilder(string name)
+            internal RecipeBuilder(string? name)
             {
                 inputs = new Dictionary<string, float>();
                 outputs = new Dictionary<string, float>();

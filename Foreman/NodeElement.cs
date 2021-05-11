@@ -9,6 +9,7 @@ namespace Foreman
     using System.Windows.Controls.Primitives;
     using System.Windows.Media;
     using Controls;
+    using Foreman.Extensions;
     using Views;
 
     public class NodeElement : GraphElement, IPlacedElement, IContextElement
@@ -19,22 +20,22 @@ namespace Foreman
         private static Color ConsumerColor => Color.FromArgb(0xFF, 0xE7, 0xD6, 0xE0);
         private static Color MissingColor => Color.FromArgb(0xFF, 0xFF, 0x7F, 0x6B);
 
-        private static Popup nodeRatePopup;
+        private static Popup? nodeRatePopup;
 
         private Point position;
         private Size renderSize;
-        private ImageSource icon;
-        private string displayedNumber;
-        private string text;
-        private string balloonText;
+        private ImageSource? icon;
+        private string displayedNumber = string.Empty;
+        private string text = string.Empty;
+        private string? balloonText;
         private Color backgroundColor;
         private bool showText = true;
         private bool showNumber;
         private bool showIcon;
 
         public NodeElement(ProductionNode displayedNode, ProductionGraphViewModel parent)
-            : base(parent)
         {
+            Parent = parent;
             HorizontalAlignment = HorizontalAlignment.Center;
             VerticalAlignment = VerticalAlignment.Center;
             DisplayedNode = displayedNode;
@@ -51,6 +52,8 @@ namespace Foreman
             else
                 throw new ArgumentException("No branch for node: " + DisplayedNode);
         }
+
+        public ProductionGraphViewModel Parent { get; }
 
         public ProductionNode DisplayedNode { get; }
 
@@ -82,7 +85,7 @@ namespace Foreman
             set => RenderSize = new Size(RenderSize.Width, value);
         }
 
-        public ImageSource Icon
+        public ImageSource? Icon
         {
             get => icon;
             set => SetProperty(ref icon, value);
@@ -100,7 +103,7 @@ namespace Foreman
             set => SetProperty(ref text, value);
         }
 
-        public string BalloonText
+        public string? BalloonText
         {
             get => balloonText;
             set => SetProperty(ref balloonText, value);
@@ -230,9 +233,12 @@ namespace Foreman
             }
         }
 
-        private static ImageSource CreateIcon(MachinePermutation permutation)
+        private static ImageSource? CreateIcon(MachinePermutation permutation)
         {
             var assemblerIcon = permutation.Assembler.Icon;
+            if (assemblerIcon == null)
+                return null;
+
             var iconSize = Math.Min(assemblerIcon.Width, assemblerIcon.Height);
 
             var dg = new DrawingGroup();
@@ -322,7 +328,7 @@ namespace Foreman
             Outputs.StableSortBy(GetPinXHeuristic);
         }
 
-        private static NodeElement GetConnectedNode(Pin pin)
+        private static NodeElement? GetConnectedNode(Pin pin)
         {
             if (pin.Kind == PinKind.Input)
                 return pin.Connectors.FirstOrDefault()?.Source?.Node;
@@ -332,11 +338,11 @@ namespace Foreman
 
         private int GetPinXHeuristic(Pin pin)
         {
-            NodeElement node = GetConnectedNode(pin);
-            double factorY = pin.Kind == PinKind.Input ? 1 : -1;
-
+            NodeElement? node = GetConnectedNode(pin);
             if (node == null)
                 return 0;
+
+            double factorY = pin.Kind == PinKind.Input ? 1 : -1;
 
             var p1 = node.Position + (Vector)node.RenderSize / 2;
             var p2 = Position + (Vector)RenderSize / 2;
@@ -390,7 +396,7 @@ namespace Foreman
             return buffer.ToString();
         }
 
-        private string CreateDetails(
+        private string? CreateDetails(
             SupplyNode supplyNode, Dictionary<MachinePermutation, double> permutations)
         {
             if (supplyNode.Resource == null)
@@ -419,7 +425,7 @@ namespace Foreman
 
                 var assembler = permutation.Assembler;
                 buffer.AppendFormat("\n  {0} ({1})", assembler.FriendlyName, kvp.Value);
-                foreach (var module in permutation.Modules.Where(m => m != null))
+                foreach (var module in permutation.Modules.NotNull())
                     buffer.AppendFormat("\n    {0}", module.FriendlyName);
 
                 var baseConsumption = assembler.EnergyUsage;

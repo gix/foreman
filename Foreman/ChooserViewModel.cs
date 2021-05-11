@@ -3,6 +3,7 @@ namespace Foreman
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading.Tasks;
     using System.Windows;
@@ -10,21 +11,21 @@ namespace Foreman
 
     public static class Chooser
     {
-        public static Task<Choice> ChooseAsync(
+        public static Task<Choice?> ChooseAsync(
             this IReadOnlyList<Choice> choices, Point screenPoint)
         {
             var model = new ChooserViewModel(choices);
-            var tcs = new TaskCompletionSource<Choice>();
+            var tcs = new TaskCompletionSource<Choice?>();
             model.Show(screenPoint, c => tcs.SetResult(c));
             return tcs.Task;
         }
 
-        public static Task<Choice> ChooseAsync(
-            this IReadOnlyList<Choice> choices, UIElement placementTarget,
+        public static Task<Choice?> ChooseAsync(
+            this IReadOnlyList<Choice> choices, UIElement? placementTarget,
             PlacementMode placementMode)
         {
             var model = new ChooserViewModel(choices);
-            var tcs = new TaskCompletionSource<Choice>();
+            var tcs = new TaskCompletionSource<Choice?>();
             model.Show(placementTarget, placementMode, c => tcs.SetResult(c));
             return tcs.Task;
         }
@@ -34,9 +35,9 @@ namespace Foreman
     {
         private readonly IReadOnlyList<Choice> allChoices;
         private readonly ObservableCollection<Choice> filteredChoices;
-        private Choice selectedChoice;
-        private Action<Choice> callbackMethod;
-        private Popup popup;
+        private Choice? selectedChoice;
+        private Action<Choice?>? callbackMethod;
+        private Popup? popup;
 
         public ChooserViewModel(IReadOnlyList<Choice> choices)
         {
@@ -44,8 +45,9 @@ namespace Foreman
             filteredChoices = new ObservableCollection<Choice>(choices);
         }
 
-        private string filterText;
+        private string? filterText;
 
+        [MaybeNull]
         public string FilterText
         {
             get => filterText;
@@ -54,7 +56,7 @@ namespace Foreman
                 if (SetProperty(ref filterText, value)) {
                     filteredChoices.Clear();
                     foreach (var choice in allChoices) {
-                        if (choice.FilterText.IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0)
+                        if (choice.FilterText.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0)
                             filteredChoices.Add(choice);
                     }
                 }
@@ -63,13 +65,13 @@ namespace Foreman
 
         public IReadOnlyList<Choice> Choices => filteredChoices;
 
-        public Choice SelectedChoice
+        public Choice? SelectedChoice
         {
             get => selectedChoice;
             set => SetProperty(ref selectedChoice, value);
         }
 
-        public void Show(UIElement placementTarget, PlacementMode placementMode, Action<Choice> callback)
+        public void Show(UIElement? placementTarget, PlacementMode placementMode, Action<Choice?> callback)
         {
             callbackMethod = callback;
 
@@ -79,7 +81,7 @@ namespace Foreman
             popup.IsOpen = true;
         }
 
-        public void Show(Point location, Action<Choice> callback)
+        public void Show(Point location, Action<Choice?> callback)
         {
             callbackMethod = callback;
 
@@ -101,7 +103,7 @@ namespace Foreman
 
         private void Cancel()
         {
-            callbackMethod(null);
+            callbackMethod?.Invoke(null);
             Hide();
         }
 
@@ -116,21 +118,21 @@ namespace Foreman
             return popup;
         }
 
-        private void OnPopupClosed(object sender, EventArgs e)
+        private void OnPopupClosed(object? sender, EventArgs e)
         {
             Cancel();
         }
 
         public void OnItemClicked(Choice choice)
         {
-            callbackMethod(choice);
+            callbackMethod?.Invoke(choice);
             Hide();
         }
     }
 
     public abstract class Choice : ViewModel
     {
-        protected Choice(string displayText, string filterText, object value)
+        protected Choice(string displayText, string? filterText, object? value)
         {
             DisplayText = displayText;
             FilterText = filterText ?? displayText;
@@ -139,23 +141,23 @@ namespace Foreman
 
         public string DisplayText { get; }
         public string FilterText { get; }
-        public object Value { get; }
+        public object? Value { get; }
     }
 
     public class ItemChoice : Choice
     {
-        public ItemChoice(Item item, string displayText, string filterText = null, object value = null)
+        public ItemChoice(Item? item, string displayText, string? filterText = null, object? value = null)
             : base(displayText, filterText, value)
         {
             Item = item;
         }
 
-        public Item Item { get; }
+        public Item? Item { get; }
     }
 
     public class RecipeChoice : Choice
     {
-        public RecipeChoice(Recipe recipe, string text, string filterText = null, object value = null)
+        public RecipeChoice(Recipe recipe, string text, string? filterText = null, object? value = null)
             : base(string.Format(text, recipe.FriendlyName), filterText, value)
         {
             Recipe = recipe;

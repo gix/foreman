@@ -1,12 +1,13 @@
 namespace Foreman
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
 
     public class DependencyGraph
     {
         private readonly List<Mod> mods;
-        private int[,] adjacencyMatrix;
+        private int[,]? adjacencyMatrix;
 
         public DependencyGraph(List<Mod> mods)
         {
@@ -35,9 +36,10 @@ namespace Foreman
         public List<Mod> SortMods()
         {
             UpdateAdjacency();
+            Debug.Assert(adjacencyMatrix != null);
 
-            List<Mod> L = new List<Mod>();
-            HashSet<Mod> S = new HashSet<Mod>();
+            var L = new List<Mod>();
+            var S = new HashSet<Mod>();
 
             // Get all mods with no incoming dependencies
             for (int i = 0; i < mods.Count; i++) {

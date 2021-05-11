@@ -15,7 +15,7 @@ namespace Foreman
     {
         private readonly HashSet<Connector> connectors = new();
         private string label;
-        private ImageSource icon;
+        private ImageSource? icon;
         private Point hotspot;
         private Color fillColor;
         private string balloonText;
@@ -27,12 +27,12 @@ namespace Foreman
             Item = item;
             Node = node;
             Icon = item.Icon;
-            Label = string.Empty;
-            BalloonText = $"{Item.FriendlyName}\nDrag to create a new connection";
+            label = string.Empty;
+            balloonText = $"{Item.FriendlyName}\nDrag to create a new connection";
         }
 
-        public event EventHandler<EventArgs> HotspotUpdated;
-        public event EventHandler<EventArgs> ConnectionChanged;
+        public event EventHandler<EventArgs>? HotspotUpdated;
+        public event EventHandler<EventArgs>? ConnectionChanged;
 
         public override bool IsDraggable => false;
         public override bool IsSelectable => false;
@@ -47,7 +47,7 @@ namespace Foreman
             set => SetProperty(ref label, value);
         }
 
-        public ImageSource Icon
+        public ImageSource? Icon
         {
             get => icon;
             set => SetProperty(ref icon, value);

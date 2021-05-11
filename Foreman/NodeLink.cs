@@ -25,7 +25,7 @@ namespace Foreman
             return supplier.Supplies(item) && consumer.Consumes(item);
         }
 
-        public static NodeLink Create(ProductionNode supplier, ProductionNode consumer, Item item,
+        public static NodeLink? Create(ProductionNode supplier, ProductionNode consumer, Item item,
             float maxAmount = float.PositiveInfinity)
         {
             if (!supplier.Supplies(item) || !consumer.Consumes(item))
@@ -35,7 +35,8 @@ namespace Foreman
                 return null;
             if (supplier.OutputLinks.Any(l => l.Item == item && l.Consumer == consumer))
                 return null;
-            NodeLink link = new NodeLink(supplier, consumer, item, maxAmount);
+
+            var link = new NodeLink(supplier, consumer, item, maxAmount);
             supplier.OutputLinks.Add(link);
             consumer.InputLinks.Add(link);
             supplier.Graph.InvalidateCaches();

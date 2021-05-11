@@ -209,7 +209,7 @@ namespace Foreman
         public abstract bool IsEffectableBy(Module module);
 
         public abstract IEnumerable<ProductionEntity> GetAllowedProductionEntities();
-        public abstract ProductionEntity ProductionEntity { get; set; }
+        public abstract ProductionEntity? ProductionEntity { get; set; }
     }
 
     [Serializable]
@@ -219,7 +219,7 @@ namespace Foreman
 
         // If null, best available assembler should be used, using speed (not number of module slots)
         // as a proxy since "best" can have varying definitions.
-        public Assembler Assembler { get; set; }
+        public Assembler? Assembler { get; set; }
 
         public IEnumerable<Assembler> GetAllowedAssemblers()
         {
@@ -239,10 +239,10 @@ namespace Foreman
             var results = new Dictionary<MachinePermutation, double>();
 
             if (assembler != null) {
-                var modules = Modules.For(Assembler, BaseRecipe, assembler.ModuleSlots);
+                var modules = Modules.For(assembler, BaseRecipe, assembler.ModuleSlots).ToList();
                 var required = ActualRate / assembler.GetRate(
                     BaseRecipe.Time, BeaconModules.GetSpeedBonus(), modules);
-                results.Add(new MachinePermutation(assembler, modules.ToList()), required);
+                results.Add(new MachinePermutation(assembler, modules), required);
             }
 
             return results;
@@ -313,10 +313,10 @@ namespace Foreman
             return GetAllowedAssemblers();
         }
 
-        public override ProductionEntity ProductionEntity
+        public override ProductionEntity? ProductionEntity
         {
             get => Assembler;
-            set => Assembler = (Assembler)value;
+            set => Assembler = (Assembler?)value;
         }
 
         public override float GetConsumeRate(Item item)
@@ -359,11 +359,11 @@ namespace Foreman
     [Serializable]
     public class SupplyNode : EffectableNode
     {
-        private Resource resource;
+        private Resource? resource;
 
         public Item SuppliedItem { get; }
 
-        public Resource Resource =>
+        public Resource? Resource =>
             resource ??= DataCache.Current.Resources.Values.FirstOrDefault(
                 r => r.Result == SuppliedItem);
 
@@ -389,24 +389,24 @@ namespace Foreman
         }
 
         public override string DisplayName => SuppliedItem.FriendlyName;
-        public Miner Miner { get; set; }
+        public Miner? Miner { get; set; }
 
         public override IEnumerable<ProductionEntity> GetAllowedProductionEntities()
         {
             return GetAllowedAssemblers();
         }
 
-        public override ProductionEntity ProductionEntity
+        public override ProductionEntity? ProductionEntity
         {
             get => Miner;
-            set => Miner = (Miner)value;
+            set => Miner = (Miner?)value;
         }
 
         public IEnumerable<Miner> GetAllowedAssemblers()
         {
             return DataCache.Current.Miners.Values
                 .Where(a => a.Enabled)
-                .Where(a => a.ResourceCategories.Contains(Resource.Category));
+                .Where(a => a.ResourceCategories.Contains(Resource!.Category));
         }
 
         public Dictionary<MachinePermutation, double> GetMinimumMiners()

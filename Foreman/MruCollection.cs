@@ -10,7 +10,7 @@ namespace Foreman
         private readonly ObservableCollection<T> items = new();
         private int capacity = 10;
 
-        public event NotifyCollectionChangedEventHandler CollectionChanged
+        public event NotifyCollectionChangedEventHandler? CollectionChanged
         {
             add => items.CollectionChanged += value;
             remove => items.CollectionChanged -= value;

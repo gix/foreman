@@ -2,6 +2,7 @@ namespace Foreman
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
@@ -26,8 +27,9 @@ namespace Foreman
         }
 
         public string Name { get; }
-        private string localName;
+        private string? localName;
 
+        [AllowNull]
         public string LocalName
         {
             get => !string.IsNullOrWhiteSpace(localName) ? localName : Name;
@@ -45,13 +47,14 @@ namespace Foreman
             dictionary.Clear();
         }
 
+        [MaybeNull]
         public string this[string section, string key]
         {
             get => dictionary.GetValueOrDefault((section, key));
             set => dictionary[(section, key)] = value;
         }
 
-        public bool TryGetValue(string section, string key, out string value)
+        public bool TryGetValue(string section, string key, [MaybeNullWhen(false)] out string value)
         {
             return dictionary.TryGetValue((section, key), out value);
         }
@@ -59,7 +62,7 @@ namespace Foreman
 
     public abstract class LocalizationInfo
     {
-        public abstract string Interpolate(LocalizedStringDictionary localized);
+        public abstract string? Interpolate(LocalizedStringDictionary localized);
 
         public static LocalizationInfo Create(
             string section, string name, string placeholderSection, string placeholderName)
@@ -89,7 +92,7 @@ namespace Foreman
                 this.placeholderName = placeholderName;
             }
 
-            public override string Interpolate(LocalizedStringDictionary localized)
+            public override string? Interpolate(LocalizedStringDictionary localized)
             {
                 return localized[section, name]?.Replace(
                     "__1__", localized[placeholderSection, placeholderName]);
@@ -110,7 +113,7 @@ namespace Foreman
                 this.placeholders = placeholders;
             }
 
-            public override string Interpolate(LocalizedStringDictionary localized)
+            public override string? Interpolate(LocalizedStringDictionary localized)
             {
                 var str = localized[section, name];
                 if (str == null)
@@ -132,6 +135,11 @@ namespace Foreman
     {
         private static DataCache current = new();
 
+        public DataCache()
+        {
+            UnknownIcon = LoadUnknownIcon();
+        }
+
         public static DataCache Current
         {
             get => current;
@@ -146,7 +154,7 @@ namespace Foreman
 
         private string ModPath => Settings.Default.FactorioModPath;
 
-        private Mod coreMod;
+        private Mod? coreMod;
         public List<Mod> Mods { get; set; } = new();
         public List<Language> Languages { get; } = new();
 
@@ -163,12 +171,10 @@ namespace Foreman
         public Dictionary<string, Inserter> Inserters { get; } = new();
 
         private const float DefaultRecipeTime = 0.5f;
-        private static readonly Dictionary<BitmapSource, Color> colorCache =
-            new();
-        public BitmapSource UnknownIcon;
+        private static readonly Dictionary<BitmapSource, Color> colorCache = new();
+        public BitmapSource UnknownIcon { get; }
 
-        private LocalizedStringDictionary localeFiles =
-            new();
+        private LocalizedStringDictionary localeFiles = new();
 
         public Dictionary<string, Exception> FailedFiles { get; } = new();
         public Dictionary<string, Exception> FailedModRegistrations { get; } = new();
@@ -190,7 +196,7 @@ namespace Foreman
             return Reload(null);
         }
 
-        public static async Task Reload(List<string> enabledMods)
+        public static async Task Reload(List<string>? enabledMods)
         {
             var newData = new DataCache();
             newData.Difficulty = Current.Difficulty;
@@ -198,7 +204,7 @@ namespace Foreman
             Current = newData;
         }
 
-        private async Task LoadAllData(List<string> enabledMods)
+        private async Task LoadAllData(List<string>? enabledMods)
         {
             Clear();
 
@@ -285,8 +291,6 @@ namespace Foreman
 
                 InterpretRawData(lua.GetTable("data.raw"));
 
-                UnknownIcon = LoadUnknownIcon();
-
                 LoadAllLanguages();
                 await ChangeLocaleAsync(DefaultLocale);
             }
@@ -348,7 +352,7 @@ namespace Foreman
             foreach (string key in itemTypes) {
                 if (rawData[key] is LuaTable table) {
                     foreach (KeyValuePair<object, object> entry in table)
-                        InterpretLuaItem(entry.Key as string, entry.Value as LuaTable);
+                        InterpretLuaItem((string)entry.Key, (LuaTable)entry.Value);
                 }
             }
 
@@ -366,7 +370,7 @@ namespace Foreman
             foreach (var (key, interpreter) in interpreters) {
                 if (rawData[key] is LuaTable table) {
                     foreach (KeyValuePair<object, object> entry in table)
-                        interpreter(entry.Key as string, entry.Value as LuaTable);
+                        interpreter((string)entry.Key, (LuaTable)entry.Value);
                 }
             }
         }
@@ -392,13 +396,13 @@ namespace Foreman
         private void LoadAllLanguages()
         {
             var localeDirs = Directory.EnumerateDirectories(
-                Path.Combine(coreMod.ModPath, "locale"));
+                Path.Combine(coreMod!.ModPath, "locale"));
 
             foreach (string dir in localeDirs) {
                 var newLanguage = new Language(Path.GetFileName(dir));
                 try {
                     string infoJson = File.ReadAllText(Path.Combine(dir, "info.json"));
-                    newLanguage.LocalName = (string)JObject.Parse(infoJson)["language-name"];
+                    newLanguage.LocalName = (string)JObject.Parse(infoJson)["language-name"]!;
                 } catch {
                     // ignored
                 }
@@ -452,7 +456,7 @@ namespace Foreman
             }
         }
 
-        private void FindAllMods(List<string> enabledMods) //Vanilla game counts as a mod too.
+        private void FindAllMods(List<string>? enabledMods) //Vanilla game counts as a mod too.
         {
             if (Directory.Exists(DataPath)) {
                 foreach (string dir in Directory.EnumerateDirectories(DataPath))
@@ -465,14 +469,14 @@ namespace Foreman
                     ReadModInfoZip(zipFile);
             }
 
-            coreMod = Mods.FirstOrDefault(x => x.Name == "core");
+            coreMod = Mods.First(x => x.Name == "core");
 
             var enabledModsFromFile = new Dictionary<string, bool>();
 
             string modListFile = Path.Combine(Settings.Default.FactorioModPath, "mod-list.json");
             if (File.Exists(modListFile)) {
                 string json = File.ReadAllText(modListFile);
-                dynamic parsedJson = JsonConvert.DeserializeObject(json);
+                dynamic parsedJson = JsonConvert.DeserializeObject(json)!;
                 foreach (var mod in parsedJson.mods) {
                     string name = mod.name;
                     bool enabled = (bool)mod.enabled;
@@ -486,8 +490,8 @@ namespace Foreman
                 }
             } else {
                 var splitModStrings = new Dictionary<string, string>();
-                foreach (string s in Settings.Default.EnabledMods) {
-                    var split = s.Split('|');
+                foreach (string? s in Settings.Default.EnabledMods) {
+                    var split = s!.Split('|');
                     splitModStrings.Add(split[0], split[1]);
                 }
                 foreach (Mod mod in Mods) {
@@ -563,7 +567,7 @@ namespace Foreman
                 ReadModInfo(infoEntry.ReadAllText(), zipFile);
         }
 
-        private ZipArchiveEntry GetEntryIgnoreCaseSlow(ZipArchive archive, string name)
+        private ZipArchiveEntry? GetEntryIgnoreCaseSlow(ZipArchive archive, string name)
         {
             foreach (var entry in archive.Entries) {
                 if (entry.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
@@ -645,7 +649,7 @@ namespace Foreman
         }
 
         private static async Task<LocalizedStringDictionary> LoadLocaleFilesAsync(
-            string locale, IEnumerable<Mod> mods, Dictionary<string, Exception> failedFiles = null)
+            string locale, IEnumerable<Mod> mods, Dictionary<string, Exception>? failedFiles = null)
         {
             var localeFiles = new LocalizedStringDictionary();
 
@@ -671,7 +675,7 @@ namespace Foreman
             string iniSection = "none";
 
             while (!stream.EndOfStream) {
-                string line = await stream.ReadLineAsync();
+                string? line = await stream.ReadLineAsync();
                 if (line == null)
                     break;
 
@@ -686,7 +690,7 @@ namespace Foreman
             }
         }
 
-        private BitmapSource LoadModImage(LuaTable values)
+        private BitmapSource? LoadModImage(LuaTable values)
         {
             {
                 var iconSize = values.Int("icon_size");
@@ -697,7 +701,7 @@ namespace Foreman
 
             var icons = values.TableOrDefault("icons");
             if (icons != null) {
-                var baseImagePath = ((LuaTable)icons[1])?.String("icon");
+                var baseImagePath = ((LuaTable)icons[1]).String("icon");
                 var baseImage = LoadModImage(baseImagePath);
                 // FIXME: Handle composite icons
                 return baseImage;
@@ -706,9 +710,9 @@ namespace Foreman
             return null;
         }
 
-        private BitmapSource LoadModImage(string filePath, int? iconSize = null)
+        private BitmapSource? LoadModImage(string filePath, int? iconSize = null)
         {
-            if (TrySplitModPath(filePath, out string modName, out string relativePath)) {
+            if (TrySplitModPath(filePath, out string? modName, out string? relativePath)) {
                 var mod = Mods.FirstOrDefault(x => x.Name == modName);
                 return mod?.LoadImage(relativePath, iconSize);
             }
@@ -727,7 +731,8 @@ namespace Foreman
         }
 
         private static bool TrySplitModPath(
-            string filePath, out string modName, out string relativePath)
+            string filePath, [MaybeNullWhen(false)] out string modName,
+            [MaybeNullWhen(false)] out string relativePath)
         {
             modName = null;
             relativePath = null;
@@ -749,7 +754,7 @@ namespace Foreman
             return true;
         }
 
-        public static Color IconAverageColor(BitmapSource icon)
+        public static Color IconAverageColor(BitmapSource? icon)
         {
             if (icon == null)
                 return Colors.LightGray;
@@ -770,7 +775,7 @@ namespace Foreman
             return result;
         }
 
-        private void InterpretLuaItem(string name, LuaTable values)
+        private void InterpretLuaItem(string? name, LuaTable values)
         {
             if (string.IsNullOrEmpty(name) || Items.ContainsKey(name))
                 return;
@@ -782,7 +787,7 @@ namespace Foreman
             Items.Add(name, newItem);
         }
 
-        private LocalizationInfo GetLocalizationInfo(LuaTable values)
+        private LocalizationInfo? GetLocalizationInfo(LuaTable values)
         {
             var localizedTable = values.TableOrDefault("localised_name");
             if (localizedTable == null || localizedTable.Values.Count != 2)
@@ -814,7 +819,8 @@ namespace Foreman
             return LocalizationInfo.Create(section, name, e);
         }
 
-        private bool SplitKey(string key, out string section, out string name)
+        private bool SplitKey(string key, [MaybeNullWhen(false)] out string section,
+            [MaybeNullWhen(false)] out string name)
         {
             int idx = key.IndexOf('.');
             if (idx != -1) {
@@ -849,11 +855,11 @@ namespace Foreman
                 Dictionary<Item, float> ingredients = ExtractIngredientsFromLuaRecipe(values);
                 Dictionary<Item, float> results = ExtractResultsFromLuaRecipe(values);
 
-                name ??= results.ElementAt(0).Key.Name;
-                Recipe newRecipe = new Recipe(name, time == 0.0f ? DefaultRecipeTime : time, ingredients, results);
-
-                newRecipe.Category = values.StringOrDefault("category", "crafting");
-                newRecipe.Icon = LoadModImage(values);
+                var newRecipe = new Recipe(
+                    name, time == 0.0f ? DefaultRecipeTime : time, ingredients, results) {
+                    Category = values.StringOrDefault("category", "crafting"),
+                    Icon = LoadModImage(values)
+                };
 
                 foreach (Item result in results.Keys)
                     result.Recipes.Add(newRecipe);
@@ -885,15 +891,15 @@ namespace Foreman
                 assembler.Categories.Add(category);
             }
 
-            LuaTable effects = values.TableOrDefault("allowed_effects");
+            LuaTable? effects = values.TableOrDefault("allowed_effects");
             if (effects != null) {
                 foreach (string effect in effects.Values) {
                     assembler.AllowedEffects.Add(effect);
                 }
             }
 
-            foreach (string s in Settings.Default.EnabledAssemblers) {
-                if (s.Split('|')[0] == assembler.Name) {
+            foreach (string? s in Settings.Default.EnabledAssemblers) {
+                if (s!.Split('|')[0] == assembler.Name) {
                     assembler.Enabled = (s.Split('|')[1] == "True");
                 }
             }
@@ -941,7 +947,7 @@ namespace Foreman
 
                 if (values["crafting_categories"] == null) {
                     //Another 0.10 compatibility thing.
-                    LuaTable categories = values.Table("smelting_categories");
+                    LuaTable? categories = values.TableOrDefault("smelting_categories");
                     if (categories != null) {
                         foreach (string category in categories.Values)
                             newFurnace.Categories.Add(category);
@@ -986,15 +992,15 @@ namespace Foreman
                         newMiner.ModuleSlots = moduleTable.IntOrDefault("module_slots");
                 }
 
-                LuaTable categories = values.Table("resource_categories");
+                LuaTable? categories = values.TableOrDefault("resource_categories");
                 if (categories != null) {
                     foreach (string category in categories.Values) {
                         newMiner.ResourceCategories.Add(category);
                     }
                 }
 
-                foreach (string s in Settings.Default.EnabledMiners) {
-                    if (s.Split('|')[0] == name) {
+                foreach (string? s in Settings.Default.EnabledMiners) {
+                    if (s!.Split('|')[0] == name) {
                         newMiner.Enabled = (s.Split('|')[1] == "True");
                     }
                 }
@@ -1015,7 +1021,7 @@ namespace Foreman
                 }
 
                 var category = values.StringOrDefault("category", "basic-solid");
-                LuaTable minableTable = values.TableOrDefault("minable");
+                LuaTable minableTable = values.Table("minable");
                 var hardness = 0; //minableTable.Float("hardness");
                 var miningTime = minableTable.Float("mining_time");
 
@@ -1023,9 +1029,9 @@ namespace Foreman
                 if (minableTable["result"] != null) {
                     result = minableTable.String("result");
                 } else {
-                    result = ((minableTable["results"] as LuaTable)?[1] as LuaTable)?["name"] as string;
-                    if (result == null)
-                        throw new MissingPrototypeValueException(minableTable, "results");
+                    var results = minableTable["results"] as LuaTable;
+                    result = (results?[1] as LuaTable)?["name"] as string ??
+                             throw new MissingPrototypeValueException(minableTable, "results");
                 }
 
                 var resultItem = FindOrCreateUnknownItem(result);
@@ -1043,7 +1049,7 @@ namespace Foreman
         private void InterpretModule(string name, LuaTable values)
         {
             try {
-                string category = values.StringOrDefault("category");
+                string category = values.String("category");
 
                 float speedBonus = 0f;
                 float productivityBonus = 0f;
@@ -1051,35 +1057,32 @@ namespace Foreman
 
                 LuaTable effectTable = values.Table("effect");
 
-                LuaTable speed = effectTable.TableOrDefault("speed");
+                LuaTable? speed = effectTable.TableOrDefault("speed");
                 if (speed != null) {
                     speedBonus = speed.FloatOrDefault("bonus");
                 }
 
-                LuaTable productivity = effectTable.TableOrDefault("productivity");
+                LuaTable? productivity = effectTable.TableOrDefault("productivity");
                 if (productivity != null) {
                     productivityBonus = productivity.FloatOrDefault("bonus");
                 }
 
-                LuaTable consumption = effectTable.TableOrDefault("consumption");
+                LuaTable? consumption = effectTable.TableOrDefault("consumption");
                 if (consumption != null)
                     consumptionBonus = consumption.FloatOrDefault("bonus");
 
                 var limitations = values.TableOrDefault("limitation");
-                List<string> allowedIn = null;
+                List<string>? allowedIn = null;
                 if (limitations != null) {
-                    allowedIn = new List<string>();
-                    foreach (var recipe in limitations.Values) {
-                        allowedIn.Add((string)recipe);
-                    }
+                    allowedIn = limitations.Values.Cast<string>().ToList();
                 }
 
                 var newModule = new Module(
                     name, category, speedBonus, productivityBonus,
                     consumptionBonus, allowedIn);
 
-                foreach (string s in Settings.Default.EnabledModules) {
-                    if (s.Split('|')[0] == name) {
+                foreach (string? s in Settings.Default.EnabledModules) {
+                    if (s!.Split('|')[0] == name) {
                         newModule.Enabled = (s.Split('|')[1] == "True");
                     }
                 }
@@ -1136,7 +1139,7 @@ namespace Foreman
         {
             var results = new Dictionary<Item, float>();
 
-            LuaTable source = null;
+            LuaTable? source = null;
 
             if (values[Difficulty] == null)
                 source = values;
@@ -1155,12 +1158,12 @@ namespace Foreman
                 results.Add(FindOrCreateUnknownItem(resultName), resultCount);
             } else {
                 // If we can't read results, try difficulty/results
-                LuaTable resultsTable = source.TableOrDefault("results");
+                LuaTable? resultsTable = source?.TableOrDefault("results");
 
                 if (resultsTable != null) {
                     foreach (LuaTable resultTable in resultsTable.Values) {
                         Item result = FindOrCreateUnknownItem(
-                            (string)resultTable["name"] ?? (string)resultTable[1]);
+                            (string?)resultTable["name"] ?? (string)resultTable[1]);
 
                         float amount;
                         if (resultTable["amount"] != null) {
@@ -1200,7 +1203,7 @@ namespace Foreman
 
             foreach (LuaTable ingredientTable in ingredientsTable.Values) {
                 // Name and amount often have no key in the prototype
-                string name = (ingredientTable["name"] ?? ingredientTable[1]) as string;
+                string name = (string)(ingredientTable["name"] ?? ingredientTable[1]);
                 float amount = Convert.ToSingle(ingredientTable["amount"] ?? ingredientTable[2]);
 
                 Item ingredient = FindOrCreateUnknownItem(name);
@@ -1237,7 +1240,8 @@ namespace Foreman
             return name;
         }
 
-        public bool TryGetLocalizedString(string category, string name, out string localized)
+        public bool TryGetLocalizedString(
+            string category, string name, [MaybeNullWhen(false)] out string localized)
         {
             if (localeFiles.TryGetValue(category, name, out localized))
                 return true;
@@ -1255,7 +1259,7 @@ namespace Foreman
             return name;
         }
 
-        public string GetLocalizedString(string name, LocalizationInfo locInfo)
+        public string GetLocalizedString(string name, LocalizationInfo? locInfo)
         {
             return locInfo?.Interpolate(localeFiles) ?? GetLocalizedString(name);
         }
@@ -1331,13 +1335,14 @@ namespace Foreman
         public static string String(this LuaTable table, string key)
         {
             if (table[key] != null)
-                return Convert.ToString(table[key]);
+                return Convert.ToString(table[key])!;
 
             throw new MissingPrototypeValueException(table, key, "Key is missing");
         }
 
-        public static string StringOrDefault(
-            this LuaTable table, string key, string defaultValue = null)
+        [return: NotNullIfNotNull("defaultValue")]
+        public static string? StringOrDefault(
+            this LuaTable table, string key, string? defaultValue = null)
         {
             if (table[key] != null)
                 return Convert.ToString(table[key]);
@@ -1347,13 +1352,13 @@ namespace Foreman
         public static LuaTable Table(this LuaTable table, string key)
         {
             if (table[key] != null)
-                return table[key] as LuaTable;
+                return (LuaTable)table[key];
 
             throw new MissingPrototypeValueException(table, key, "Key is missing");
         }
 
-        public static LuaTable TableOrDefault(
-            this LuaTable table, string key, LuaTable defaultValue = null)
+        public static LuaTable? TableOrDefault(
+            this LuaTable table, string key, LuaTable? defaultValue = null)
         {
             if (table[key] != null)
                 return table[key] as LuaTable;

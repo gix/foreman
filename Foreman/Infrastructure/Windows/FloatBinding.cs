@@ -8,8 +8,8 @@ namespace Foreman.Infrastructure.Windows
 
     public class FloatBinding : Bind, IValueConverter
     {
-        private string effectiveStringFormat;
-        private string actualStringValue;
+        private string? effectiveStringFormat;
+        private string? actualStringValue;
 
         public FloatBinding()
         {
@@ -31,7 +31,7 @@ namespace Foreman.Infrastructure.Windows
         public NumberStyles NumberStyles { get; set; } = NumberStyles.Float;
 
         object IValueConverter.Convert(
-            object value, Type targetType, object parameter, CultureInfo culture)
+            object? value, Type targetType, object parameter, CultureInfo culture)
         {
             if (actualStringValue != null) {
                 value = actualStringValue;

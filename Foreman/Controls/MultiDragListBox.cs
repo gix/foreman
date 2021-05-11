@@ -36,7 +36,7 @@ namespace Foreman.Controls
         private bool deferredSelect;
 
         private MultiDragListBox ParentListBox =>
-            ItemsControl.ItemsControlFromItemContainer(this) as MultiDragListBox;
+            (MultiDragListBox)ItemsControl.ItemsControlFromItemContainer(this);
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {

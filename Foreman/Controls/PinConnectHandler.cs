@@ -1,5 +1,6 @@
 namespace Foreman.Controls
 {
+    using System.Diagnostics;
     using System.Threading.Tasks;
     using System.Windows;
     using System.Windows.Controls;
@@ -20,10 +21,10 @@ namespace Foreman.Controls
         }
 
         private DragState state;
-        private FrameworkElementAdorner connectorAdorner;
+        private FrameworkElementAdorner? connectorAdorner;
         private Point startPosition;
-        private Pin sourcePin;
-        private Pin targetPin;
+        private Pin? sourcePin;
+        private Pin? targetPin;
 
         private bool IsActive => state != DragState.None;
 
@@ -45,7 +46,7 @@ namespace Foreman.Controls
             AssociatedObject.PreviewMouseDown -= OnMouseDown;
         }
 
-        private bool MatchesGesture(MouseButtonEventArgs args)
+        private static bool MatchesGesture(MouseButtonEventArgs args)
         {
             return args.ChangedButton == MouseButton.Left &&
                    Keyboard.Modifiers == ModifierKeys.None;
@@ -100,7 +101,7 @@ namespace Foreman.Controls
                 Reset();
         }
 
-        private Pin FindPin(Point point)
+        private Pin? FindPin(Point point)
         {
             return AssociatedObject.HitTestDataContext<NodeElement, Pin>(point);
         }
@@ -139,6 +140,8 @@ namespace Foreman.Controls
 
         private void StartDrag()
         {
+            Debug.Assert(sourcePin != null);
+
             var brush = new SolidColorBrush(
                 DataCache.IconAverageColor(sourcePin.Item.Icon));
 
@@ -168,13 +171,16 @@ namespace Foreman.Controls
 
         private void Update(Point position, Point canvasPos)
         {
+            Debug.Assert(sourcePin != null);
+            Debug.Assert(connectorAdorner != null);
+
             var connector = (ConnectorShape)((Canvas)connectorAdorner.Child).Children[0];
             if (sourcePin.Kind == PinKind.Output)
                 connector.Points = new PointCollection { startPosition, canvasPos };
             else
                 connector.Points = new PointCollection { canvasPos, startPosition };
 
-            Pin candidatePin = FindPin(position);
+            Pin? candidatePin = FindPin(position);
 
             if (targetPin != candidatePin && IsValidTarget(sourcePin, candidatePin)) {
                 if (targetPin != null)
@@ -189,12 +195,14 @@ namespace Foreman.Controls
 
         private async Task FinishDrag(MouseButtonEventArgs args)
         {
+            Debug.Assert(sourcePin != null);
+
             var viewModel = AssociatedObject.DataContext as ProductionGraphViewModel;
             if (viewModel == null)
                 return;
 
             Pin source = sourcePin;
-            Pin target = targetPin;
+            Pin? target = targetPin;
             if (target == null) {
                 var position = args.GetPosition(AssociatedObject);
                 var canvasPos = AssociatedObject.PointToCanvas(position);
@@ -211,7 +219,7 @@ namespace Foreman.Controls
             }
         }
 
-        private static bool IsValidTarget(Pin source, Pin target)
+        private static bool IsValidTarget(Pin source, Pin? target)
         {
             if (target == null)
                 return true;

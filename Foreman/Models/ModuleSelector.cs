@@ -46,8 +46,9 @@ namespace Foreman
                         filter = new ModuleSpecificFilter(DataCache.Current.Modules[moduleKey]);
                     break;
                 case "Custom":
-                    if (token["Modules"] != null) {
-                        var moduleKeys = token["Modules"].Values<string>();
+                    var modulesToken = token["Modules"];
+                    if (modulesToken != null) {
+                        var moduleKeys = modulesToken.Values<string>();
                         filter = new ModuleSet(
                             moduleKeys
                             .Select(x => x != null ? DataCache.Current.Modules.GetValueOrDefault(x) : null));
@@ -177,18 +178,18 @@ namespace Foreman
     }
 
     [Serializable]
-    public class ModuleSet : ModuleSelector, IReadOnlyList<Module>
+    public class ModuleSet : ModuleSelector, IReadOnlyList<Module?>
     {
-        private readonly List<Module> modules;
+        private readonly List<Module?> modules;
 
         public ModuleSet()
         {
-            modules = new List<Module>();
+            modules = new List<Module?>();
         }
 
-        public ModuleSet(IEnumerable<Module> modules)
+        public ModuleSet(IEnumerable<Module?> modules)
         {
-            this.modules = new List<Module>(modules);
+            this.modules = new List<Module?>(modules);
         }
 
         public override string Name => "Custom";
@@ -206,17 +207,17 @@ namespace Foreman
 
         public override IEnumerable<Module> For(Assembler assembler, Recipe recipe, int moduleSlots)
         {
-            return modules.Where(x => x != null && x.AllowedIn(assembler, recipe)).Take(moduleSlots);
+            return modules.NotNull().Where(x => x.AllowedIn(assembler, recipe)).Take(moduleSlots);
         }
 
         public override IEnumerable<Module> For(Miner miner, Resource resource, int moduleSlots)
         {
-            return modules.Where(x => x != null && x.AllowedIn(miner, resource)).Take(moduleSlots);
+            return modules.NotNull().Where(x => x.AllowedIn(miner, resource)).Take(moduleSlots);
         }
 
         public int Count => modules.Count;
 
-        public Module this[int index]
+        public Module? this[int index]
         {
             get => index >= 0 && index < Count ? modules[index] : null;
             set
@@ -231,7 +232,7 @@ namespace Foreman
         {
             if (size > modules.Count)
                 modules.AddRange(
-                    Enumerable.Repeat<Module>(null, size - modules.Count));
+                    Enumerable.Repeat<Module?>(null, size - modules.Count));
             else if (size < modules.Count)
                 modules.RemoveRange(size, modules.Count - size);
         }

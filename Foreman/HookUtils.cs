@@ -273,7 +273,7 @@ namespace Foreman
             Marshal.Copy(methodHandle.GetFunctionPointer(), data, 0, data.Length);
 
             Debug.WriteLine(
-                $"Dump of {method.DeclaringType.FullName}.{method.Name}" +
+                $"Dump of {method.DeclaringType?.FullName}.{method.Name}" +
                 $"\n  Address: {methodHandle.GetFunctionPointer()}" +
                 $"\n  Bytes: {data[0]:X2} {data[1]:X2} {data[2]:X2} {data[3]:X2} {data[4]:X2} {data[5]:X2} {data[6]:X2} {data[7]:X2}" +
                 $"\n  PreCode: {(long)precode:X8}" +

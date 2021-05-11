@@ -9,8 +9,8 @@ namespace Foreman.Controls
 
     public class BalloonBorder : Border
     {
-        private StreamGeometry borderGeometryCache;
-        private StreamGeometry backgroundGeometryCache;
+        private StreamGeometry? borderGeometryCache;
+        private StreamGeometry? backgroundGeometryCache;
 
         public static readonly DependencyProperty ArrowHeadLengthProperty =
             DependencyProperty.Register(
@@ -121,7 +121,7 @@ namespace Foreman.Controls
             CornerRadius radii = CornerRadius;
             var innerRadii = new Radii(radii, borders, false);
 
-            StreamGeometry backgroundGeometry = null;
+            StreamGeometry? backgroundGeometry = null;
 
             bool hasBorder = !boundRect.Width.IsZero() && !boundRect.Height.IsZero();
             if (!innerRect.Width.IsZero() && !innerRect.Height.IsZero()) {
@@ -163,7 +163,7 @@ namespace Foreman.Controls
         protected override void OnRender(DrawingContext dc)
         {
             Brush brush;
-            StreamGeometry geometry;
+            StreamGeometry? geometry;
             if ((geometry = borderGeometryCache) != null && (brush = BorderBrush) != null)
                 dc.DrawGeometry(brush, null, geometry);
 

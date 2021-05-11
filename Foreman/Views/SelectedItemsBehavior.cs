@@ -15,9 +15,9 @@ namespace Foreman
                 typeof(SelectedItemsBehavior),
                 new FrameworkPropertyMetadata(null, OnSelectedItemsChanged));
 
-        public IList SelectedItems
+        public IList? SelectedItems
         {
-            get => (IList)GetValue(SelectedItemsProperty);
+            get => (IList?)GetValue(SelectedItemsProperty);
             set => SetValue(SelectedItemsProperty, value);
         }
 
@@ -65,7 +65,7 @@ namespace Foreman
         }
 
         private void OnCollectionChanged(
-            object sender, NotifyCollectionChangedEventArgs args)
+            object? sender, NotifyCollectionChangedEventArgs args)
         {
             if (args.OldItems != null) {
                 foreach (var item in args.OldItems)
@@ -86,7 +86,7 @@ namespace Foreman
             AssociatedObject.SelectedItems.Clear();
         }
 
-        private void AttachToList(IList list)
+        private void AttachToList(IList? list)
         {
             if (list is INotifyCollectionChanged ncc)
                 ncc.CollectionChanged += OnCollectionChanged;

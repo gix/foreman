@@ -16,6 +16,8 @@ namespace Foreman.Controls
 
     public class BalloonToolTip : ToolTip
     {
+        private Popup? popup;
+
         static BalloonToolTip()
         {
             var forType = typeof(BalloonToolTip);
@@ -49,8 +51,6 @@ namespace Foreman.Controls
                 typeof(Direction),
                 typeof(BalloonToolTip),
                 new FrameworkPropertyMetadata(Direction.Left, OnArrowDirectionChanged));
-
-        private Popup popup;
 
         /// <summary>Gets or sets the angle (in degrees) of the arrow head.</summary>
         public double ArrowHeadLength
@@ -97,7 +97,7 @@ namespace Foreman.Controls
                 case Direction.Right:
                     return PopupUtils.LeftCenteredPlacement(popupsize, targetsize, offset);
                 default:
-                    return new CustomPopupPlacement[0];
+                    return Array.Empty<CustomPopupPlacement>();
             }
 
         }
@@ -107,12 +107,12 @@ namespace Foreman.Controls
             FindAndHookPopup(this, ref popup);
         }
 
-        private static void FindAndHookPopup(DependencyObject element, ref Popup popup)
+        private static void FindAndHookPopup(DependencyObject element, ref Popup? popup)
         {
             if (popup != null)
                 return;
 
-            DependencyObject visualRoot = element.FindVisualRoot();
+            DependencyObject? visualRoot = element.FindVisualRoot();
             if (visualRoot != null) {
                 popup = LogicalTreeHelper.GetParent(visualRoot) as Popup;
                 if (popup != null) {
@@ -123,9 +123,9 @@ namespace Foreman.Controls
             }
         }
 
-        private static void OnPopupOpenedOrClosed(object sender, EventArgs e)
+        private static void OnPopupOpenedOrClosed(object? sender, EventArgs e)
         {
-            UpdatePopupAnimation((Popup)sender);
+            UpdatePopupAnimation((Popup)sender!);
         }
 
         private static void UpdatePopupAnimation(Popup popup)
@@ -161,7 +161,7 @@ namespace Foreman.Controls
 
         public bool KeepCurrentActive { get; set; }
 
-        public DependencyObject TargetElement { get; set; }
+        public DependencyObject? TargetElement { get; set; }
 
         protected override void InvokeEventHandler(
             Delegate genericHandler, object genericTarget)
@@ -177,11 +177,11 @@ namespace Foreman.Controls
     {
         private readonly Func<InputEventArgs, bool> isRawMouseDeactivate;
 
-        private WeakReference lastChecked;
-        private WeakReference lastMouseDirectlyOver;
-        private WeakReference lastMouseOverWithToolTip;
+        private WeakReference? lastChecked;
+        private WeakReference? lastMouseDirectlyOver;
+        private WeakReference? lastMouseOverWithToolTip;
 
-        private BalloonToolTip currentToolTip;
+        private BalloonToolTip? currentToolTip;
         private bool ownsToolTip;
 
         [SecurityCritical]
@@ -219,9 +219,9 @@ namespace Foreman.Controls
 
         internal static readonly DependencyProperty OwnerProperty =
             (DependencyProperty)typeof(ToolTip).Assembly
-                .GetType("System.Windows.Controls.PopupControlService")
-                .GetField("OwnerProperty", BindingFlags.Static | BindingFlags.NonPublic)
-                .GetValue(null);
+                .GetType("System.Windows.Controls.PopupControlService")!
+                .GetField("OwnerProperty", BindingFlags.Static | BindingFlags.NonPublic)!
+                .GetValue(null)!;
 
         /// <summary>
         ///   Identifies the <see cref="BalloonToolTip"/> read-only attached
@@ -239,12 +239,12 @@ namespace Foreman.Controls
         {
         }
 
-        private DependencyObject LastChecked
+        private DependencyObject? LastChecked
         {
             get
             {
                 if (lastChecked != null) {
-                    var target = (DependencyObject)lastChecked.Target;
+                    var target = (DependencyObject?)lastChecked.Target;
                     if (target != null)
                         return target;
                     lastChecked = null;
@@ -264,12 +264,12 @@ namespace Foreman.Controls
 
         public static BalloonToolTipService Current { get; } = new();
 
-        private IInputElement LastMouseDirectlyOver
+        private IInputElement? LastMouseDirectlyOver
         {
             get
             {
                 if (lastMouseDirectlyOver != null) {
-                    var target = (IInputElement)lastMouseDirectlyOver.Target;
+                    var target = (IInputElement?)lastMouseDirectlyOver.Target;
                     if (target != null)
                         return target;
                     lastMouseDirectlyOver = null;
@@ -287,12 +287,12 @@ namespace Foreman.Controls
             }
         }
 
-        private DependencyObject LastMouseOverWithToolTip
+        private DependencyObject? LastMouseOverWithToolTip
         {
             get
             {
                 if (lastMouseOverWithToolTip != null) {
-                    var target = (DependencyObject)lastMouseOverWithToolTip.Target;
+                    var target = (DependencyObject?)lastMouseOverWithToolTip.Target;
                     if (target != null)
                         return target;
                     lastMouseOverWithToolTip = null;
@@ -323,12 +323,12 @@ namespace Foreman.Controls
                 new FindBallonEventHandler(OnFindBalloonToolTip));
         }
 
-        public static object GetBalloonToolTip(DependencyObject d)
+        public static object? GetBalloonToolTip(DependencyObject d)
         {
             return d.GetValue(BalloonToolTipProperty);
         }
 
-        public static void SetBalloonToolTip(DependencyObject d, object value)
+        public static void SetBalloonToolTip(DependencyObject d, object? value)
         {
             d.SetValue(BalloonToolTipProperty, value);
         }
@@ -361,9 +361,9 @@ namespace Foreman.Controls
             }
         }
 
-        private void InspectElementForToolTip(DependencyObject obj)
+        private void InspectElementForToolTip(DependencyObject? obj)
         {
-            DependencyObject origObj = obj;
+            DependencyObject? origObj = obj;
             if (LocateNearestToolTip(ref obj)) {
                 if (obj != null) {
                     if (LastMouseOverWithToolTip != null)
@@ -378,7 +378,7 @@ namespace Foreman.Controls
             }
         }
 
-        private bool LocateNearestToolTip(ref DependencyObject o)
+        private bool LocateNearestToolTip(ref DependencyObject? o)
         {
             if (o is IInputElement element) {
                 var args = new FindBalloonEventArgs();
@@ -422,7 +422,7 @@ namespace Foreman.Controls
             if (currentToolTip == null)
                 return false;
 
-            DependencyObject obj = o as Visual;
+            DependencyObject? obj = o as Visual;
             if (obj == null) {
                 if (o is ContentElement ce)
                     obj = FindContentElementParent(ce);
@@ -438,9 +438,9 @@ namespace Foreman.Controls
                 (obj is Visual3D visual3D && visual3D.IsDescendantOf(currentToolTip));
         }
 
-        private static DependencyObject FindContentElementParent(ContentElement ce)
+        private static DependencyObject? FindContentElementParent(ContentElement? ce)
         {
-            DependencyObject parent = ce;
+            DependencyObject? parent = ce;
             while (parent != null) {
                 if (parent is Visual visual)
                     return visual;
@@ -468,21 +468,17 @@ namespace Foreman.Controls
 
         private static bool IsElementEnabled(DependencyObject obj)
         {
-            switch (obj) {
-                case UIElement element:
-                    return element.IsEnabled;
-                case ContentElement contentElement:
-                    return contentElement.IsEnabled;
-                case UIElement3D element3D:
-                    return element3D.IsEnabled;
-                default:
-                    return true;
-            }
+            return obj switch {
+                UIElement element => element.IsEnabled,
+                ContentElement contentElement => contentElement.IsEnabled,
+                UIElement3D element3D => element3D.IsEnabled,
+                _ => true
+            };
         }
 
         private void RaiseToolTipOpeningEvent()
         {
-            DependencyObject obj = LastMouseOverWithToolTip;
+            DependencyObject? obj = LastMouseOverWithToolTip;
             if (obj == null)
                 return;
 
@@ -524,7 +520,7 @@ namespace Foreman.Controls
             if (reset)
                 LastChecked = null;
 
-            DependencyObject o = LastMouseOverWithToolTip;
+            DependencyObject? o = LastMouseOverWithToolTip;
             if (o != null && currentToolTip != null) {
                 bool isOpen = currentToolTip.IsOpen;
                 try {
@@ -558,13 +554,13 @@ namespace Foreman.Controls
         private static Func<InputEventArgs, bool> CreateRawMouseDeactivateDelegate()
         {
             var presentationCore = typeof(PresentationSource).Assembly;
-            var rawMouseActionsType = presentationCore.GetType("System.Windows.Input.RawMouseActions");
-            var rawMouseActionsDeactivate = rawMouseActionsType.GetField("Deactivate").GetValue("null");
-            var inputReportEventArgsType = presentationCore.GetType("System.Windows.Input.InputReportEventArgs");
-            var routedEventProperty = inputReportEventArgsType.GetProperty("RoutedEvent");
+            var rawMouseActionsType = presentationCore.GetType("System.Windows.Input.RawMouseActions")!;
+            var rawMouseActionsDeactivate = rawMouseActionsType.GetField("Deactivate")!.GetValue("null")!;
+            var inputReportEventArgsType = presentationCore.GetType("System.Windows.Input.InputReportEventArgs")!;
+            var routedEventProperty = inputReportEventArgsType.GetProperty("RoutedEvent")!;
             var reportProperty = inputReportEventArgsType.GetProperty("Report");
-            var rawMouseInputReportType = presentationCore.GetType("System.Windows.Input.RawMouseInputReport");
-            var typeProperty = rawMouseInputReportType.GetProperty("Type");
+            var rawMouseInputReportType = presentationCore.GetType("System.Windows.Input.RawMouseInputReport")!;
+            var typeProperty = rawMouseInputReportType.GetProperty("Type")!;
             var actionsProperty = rawMouseInputReportType.GetProperty("Actions");
             var inputManagerInputReportEventField = typeof(InputManager).GetField(
                 "InputReportEvent", BindingFlags.Static | BindingFlags.NonPublic);
@@ -576,7 +572,7 @@ namespace Foreman.Controls
                 inputManagerInputReportEventField == null)
                 throw new InvalidOperationException();
 
-            var inputReportEvent = (RoutedEvent)inputManagerInputReportEventField.GetValue(null);
+            var inputReportEvent = (RoutedEvent)inputManagerInputReportEventField.GetValue(null)!;
             var inputEventArgs = Expression.Parameter(typeof(InputEventArgs));
             var input = Expression.Variable(inputReportEventArgsType);
 

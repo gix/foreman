@@ -44,10 +44,10 @@ namespace Foreman.Controls
         private readonly PanHandler panHandler;
         private readonly DragHandler dragHandler;
         private readonly RectangleSelectionHandler selectionHandler;
-        private MouseGestureHandler gestureHandler;
+        private MouseGestureHandler? gestureHandler;
 
-        private ZoomableCanvas canvas;
-        private InteractiveCanvasItem frontItem;
+        private ZoomableCanvas? canvas;
+        private InteractiveCanvasItem? frontItem;
 
         static InteractiveCanvasView()
         {
@@ -95,9 +95,9 @@ namespace Foreman.Controls
 
         public Rect ActualViewbox => (Rect)GetValue(ActualViewboxProperty);
 
-        public Panel ItemsHost => canvas;
+        public Panel? ItemsHost => canvas;
 
-        private IInteractiveCanvasViewModel ViewModel => DataContext as IInteractiveCanvasViewModel;
+        private IInteractiveCanvasViewModel? ViewModel => DataContext as IInteractiveCanvasViewModel;
 
         private List<InteractiveCanvasItem> SelectedItems { get; } =
             new();
@@ -296,7 +296,7 @@ namespace Foreman.Controls
 
         private void ZoomIn(double factor, Point center)
         {
-            Point canvasPoint = canvas.PointToCanvas(center);
+            Point canvasPoint = canvas!.PointToCanvas(center);
 
             canvas.Scale = ClampScale(canvas.Scale * factor);
 
@@ -306,7 +306,7 @@ namespace Foreman.Controls
 
         private void ZoomOut(double factor, Point center)
         {
-            Point canvasPoint = canvas.PointToCanvas(center);
+            Point canvasPoint = canvas!.PointToCanvas(center);
 
             canvas.Scale = ClampScale(canvas.Scale / factor);
 
@@ -322,9 +322,9 @@ namespace Foreman.Controls
             return value;
         }
 
-        private void OnCanvasScaleChanged(object sender, EventArgs args)
+        private void OnCanvasScaleChanged(object? sender, EventArgs args)
         {
-            var formattingMode = DoubleUtils.AreClose(canvas.Scale, 1) ?
+            var formattingMode = DoubleUtils.AreClose(canvas!.Scale, 1) ?
                 TextFormattingMode.Display : TextFormattingMode.Ideal;
             TextOptions.SetTextFormattingMode(canvas, formattingMode);
         }
@@ -359,15 +359,15 @@ namespace Foreman.Controls
 
         public Point PointToCanvas(Point visualPoint)
         {
-            return canvas.PointToCanvas(visualPoint);
+            return canvas!.PointToCanvas(visualPoint);
         }
 
         public Point PointFromCanvas(Point visualPoint)
         {
-            return canvas.PointFromCanvas(visualPoint);
+            return canvas!.PointFromCanvas(visualPoint);
         }
 
-        private InteractiveCanvasItem HitTestItem(Point point)
+        private InteractiveCanvasItem? HitTestItem(Point point)
         {
             foreach (var obj in this.HitTestDrawn<DependencyObject>(point)) {
                 var item = obj.FindAncestor<InteractiveCanvasItem>();
@@ -430,14 +430,14 @@ namespace Foreman.Controls
             public void Start(MouseButtonEventArgs args)
             {
                 startPosition = args.GetPosition(view);
-                startOffset = view.canvas.Offset;
+                startOffset = view.canvas!.Offset;
                 IsActive = view.CaptureMouse();
             }
 
             protected override void OnMouseMove(MouseEventArgs args)
             {
                 Vector delta = args.GetPosition(view) - startPosition;
-                view.canvas.Offset = startOffset - delta;
+                view.canvas!.Offset = startOffset - delta;
             }
 
             protected override void OnMouseUp(MouseButtonEventArgs args)
@@ -447,7 +447,7 @@ namespace Foreman.Controls
                     return;
 
                 Vector delta = args.GetPosition(view) - startPosition;
-                view.canvas.Offset = startOffset - delta;
+                view.canvas!.Offset = startOffset - delta;
 
                 view.ReleaseMouseCapture();
             }
@@ -465,7 +465,7 @@ namespace Foreman.Controls
             private readonly InteractiveCanvasView view;
             private readonly List<Entry> draggedElements = new();
 
-            private InteractiveCanvasItem deferredSelectElement;
+            private InteractiveCanvasItem? deferredSelectElement;
             private Point startPosition;
 
             public DragHandler(InteractiveCanvasView view)
@@ -475,7 +475,7 @@ namespace Foreman.Controls
 
             public void Start(
                 Point startPos, IEnumerable<UIElement> elements,
-                InteractiveCanvasItem selectedElement)
+                InteractiveCanvasItem? selectedElement)
             {
                 IsActive = true;
                 startPosition = startPos;
@@ -499,7 +499,7 @@ namespace Foreman.Controls
                 deferredSelectElement = null;
 
                 Vector delta = args.GetPosition(view) - startPosition;
-                delta /= view.canvas.Scale;
+                delta /= view.canvas!.Scale;
                 bool snapPosition = Keyboard.Modifiers == ModifierKeys.Control;
 
                 foreach (var entry in draggedElements)
@@ -560,7 +560,7 @@ namespace Foreman.Controls
         {
             private readonly InteractiveCanvasView view;
             private Point startPosition;
-            private SelectionAdorner adorner;
+            private SelectionAdorner? adorner;
 
             public RectangleSelectionHandler(InteractiveCanvasView view)
             {
@@ -576,7 +576,7 @@ namespace Foreman.Controls
                 startPosition = mousePos;
 
                 adorner = new SelectionAdorner(view);
-                var layer = AdornerLayer.GetAdornerLayer(view);
+                var layer = AdornerLayer.GetAdornerLayer(view)!;
                 layer.Add(adorner);
                 if (!view.CaptureMouse())
                     Reset();
@@ -622,13 +622,13 @@ namespace Foreman.Controls
                 startPosition = new Point();
 
                 if (adorner != null)
-                    AdornerLayer.GetAdornerLayer(view).Remove(adorner);
+                    AdornerLayer.GetAdornerLayer(view)!.Remove(adorner);
             }
 
             protected override void OnMouseMove(MouseEventArgs args)
             {
                 var currPos = args.GetPosition(view);
-                adorner.Bounds = new Rect(startPosition, currPos);
+                adorner!.Bounds = new Rect(startPosition, currPos);
             }
 
             protected override void OnMouseUp(MouseButtonEventArgs args)

@@ -13,7 +13,7 @@ namespace Foreman
 
     public partial class App
     {
-        private MainWindowViewModel mainWindowViewModel;
+        private MainWindowViewModel? mainWindowViewModel;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -38,8 +38,9 @@ namespace Foreman
 
         protected override void OnExit(ExitEventArgs e)
         {
+            Settings.Default.RecentGraphs ??= new();
             Settings.Default.RecentGraphs.Clear();
-            foreach (var path in mainWindowViewModel.RecentGraphs)
+            foreach (var path in mainWindowViewModel!.RecentGraphs)
                 Settings.Default.RecentGraphs.Add(path);
             Settings.Default.Save();
 

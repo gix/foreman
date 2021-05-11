@@ -6,16 +6,16 @@ namespace Foreman
 
     public class Connector : GraphElement
     {
-        private Pin source;
-        private Pin destination;
+        private Pin? source;
+        private Pin? destination;
 
         private Point sourceHotspot;
         private Point destinationHotspot;
 
-        private PointCollection points;
+        private PointCollection? points;
         private Color fillColor;
 
-        public Connector(NodeLink displayedLink, Pin source, Pin destination)
+        public Connector(NodeLink displayedLink, Pin? source, Pin? destination)
         {
             DisplayedLink = displayedLink;
             Source = source;
@@ -28,7 +28,7 @@ namespace Foreman
 
         public NodeLink DisplayedLink { get; }
 
-        public Pin Source
+        public Pin? Source
         {
             get => source;
             set
@@ -54,7 +54,7 @@ namespace Foreman
             }
         }
 
-        public Pin Destination
+        public Pin? Destination
         {
             get => destination;
             set
@@ -100,7 +100,7 @@ namespace Foreman
             }
         }
 
-        public PointCollection Points
+        public PointCollection? Points
         {
             get => points;
             set => SetProperty(ref points, value);
@@ -112,7 +112,7 @@ namespace Foreman
             set => SetProperty(ref fillColor, value);
         }
 
-        public event EventHandler<EventArgs> ConnectionChanged;
+        public event EventHandler<EventArgs>? ConnectionChanged;
 
         private void OnConnectionChanged()
         {
@@ -121,14 +121,14 @@ namespace Foreman
             Destination?.RaiseConnectionChanged();
         }
 
-        private void OnSourceHotspotUpdated(object sender, EventArgs e)
+        private void OnSourceHotspotUpdated(object? sender, EventArgs e)
         {
-            SourceHotspot = Source.Hotspot;
+            SourceHotspot = Source!.Hotspot;
         }
 
-        private void OnDestinationHotspotUpdated(object sender, EventArgs e)
+        private void OnDestinationHotspotUpdated(object? sender, EventArgs e)
         {
-            DestinationHotspot = Destination.Hotspot;
+            DestinationHotspot = Destination!.Hotspot;
         }
 
         private void ComputeConnectorPoints()

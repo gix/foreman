@@ -12,7 +12,7 @@ namespace Foreman.Views
 
     public class DragDropItemBehavior : Behavior<InteractiveCanvasView>
     {
-        private ContentAdorner dragAdorner;
+        private ContentAdorner? dragAdorner;
 
         protected override void OnAttached()
         {
@@ -34,7 +34,7 @@ namespace Foreman.Views
 
         private void OnDragEnter(object sender, DragEventArgs e)
         {
-            IEnumerable<BitmapSource> icons = null;
+            IEnumerable<BitmapSource>? icons = null;
             if (e.Data.IsDataPresent<HashSet<Item>>())
                 icons = e.Data.GetData<HashSet<Item>>().Select(x => x.Icon);
             else if (e.Data.IsDataPresent<HashSet<Recipe>>())

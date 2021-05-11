@@ -200,7 +200,7 @@ namespace Foreman.Controls
         /// <seealso cref="Viewbox"/>
         public Rect ActualViewbox => (Rect)GetValue(ActualViewboxProperty);
 
-        public event EventHandler ActualViewboxChanged;
+        public event EventHandler? ActualViewboxChanged;
 
         /// <summary>
         ///   Returns a <see cref="Rect"/> representing the area of the canvas
@@ -573,7 +573,7 @@ namespace Foreman.Controls
             set => SetValue(OffsetProperty, value);
         }
 
-        public event EventHandler OffsetChanged;
+        public event EventHandler? OffsetChanged;
 
         /// <summary>
         ///   Determines whether the value given is a valid value for the
@@ -727,7 +727,7 @@ namespace Foreman.Controls
             set => SetValue(ScaleProperty, value);
         }
 
-        public event EventHandler ScaleChanged;
+        public event EventHandler? ScaleChanged;
 
         /// <summary>
         ///   Determines whether the value given is a valid value for the
@@ -870,7 +870,7 @@ namespace Foreman.Controls
         ///   Gets the applied scale transform if <see cref="ApplyTransform"/>
         ///   is set to <see langword="true"/>.
         /// </summary>
-        private ScaleTransform AppliedScaleTransform
+        private ScaleTransform? AppliedScaleTransform
         {
             get
             {
@@ -884,7 +884,7 @@ namespace Foreman.Controls
         ///   Gets the applied translate transform if <see cref="ApplyTransform"/>
         ///   is set to <see langword="true"/>.
         /// </summary>
-        private TranslateTransform AppliedTranslateTransform
+        private TranslateTransform? AppliedTranslateTransform
         {
             get
             {
@@ -1056,7 +1056,7 @@ namespace Foreman.Controls
         ///   A <see cref="Geometry"/> that represents the area that is clipped
         ///   if <see cref="UIElement.ClipToBounds"/> is <see langword="true"/>.
         /// </returns>
-        protected override Geometry GetLayoutClip(Size layoutSlotSize)
+        protected override Geometry? GetLayoutClip(Size layoutSlotSize)
         {
             // ZoomableCanvas only clips to bounds if ClipToBounds is set, no automatic clipping.
             return ClipToBounds ? new RectangleGeometry(new Rect(RenderSize)) : null;
@@ -1170,7 +1170,7 @@ namespace Foreman.Controls
         #region IScrollInfo Implementation
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
-        ScrollViewer IScrollInfo.ScrollOwner { get; set; }
+        ScrollViewer? IScrollInfo.ScrollOwner { get; set; }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         bool IScrollInfo.CanHorizontallyScroll { get; set; }

@@ -10,7 +10,7 @@ namespace Foreman
         private readonly Func<Task> execute;
         private readonly Func<bool> canExecute;
         private bool isExecuting;
-        private EventHandler canExecuteChanged;
+        private EventHandler? canExecuteChanged;
 
         public AsyncDelegateCommand(Func<Task> execute)
             : this(execute, CanAlwaysExecute)
@@ -40,7 +40,7 @@ namespace Foreman
         ///   Occurs when changes occur that affect whether or not the command
         ///   should execute.
         /// </summary>
-        public event EventHandler CanExecuteChanged
+        public event EventHandler? CanExecuteChanged
         {
             add
             {
@@ -66,7 +66,7 @@ namespace Foreman
         ///   <see langword="true"/> if this command can be executed; otherwise,
         ///   <see langword="false"/>.
         /// </returns>
-        public bool CanExecute(object parameter)
+        public bool CanExecute(object? parameter)
         {
             return !IsExecuting && canExecute();
         }
@@ -78,7 +78,7 @@ namespace Foreman
         ///   Data used by the command. If the command does not require data to
         ///   be passed, this object can be set to <see langword="null"/>.
         /// </param>
-        public async void Execute(object parameter)
+        public async void Execute(object? parameter)
         {
             if (!CanExecute(parameter))
                 return;
@@ -99,19 +99,19 @@ namespace Foreman
 
     public class AsyncDelegateCommand<T> : ICommand
     {
-        private static readonly Func<T, bool> CanAlwaysExecute = _ => true;
-        private readonly Func<T, Task> execute;
-        private readonly Func<T, bool> canExecute;
+        private static readonly Func<T?, bool> CanAlwaysExecute = _ => true;
+        private readonly Func<T?, Task> execute;
+        private readonly Func<T?, bool> canExecute;
         private bool isExecuting;
-        private EventHandler canExecuteChanged;
+        private EventHandler? canExecuteChanged;
 
-        public AsyncDelegateCommand(Func<T, Task> execute)
+        public AsyncDelegateCommand(Func<T?, Task> execute)
             : this(execute, CanAlwaysExecute)
         {
         }
 
         public AsyncDelegateCommand(
-            Func<T, Task> execute, Func<T, bool> canExecute)
+            Func<T?, Task> execute, Func<T?, bool> canExecute)
         {
             this.execute = execute;
             this.canExecute = canExecute;
@@ -133,7 +133,7 @@ namespace Foreman
         ///   Occurs when changes occur that affect whether or not the command
         ///   should execute.
         /// </summary>
-        public event EventHandler CanExecuteChanged
+        public event EventHandler? CanExecuteChanged
         {
             add
             {
@@ -159,7 +159,7 @@ namespace Foreman
         ///   <see langword="true"/> if this command can be executed; otherwise,
         ///   <see langword="false"/>.
         /// </returns>
-        public bool CanExecute(object parameter)
+        public bool CanExecute(object? parameter)
         {
             if (IsExecuting)
                 return false;
@@ -177,14 +177,14 @@ namespace Foreman
         ///   Data used by the command. If the command does not require data to
         ///   be passed, this object can be set to <see langword="null"/>.
         /// </param>
-        public async void Execute(object parameter)
+        public async void Execute(object? parameter)
         {
             if (!CanExecute(parameter))
                 return;
 
             IsExecuting = true;
             try {
-                await execute((T)parameter);
+                await execute((T?)parameter!);
             } finally {
                 IsExecuting = false;
             }

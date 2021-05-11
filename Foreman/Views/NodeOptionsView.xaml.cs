@@ -7,7 +7,7 @@ namespace Foreman.Views
 
     public partial class NodeOptionsView
     {
-        private NodeOptionsViewModel viewModel;
+        private NodeOptionsViewModel viewModel = null!;
 
         public NodeOptionsView()
         {

@@ -15,7 +15,7 @@ namespace Foreman
 
         private char quoteChar;
         private char argSeparator;
-        private string str;
+        private string str = null!;
         private int strLen;
         private int charIndex;
         private int currentTokenIndex;
@@ -79,7 +79,7 @@ namespace Foreman
             }
         }
 
-        public string GetCurrentToken()
+        public string? GetCurrentToken()
         {
             // if no current token, return null
             if (currentTokenIndex < 0)
@@ -111,7 +111,7 @@ namespace Foreman
         ///   Advances to the NextToken, throwing an exception if not present
         /// </summary>
         /// <returns>The next token found</returns>
-        public string NextTokenRequired()
+        public string? NextTokenRequired()
         {
             if (!NextToken(false))
                 throw new InvalidOperationException(
@@ -124,7 +124,7 @@ namespace Foreman
         ///   Advances to the NextToken, throwing an exception if not present
         /// </summary>
         /// <returns>The next token found</returns>
-        internal string NextTokenRequired(bool allowQuotedToken)
+        internal string? NextTokenRequired(bool allowQuotedToken)
         {
             if (!NextToken(allowQuotedToken))
                 throw new InvalidOperationException(
@@ -282,8 +282,6 @@ namespace Foreman
             // If the IFormatProvider doesn't not contain a NumberFormatInfo, then
             // this method returns the current culture's NumberFormatInfo.
             NumberFormatInfo numberFormat = NumberFormatInfo.GetInstance(provider);
-
-            Debug.Assert(null != numberFormat);
 
             // Is the decimal separator is the same as the list separator?
             // If so, we use the ";".

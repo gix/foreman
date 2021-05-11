@@ -6,6 +6,11 @@ namespace Foreman.Extensions
 
     public static class CollectionExtensions
     {
+        public static IEnumerable<T> NotNull<T>(this IEnumerable<T?> enumerable) where T : class
+        {
+            return enumerable.Where(t => t != null)!;
+        }
+
         public static void AddRange<T>(this ICollection<T> list, IEnumerable<T> items)
         {
             if (list is List<T> l)
@@ -67,10 +72,10 @@ namespace Foreman.Extensions
             }
         }
 
-        public static TValue GetValueOrDefault<TKey, TValue>(
-            this IDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue = default)
+        public static TValue? GetValueOrDefault<TKey, TValue>(
+            this IDictionary<TKey, TValue> dictionary, TKey key, TValue? defaultValue = default)
         {
-            if (dictionary.TryGetValue(key, out TValue value))
+            if (dictionary.TryGetValue(key, out TValue? value))
                 return value;
             return defaultValue;
         }
@@ -79,7 +84,7 @@ namespace Foreman.Extensions
             this IDictionary<TKey, TValue> dictionary, TKey key,
             Func<TKey, TValue> defaultValueFactory)
         {
-            if (dictionary.TryGetValue(key, out TValue value))
+            if (dictionary.TryGetValue(key, out TValue? value))
                 return value;
             return defaultValueFactory(key);
         }
@@ -87,7 +92,7 @@ namespace Foreman.Extensions
         public static TValue GetOrAdd<TKey, TValue>(
             this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
         {
-            if (dictionary.TryGetValue(key, out TValue existingValue))
+            if (dictionary.TryGetValue(key, out TValue? existingValue))
                 return existingValue;
             dictionary.Add(key, value);
             return value;
@@ -97,7 +102,7 @@ namespace Foreman.Extensions
             this IDictionary<TKey, TValue> dictionary, TKey key,
             Func<TKey, TValue> valueFactory)
         {
-            if (dictionary.TryGetValue(key, out TValue existingValue))
+            if (dictionary.TryGetValue(key, out TValue? existingValue))
                 return existingValue;
             TValue value = valueFactory(key);
             dictionary.Add(key, value);

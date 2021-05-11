@@ -1,6 +1,7 @@
 namespace Foreman
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Windows.Media.Imaging;
 
@@ -8,13 +9,14 @@ namespace Foreman
     {
         public string Name { get; }
         public float Time { get; }
-        public string Category { get; set; }
+        public string Category { get; init; } = string.Empty;
         public Dictionary<Item, float> Results { get; }
         public Dictionary<Item, float> Ingredients { get; }
         public bool IsMissingRecipe { get; set; }
         public bool IsCyclic { get; set; }
-        private BitmapSource uniqueIcon;
+        private readonly BitmapSource? uniqueIcon;
 
+        [AllowNull]
         public BitmapSource Icon
         {
             get
@@ -27,7 +29,7 @@ namespace Foreman
                 }
                 return DataCache.Current.UnknownIcon;
             }
-            set => uniqueIcon = value;
+            init => uniqueIcon = value;
         }
 
         public string FriendlyName
@@ -58,7 +60,7 @@ namespace Foreman
             return Name.GetHashCode();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is not Recipe recipe) {
                 return false;
@@ -67,7 +69,7 @@ namespace Foreman
             return recipe == this;
         }
 
-        public static bool operator ==(Recipe recipe1, Recipe recipe2)
+        public static bool operator ==(Recipe? recipe1, Recipe? recipe2)
         {
             if (ReferenceEquals(recipe1, recipe2)) {
                 return true;
@@ -80,7 +82,7 @@ namespace Foreman
             return recipe1.Name == recipe2.Name;
         }
 
-        public static bool operator !=(Recipe recipe1, Recipe recipe2)
+        public static bool operator !=(Recipe? recipe1, Recipe? recipe2)
         {
             return !(recipe1 == recipe2);
         }

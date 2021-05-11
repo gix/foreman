@@ -20,14 +20,14 @@ namespace Foreman.Views
         private bool canEditAssembler;
         private RateType rateType;
         private double amount;
-        private string amountUnit;
+        private string? amountUnit;
 
         private double speedBonus;
         private double productivityBonus;
         private double consumptionBonus;
         private bool canOverrideBonus;
-        private object assembler;
-        private object moduleStrategy;
+        private object? assembler;
+        private object? moduleStrategy;
 
         public NodeOptionsViewModel(
             ProductionNode baseNode, ProductionGraphViewModel graphViewModel)
@@ -129,7 +129,7 @@ namespace Foreman.Views
             }
         }
 
-        public string AmountUnit
+        public string? AmountUnit
         {
             get => amountUnit;
             set => SetProperty(ref amountUnit, value);
@@ -183,13 +183,13 @@ namespace Foreman.Views
             set => SetProperty(ref canOverrideBonus, value);
         }
 
-        public object Assembler
+        public object? Assembler
         {
             get => assembler;
             set => SetProperty(ref assembler, value);
         }
 
-        public object ModuleStrategy
+        public object? ModuleStrategy
         {
             get => moduleStrategy;
             set => SetProperty(ref moduleStrategy, value);
@@ -197,7 +197,7 @@ namespace Foreman.Views
 
         public void UpdateAssemblerButtons()
         {
-            if (!(BaseNode is EffectableNode node))
+            if (BaseNode is not EffectableNode node)
                 return;
 
             var entity = node.ProductionEntity;
@@ -227,8 +227,8 @@ namespace Foreman.Views
 
             var nodeBeaconModules = BaseNode.BeaconModules;
             nodeBeaconModules.Clear();
-            foreach (var entry in BeaconModules.Where(x => x.Module != null))
-                nodeBeaconModules.Add(entry.Module, entry.Count);
+            foreach (ModuleSlot entry in BeaconModules.Where(x => x.Module != null))
+                nodeBeaconModules.Add(entry.Module!, entry.Count);
 
             SpeedBonus = nodeBeaconModules.GetSpeedBonus();
             ProductivityBonus = nodeBeaconModules.GetProductivityBonus();
@@ -264,7 +264,7 @@ namespace Foreman.Views
                 CleanupAndEnsureTail();
             }
 
-            private static bool IsEmptyItem(ModuleSlot item)
+            private static bool IsEmptyItem(ModuleSlot? item)
             {
                 return item == null || (item.Module == null && item.Count == 0);
             }
@@ -305,11 +305,11 @@ namespace Foreman.Views
 
             var c = await optionList.ChooseAsync(placementTarget, PlacementMode.Right);
             if (c != null) {
-                if (c == bestOption) {
+                if (c == bestOption)
                     node.ProductionEntity = null;
-                } else {
+                else if (c.Value != null)
                     node.ProductionEntity = (ProductionEntity)c.Value;
-                }
+
                 UpdateAssemblerButtons();
                 Graph.UpdateNodeValues();
             }
@@ -317,7 +317,7 @@ namespace Foreman.Views
 
         public async Task ChooseModuleSelector(UIElement placementTarget)
         {
-            if (!(BaseNode is EffectableNode node))
+            if (BaseNode is not EffectableNode node)
                 return;
 
             var noneOption = new ItemChoice(null, "None", "None");
@@ -354,7 +354,7 @@ namespace Foreman.Views
                     node.Modules = ModuleSelector.Efficient;
                 else if (c == customOption)
                     node.Modules = new ModuleSet();
-                else
+                else if (c.Value != null)
                     node.Modules = ModuleSelector.Specific((Module)c.Value);
 
                 UpdateAssemblerButtons();
@@ -364,7 +364,7 @@ namespace Foreman.Views
 
         public async Task ChooseModule(ModuleSlot slot, UIElement placementTarget)
         {
-            if (!(BaseNode is EffectableNode node))
+            if (BaseNode is not EffectableNode node)
                 return;
 
             var optionList = new List<Choice>();
@@ -392,7 +392,7 @@ namespace Foreman.Views
 
     public class ModuleSlot : ViewModel
     {
-        private Module module;
+        private Module? module;
         private int count;
 
         public ModuleSlot(bool isAggregated)
@@ -400,7 +400,7 @@ namespace Foreman.Views
             IsAggregated = isAggregated;
         }
 
-        public ModuleSlot(Module module)
+        public ModuleSlot(Module? module)
         {
             this.module = module;
             IsAggregated = false;
@@ -415,7 +415,7 @@ namespace Foreman.Views
 
         public bool IsAggregated { get; }
 
-        public Module Module
+        public Module? Module
         {
             get => module;
             set => SetProperty(ref module, value);

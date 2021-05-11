@@ -14,11 +14,11 @@ namespace Foreman.Controls
     public class PopupEx : Popup
     {
         private static readonly object Mutex = new();
-        private static PropertyInfo pshIsChildPopupProperty;
-        private static MethodInfo pshConnectedToForegroundWindowMethod;
-        private static FieldInfo pshWindowField;
-        private static ConstructorInfo securityCriticalDataClassOfWindowCtor;
-        private static HookUtils.MemoryPatch buildWindowHook;
+        private static PropertyInfo pshIsChildPopupProperty = null!;
+        private static MethodInfo pshConnectedToForegroundWindowMethod = null!;
+        private static FieldInfo pshWindowField = null!;
+        private static ConstructorInfo securityCriticalDataClassOfWindowCtor = null!;
+        private static HookUtils.MemoryPatch? buildWindowHook;
 
         public static void InstallHook()
         {
@@ -30,22 +30,22 @@ namespace Foreman.Controls
                 var nonPublicStatic = BindingFlags.Static | BindingFlags.NonPublic;
 
                 var popupSecurityHelperType = typeof(Popup).GetNestedType(
-                    "PopupSecurityHelper", BindingFlags.NonPublic);
-                pshWindowField = popupSecurityHelperType.GetField("_window", nonPublicInstance);
-                pshIsChildPopupProperty = popupSecurityHelperType.GetProperty("IsChildPopup", nonPublicInstance);
+                    "PopupSecurityHelper", BindingFlags.NonPublic)!;
+                pshWindowField = popupSecurityHelperType.GetField("_window", nonPublicInstance)!;
+                pshIsChildPopupProperty = popupSecurityHelperType.GetProperty("IsChildPopup", nonPublicInstance)!;
                 pshConnectedToForegroundWindowMethod =
-                    popupSecurityHelperType.GetMethod("ConnectedToForegroundWindow", nonPublicStatic);
+                    popupSecurityHelperType.GetMethod("ConnectedToForegroundWindow", nonPublicStatic)!;
 
                 var windowsBase = typeof(DependencyObject).Assembly;
                 securityCriticalDataClassOfWindowCtor =
-                    windowsBase.GetType("MS.Internal.SecurityCriticalDataClass`1")
+                    windowsBase.GetType("MS.Internal.SecurityCriticalDataClass`1")!
                         .MakeGenericType(typeof(HwndSource))
-                        .GetConstructor(nonPublicInstance, null, new[] { typeof(HwndSource) }, null);
+                        .GetConstructor(nonPublicInstance, null, new[] { typeof(HwndSource) }, null)!;
 
                 var oldBuildWindow = popupSecurityHelperType.GetMethod(
-                    "BuildWindow", BindingFlags.Instance | BindingFlags.NonPublic);
+                    "BuildWindow", BindingFlags.Instance | BindingFlags.NonPublic)!;
                 var newBuildWindow = typeof(PopupSecurityHelper).GetMethod(
-                    "BuildWindow", BindingFlags.Static | BindingFlags.NonPublic);
+                    "BuildWindow", BindingFlags.Static | BindingFlags.NonPublic)!;
 
                 buildWindowHook = HookUtils.HookMethod(oldBuildWindow, newBuildWindow);
             }
@@ -58,10 +58,10 @@ namespace Foreman.Controls
                     return;
 
                 buildWindowHook.Dispose();
-                pshIsChildPopupProperty = null;
-                pshConnectedToForegroundWindowMethod = null;
-                pshWindowField = null;
-                securityCriticalDataClassOfWindowCtor = null;
+                pshIsChildPopupProperty = null!;
+                pshConnectedToForegroundWindowMethod = null!;
+                pshWindowField = null!;
+                securityCriticalDataClassOfWindowCtor = null!;
             }
         }
 
@@ -95,7 +95,7 @@ namespace Foreman.Controls
                 bool transparent, HwndSourceHook hook, AutoResizedEventHandler handler,
                 HwndDpiChangedEventHandler dpiChangedHandler)
             {
-                bool isChildPopup = (bool)pshIsChildPopupProperty.GetValue(psh);
+                bool isChildPopup = (bool)pshIsChildPopupProperty.GetValue(psh)!;
 
                 Debug.Assert(!isChildPopup || (isChildPopup && !transparent), "Child popups cannot be transparent");
                 transparent = transparent && !isChildPopup;
@@ -175,11 +175,11 @@ namespace Foreman.Controls
 
             private static bool ConnectedToForegroundWindow(IntPtr window)
             {
-                return (bool)pshConnectedToForegroundWindowMethod.Invoke(null, new object[] { window });
+                return (bool)pshConnectedToForegroundWindowMethod.Invoke(null, new object[] { window })!;
             }
 
             [SecurityCritical]
-            private static PresentationSource GetPresentationSource(Visual visual)
+            private static PresentationSource? GetPresentationSource(Visual? visual)
             {
                 if (visual == null)
                     return null;
@@ -187,7 +187,7 @@ namespace Foreman.Controls
             }
 
             [SecurityCritical]
-            private static IntPtr GetHandle(HwndSource hwnd)
+            private static IntPtr GetHandle(HwndSource? hwnd)
             {
                 if (hwnd == null)
                     return IntPtr.Zero;

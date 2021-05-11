@@ -3,6 +3,7 @@ namespace Foreman
     using System.Collections.Generic;
     using System.Linq;
     using System.Windows.Media.Imaging;
+    using Foreman.Extensions;
     using Units;
 
     public class MachinePermutation
@@ -18,28 +19,31 @@ namespace Foreman
 
         internal double GetAssemblerProductivity()
         {
-            return Modules
-                .Where(x => x != null)
-                .Sum(x => x.ProductivityBonus);
+            return Modules.Sum(x => x.ProductivityBonus);
         }
     }
 
     public abstract class ProductionEntity
     {
-        public string Name { get; protected set; }
+        protected ProductionEntity(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
         public bool Enabled { get; set; }
-        public BitmapSource Icon { get; set; }
+        public BitmapSource? Icon { get; set; }
         public int ModuleSlots { get; set; }
         public float Speed { get; set; }
         public Power EnergyUsage { get; set; }
 
         public string FriendlyName => DataCache.Current.GetLocalizedString(Name);
 
-        public double GetSpeed(double beaconBonus, IEnumerable<Module> modules = null)
+        public double GetSpeed(double beaconBonus, IEnumerable<Module?>? modules = null)
         {
             double finalSpeed = Speed;
             if (modules != null) {
-                foreach (Module module in modules.Where(m => m != null))
+                foreach (Module module in modules.NotNull())
                     finalSpeed += module.SpeedBonus * Speed;
             }
             finalSpeed += beaconBonus * Speed;
@@ -47,11 +51,11 @@ namespace Foreman
             return finalSpeed;
         }
 
-        public Power GetEnergyConsumption(double beaconBonus, IEnumerable<Module> modules = null)
+        public Power GetEnergyConsumption(double beaconBonus, IEnumerable<Module?>? modules = null)
         {
             Power consumption = EnergyUsage;
             if (modules != null) {
-                foreach (Module module in modules.Where(m => m != null))
+                foreach (Module module in modules.NotNull())
                     consumption += module.ConsumptionBonus * EnergyUsage;
             }
             consumption += beaconBonus * EnergyUsage;
@@ -63,7 +67,7 @@ namespace Foreman
         {
             yield return new MachinePermutation(this, new List<Module>());
 
-            Module[] currentModules = new Module[ModuleSlots];
+            var currentModules = new Module[ModuleSlots];
 
             if (ModuleSlots <= 0) {
                 yield break;
@@ -74,7 +78,7 @@ namespace Foreman
                 .Where(m => m.AllowedIn((Assembler)this, recipe));
 
             foreach (Module module in allowedModules) {
-                for (int i = 0; i < ModuleSlots; i++) {
+                for (int i = 0; i < ModuleSlots; ++i) {
                     currentModules[i] = module;
                     yield return new MachinePermutation(this, currentModules);
                 }
@@ -85,7 +89,7 @@ namespace Foreman
         {
             yield return new MachinePermutation(this, new List<Module>());
 
-            Module[] currentModules = new Module[ModuleSlots];
+            var currentModules = new Module[ModuleSlots];
 
             if (ModuleSlots <= 0) {
                 yield break;
@@ -96,7 +100,7 @@ namespace Foreman
                 .Where(m => m.AllowedIn((Miner)this, resource));
 
             foreach (Module module in allowedModules) {
-                for (int i = 0; i < ModuleSlots; i++) {
+                for (int i = 0; i < ModuleSlots; ++i) {
                     currentModules[i] = module;
                     yield return new MachinePermutation(this, currentModules);
                 }
@@ -116,9 +120,9 @@ namespace Foreman
         public List<string> AllowedEffects { get; }
 
         public Assembler(string name)
+            : base(name)
         {
             Enabled = true;
-            Name = name;
             Categories = new List<string>();
             AllowedEffects = new List<string>();
         }
@@ -128,7 +132,7 @@ namespace Foreman
             return $"Assembler: {Name}";
         }
 
-        public double GetRate(float recipeTime, double beaconBonus, IEnumerable<Module> modules = null)
+        public double GetRate(float recipeTime, double beaconBonus, IEnumerable<Module>? modules = null)
         {
             return GameUtils.GetRate(recipeTime, GetSpeed(beaconBonus, modules));
         }
@@ -144,13 +148,13 @@ namespace Foreman
         public float ProductivityBonus { get; }
         public float ConsumptionBonus { get; }
         public string Name { get; }
-        private readonly List<string> allowedIn;
+        private readonly List<string>? allowedIn;
 
         public string FriendlyName => DataCache.Current.GetLocalizedString("item-name", Name);
 
         public Module(
             string name, string category, float speedBonus, float productivityBonus,
-            float consumptionBonus, List<string> allowedIn)
+            float consumptionBonus, List<string>? allowedIn)
         {
             SpeedBonus = speedBonus;
             ProductivityBonus = productivityBonus;
@@ -161,14 +165,14 @@ namespace Foreman
             this.allowedIn = allowedIn;
         }
 
-        public bool AllowedIn(Assembler assembler, Recipe recipe)
+        public bool AllowedIn(Assembler? assembler, Recipe recipe)
         {
             if (assembler != null && !EnumerateEffects().All(x => assembler.AllowedEffects.Contains(x)))
                 return false;
             return allowedIn == null || allowedIn.Contains(recipe.Name);
         }
 
-        public bool AllowedIn(Miner miner, Resource resource)
+        public bool AllowedIn(Miner? miner, Resource? resource)
         {
             if (miner != null && resource != null && !miner.ResourceCategories.Contains(resource.Category))
                 return false;

@@ -22,7 +22,7 @@ namespace Foreman.Units
         {
             IEnumerable<double> values = enumerable.Select(x => x.RawValue);
             double average = values.Average();
-            return (T)Activator.CreateInstance(typeof(T), average);
+            return (T)Activator.CreateInstance(typeof(T), average)!;
         }
 
         public static bool IsFinite(this IQuantity quantity)

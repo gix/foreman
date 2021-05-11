@@ -46,10 +46,10 @@ namespace Foreman.Extensions
             return result;
         }
 
-        public static T HitTestAllSingle<T>(this Visual reference, Point point)
+        public static T? HitTestAllSingle<T>(this Visual reference, Point point)
             where T : class
         {
-            T result = null;
+            T? result = null;
 
             HitTestFilterBehavior Filter(DependencyObject d)
             {
@@ -85,7 +85,7 @@ namespace Foreman.Extensions
             return result;
         }
 
-        public static TDataContext HitTestDataContext<TRootDataContext, TDataContext>(
+        public static TDataContext? HitTestDataContext<TRootDataContext, TDataContext>(
             this Visual reference, Point point)
             where TRootDataContext : class
             where TDataContext : class

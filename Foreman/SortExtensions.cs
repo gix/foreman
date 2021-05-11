@@ -23,7 +23,7 @@ namespace Foreman
                 throw new ArgumentNullException(nameof(list));
             if (selector == null)
                 throw new ArgumentNullException(nameof(selector));
-            return list.StableSort(new SelectorComparer<T, TResult>(selector));
+            return list.StableSort(new SelectorComparer<T, TResult>(selector!));
         }
 
         public static IList<T> StableSort<T>(this IList<T> list)

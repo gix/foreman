@@ -27,10 +27,10 @@ namespace Foreman.Controls
         private const double ShadowDepth = 5;
 
         private static readonly object Mutex = new();
-        private static Brush[] commonBrushes;
+        private static Brush[]? commonBrushes;
         private static CornerRadius commonCornerRadius;
 
-        private Brush[] roundedBrushes;
+        private Brush[]? roundedBrushes;
 
         /// <summary>
         ///   Identifies the <see cref="Color"/> dependency property.

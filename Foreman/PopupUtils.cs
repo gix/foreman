@@ -60,7 +60,7 @@ namespace Foreman
         }
 
         [ThreadStatic]
-        private static Stack<Popup> nestedPopups;
+        private static Stack<Popup>? nestedPopups;
 
         private static Stack<Popup> NestedPopups =>
             nestedPopups ??= new Stack<Popup>();
@@ -79,15 +79,15 @@ namespace Foreman
             return popup;
         }
 
-        private static void OnPopupOpened(object sender, EventArgs args)
+        private static void OnPopupOpened(object? sender, EventArgs args)
         {
-            var popup = (Popup)sender;
+            var popup = (Popup)sender!;
             NestedPopups.Push(popup);
             EstablishNestedPopupCapture(popup);
             FocusContent(popup);
         }
 
-        private static void OnPopupClosed(object sender, EventArgs e)
+        private static void OnPopupClosed(object? sender, EventArgs e)
         {
             NestedPopups.Pop();
             if (NestedPopups.Count > 0 && Mouse.Captured == null) {
@@ -133,7 +133,7 @@ namespace Foreman
             }
         }
 
-        private static FrameworkElement GetPopupRoot(Popup popup)
+        private static FrameworkElement? GetPopupRoot(Popup popup)
         {
             var d = VisualTreeHelper.GetParent(popup.Child);
             while (d != null) {

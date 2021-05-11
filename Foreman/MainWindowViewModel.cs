@@ -21,16 +21,16 @@ namespace Foreman
     {
         private readonly IMainWindow view;
 
-        private string currentGraphFile;
+        private string? currentGraphFile;
         private List<Item> unfilteredItemList = new();
         private List<Recipe> unfilteredRecipeList = new();
         private Difficulty difficulty;
-        private Language selectedLanguage;
-        private Item selectedItem;
+        private Language? selectedLanguage;
+        private Item? selectedItem;
         private bool showAssemblers;
         private bool showMiners;
-        private string itemFilterText;
-        private string recipeFilterText;
+        private string itemFilterText = string.Empty;
+        private string recipeFilterText = string.Empty;
         private AmountType amountType = AmountType.FixedAmount;
         private RateUnit selectedRateUnit = RateUnit.PerSecond;
 
@@ -92,7 +92,7 @@ namespace Foreman
             set => SetProperty(ref windowTitle, value);
         }
 
-        public Language SelectedLanguage
+        public Language? SelectedLanguage
         {
             get => selectedLanguage;
             set
@@ -104,7 +104,7 @@ namespace Foreman
 
         public ObservableCollection<Item> ItemList { get; } = new();
 
-        public Item SelectedItem
+        public Item? SelectedItem
         {
             get => selectedItem;
             set => SetProperty(ref selectedItem, value);
@@ -219,9 +219,9 @@ namespace Foreman
             }
 
             if (!Directory.Exists(Settings.Default.FactorioModPath)) {
-                if (Directory.Exists(Path.Combine(Settings.Default.FactorioPath, "mods"))) {
+                if (Directory.Exists(Path.Combine(Settings.Default.FactorioPath!, "mods"))) {
                     Settings.Default.FactorioModPath =
-                        Path.Combine(Settings.Default.FactorioPath, "mods");
+                        Path.Combine(Settings.Default.FactorioPath!, "mods");
                 } else {
                     var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                     var modsPath = Path.Combine(appData, "factorio", "mods");
@@ -258,13 +258,18 @@ namespace Foreman
 
             await Task.Run(DataCache.Reload);
 
-            Languages.AddRange(DataCache.Current.Languages);
-            SelectedLanguage = DataCache.Current.Languages.FirstOrDefault(l => l.Name == Settings.Default.Language);
+            var languages = DataCache.Current.Languages;
+            Languages.AddRange(languages);
+            SelectedLanguage = languages.FirstOrDefault(l => l.Name == Settings.Default.Language) ??
+                               languages.FirstOrDefault(l => l.Name == "en") ??
+                               languages.First();
 
             Settings.Default.RecentGraphs ??= new StringCollection();
 
-            foreach (var recentGraph in Settings.Default.RecentGraphs)
-                RecentGraphs.Add(recentGraph);
+            foreach (var recentGraph in Settings.Default.RecentGraphs) {
+                if (recentGraph != null)
+                    RecentGraphs.Add(recentGraph);
+            }
 
             UpdateControlValues();
         }
@@ -287,16 +292,14 @@ namespace Foreman
             RecipeList.AddRange(unfilteredRecipeList);
         }
 
-        private bool CanAddItems(UIElement source)
+        private bool CanAddItems(UIElement? source)
         {
             return SelectedItem != null;
         }
 
-        private async Task AddItems(UIElement source)
+        private async Task AddItems(UIElement? source)
         {
-            foreach (Item item in new[] { SelectedItem }) {
-                NodeElement newElement = null;
-
+            foreach (Item item in new[] { SelectedItem! }) {
                 var itemSupplyOption = new ItemChoice(item, "Create infinite supply node", item.FriendlyName);
                 var itemOutputOption = new ItemChoice(item, "Create output node", item.FriendlyName);
 
@@ -315,6 +318,8 @@ namespace Foreman
 
                 var c = await optionList.ChooseAsync(source, PlacementMode.Right);
                 if (c != null) {
+                    NodeElement newElement;
+
                     if (c == itemSupplyOption) {
                         newElement = new NodeElement(SupplyNode.Create(item, GraphViewModel.Graph), GraphViewModel);
                     } else if (c is RecipeChoice rc) {
@@ -322,6 +327,8 @@ namespace Foreman
                             RecipeNode.Create(rc.Recipe, GraphViewModel.Graph), GraphViewModel);
                     } else if (c == itemOutputOption) {
                         newElement = new NodeElement(ConsumerNode.Create(item, GraphViewModel.Graph), GraphViewModel);
+                    } else {
+                        continue;
                     }
 
                     newElement.Update();
@@ -499,8 +506,11 @@ namespace Foreman
             await LoadGraph(dialog.FileName);
         }
 
-        private async Task LoadGraph(string filePath)
+        private async Task LoadGraph(string? filePath)
         {
+            if (filePath == null)
+                return;
+
             try {
                 await GraphViewModel.LoadFromJson(JObject.Parse(File.ReadAllText(filePath)));
 
@@ -551,6 +561,9 @@ namespace Foreman
 
         private void OnLanguageChanged()
         {
+            if (SelectedLanguage == null)
+                return;
+
             string newLocale = SelectedLanguage.Name;
             Task.Run(async () => await DataCache.Current.ChangeLocaleAsync(newLocale));
 

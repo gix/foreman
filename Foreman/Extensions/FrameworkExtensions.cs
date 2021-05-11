@@ -2,6 +2,7 @@ namespace Foreman.Extensions
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls.Primitives;
@@ -49,7 +50,7 @@ namespace Foreman.Extensions
             return dialog.ShowDialog(hwndSource?.RootVisual as Window);
         }
 
-        public static T GetRootVisual<T>(this DependencyObject obj) where T : Visual
+        public static T? GetRootVisual<T>(this DependencyObject obj) where T : Visual
         {
             while (true) {
                 if (obj is Visual visual) {
@@ -57,18 +58,18 @@ namespace Foreman.Extensions
                     return source?.RootVisual as T;
                 }
 
-                if (!(obj is FrameworkContentElement element))
+                if (obj is not FrameworkContentElement element)
                     return null;
 
                 obj = element.Parent;
             }
         }
 
-        public static DependencyObject FindVisualRoot(this DependencyObject obj)
+        public static DependencyObject? FindVisualRoot(this DependencyObject? obj)
         {
             bool includeContentElements = true;
             while (obj != null) {
-                DependencyObject parent = GetVisualParent(obj, includeContentElements);
+                DependencyObject? parent = GetVisualParent(obj, includeContentElements);
                 if (parent == null)
                     return obj;
 
@@ -79,7 +80,7 @@ namespace Foreman.Extensions
             return null;
         }
 
-        private static DependencyObject GetVisualParent(
+        private static DependencyObject? GetVisualParent(
             DependencyObject obj, bool includeContentElements)
         {
             if (includeContentElements && obj is ContentElement current)
@@ -88,7 +89,7 @@ namespace Foreman.Extensions
             return VisualTreeHelper.GetParent(obj);
         }
 
-        public static DependencyObject GetVisualOrLogicalParent(this DependencyObject sourceElement)
+        public static DependencyObject? GetVisualOrLogicalParent(this DependencyObject? sourceElement)
         {
             if (sourceElement == null)
                 return null;
@@ -98,36 +99,36 @@ namespace Foreman.Extensions
             return LogicalTreeHelper.GetParent(sourceElement);
         }
 
-        public static T FindVisualChild<T>(this Visual root) where T : Visual
+        public static T? FindVisualChild<T>(this Visual root) where T : Visual
         {
             return root.FindVisualChild<T>(v => v != null);
         }
 
-        public static T FindVisualChild<T>(this Visual root, Predicate<T> predicate)
+        public static T? FindVisualChild<T>(this Visual root, Predicate<T?> predicate)
             where T : Visual
         {
             return root.FindVisualChildren(predicate).FirstOrDefault();
         }
 
         public static IEnumerable<T> FindVisualChildren<T>(
-            this Visual root, Predicate<T> predicate) where T : Visual
+            this Visual root, Predicate<T?> predicate) where T : Visual
         {
             return from v in root.EnumerateVisualTree().OfType<T>()
                    where predicate(v)
                    select v;
         }
 
-        public static T FindVisualParent<T>(this Visual element) where T : Visual
+        public static T? FindVisualParent<T>(this Visual element) where T : Visual
         {
-            for (Visual it = element; it != null; it = VisualTreeHelper.GetParent(it) as Visual) {
+            for (Visual? it = element; it != null; it = VisualTreeHelper.GetParent(it) as Visual) {
                 if (it is T result)
                     return result;
             }
 
-            return default(T);
+            return default;
         }
 
-        public static T FindParent<T>(this FrameworkElement element)
+        public static T? FindParent<T>(this FrameworkElement element)
             where T : FrameworkElement
         {
             for (var it = element.TemplatedParent as FrameworkElement;
@@ -139,14 +140,14 @@ namespace Foreman.Extensions
             return null;
         }
 
-        public static TAncestor FindAncestor<TAncestor>(this DependencyObject obj)
+        public static TAncestor? FindAncestor<TAncestor>(this DependencyObject obj)
             where TAncestor : class
         {
-            return obj.FindAncestor<TAncestor>(x => true);
+            return obj.FindAncestor<TAncestor>(_ => true);
         }
 
-        public static TAncestor FindAncestor<TAncestor>(
-            this DependencyObject obj, Func<TAncestor, bool> predicate)
+        public static TAncestor? FindAncestor<TAncestor>(
+            this DependencyObject? obj, Func<TAncestor, bool> predicate)
             where TAncestor : class
         {
             if (obj == null)
@@ -161,7 +162,7 @@ namespace Foreman.Extensions
             return null;
         }
 
-        public static TAncestor FindAncestorOrSelf<TAncestor>(
+        public static TAncestor? FindAncestorOrSelf<TAncestor>(
             this DependencyObject obj) where TAncestor : DependencyObject
         {
             if (obj == null)
@@ -184,7 +185,7 @@ namespace Foreman.Extensions
         ///   The first visual descendant that satisfies the predicate, or
         ///   <see langword="null"/> if no descendant is found.
         /// </returns>
-        public static T FindDescendant<T>(this DependencyObject obj)
+        public static T? FindDescendant<T>(this DependencyObject? obj)
             where T : DependencyObject
         {
             if (obj == null)
@@ -192,8 +193,7 @@ namespace Foreman.Extensions
 
             for (int idx = 0; idx < VisualTreeHelper.GetChildrenCount(obj); ++idx) {
                 DependencyObject child = VisualTreeHelper.GetChild(obj, idx);
-                if (child == null)
-                    continue;
+                Debug.Assert(child != null);
 
                 var descendant = child as T ?? child.FindDescendant<T>();
                 if (descendant != null)
@@ -215,13 +215,13 @@ namespace Foreman.Extensions
         ///   descendant that satisfies the predicate, or <see langword="null"/>
         ///   if no descendant is found.
         /// </returns>
-        public static T FindDescendantOrSelf<T>(this DependencyObject obj)
+        public static T? FindDescendantOrSelf<T>(this DependencyObject obj)
             where T : DependencyObject
         {
             return obj as T ?? obj.FindDescendant<T>();
         }
 
-        public static IEnumerable<Visual> EnumerateVisualTree(this Visual root)
+        public static IEnumerable<Visual> EnumerateVisualTree(this Visual? root)
         {
             if (root == null)
                 yield break;

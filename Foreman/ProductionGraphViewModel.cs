@@ -4,6 +4,7 @@ namespace Foreman
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
@@ -16,9 +17,11 @@ namespace Foreman
     public class ProductionGraphViewModel
         : ViewModel, IInteractiveCanvasViewModel, ISerializable
     {
+        private static readonly ProductionGraph emptyGraph = new();
+
         private bool showAssemblers;
         private bool showMiners;
-        private ProductionGraph graph;
+        private ProductionGraph? graph;
 
         private double scale = 1.0;
         private Vector offset;
@@ -39,15 +42,14 @@ namespace Foreman
                 Elements.Add(sourceElement.Clone());
         }
 
-        public ObservableCollection<GraphElement> Elements { get; } =
-            new();
+        public ObservableCollection<GraphElement> Elements { get; } = new();
 
-        public ObservableCollection<GraphElement> SelectedItems { get; } =
-            new();
+        public ObservableCollection<GraphElement> SelectedItems { get; } = new();
 
+        [AllowNull]
         public ProductionGraph Graph
         {
-            get => graph;
+            get => graph ?? emptyGraph;
             set
             {
                 if (graph != null)
@@ -114,14 +116,14 @@ namespace Foreman
             }
         }
 
-        private void OnGraphNodeValuesUpdated(object sender, EventArgs e)
+        private void OnGraphNodeValuesUpdated(object? sender, EventArgs e)
         {
             UpdateNodes();
         }
 
         public NodeElement GetElementForNode(ProductionNode node)
         {
-            return Elements.OfType<NodeElement>().FirstOrDefault(e => e.DisplayedNode == node);
+            return Elements.OfType<NodeElement>().First(e => e.DisplayedNode == node);
         }
 
         public void PositionNodes()
@@ -232,8 +234,6 @@ namespace Foreman
         {
             if (data.IsDataPresent<HashSet<Item>>()) {
                 foreach (Item item in data.GetData<HashSet<Item>>()) {
-                    NodeElement newElement = null;
-
                     var itemSupplyOption =
                         new ItemChoice(item, "Create infinite supply node", item.FriendlyName);
                     var itemOutputOption = new ItemChoice(item, "Create output node", item.FriendlyName);
@@ -255,8 +255,9 @@ namespace Foreman
                             recipe.FriendlyName));
                     }
 
-                    Choice c = await optionList.ChooseAsync(screenPosition);
+                    Choice? c = await optionList.ChooseAsync(screenPosition);
                     if (c != null) {
+                        NodeElement newElement;
                         if (c == itemSupplyOption) {
                             newElement = new NodeElement(SupplyNode.Create(item, Graph), this);
                         } else if (c == itemPassthroughOption) {
@@ -267,6 +268,7 @@ namespace Foreman
                             newElement = new NodeElement(RecipeNode.Create(rc.Recipe, Graph), this);
                         } else {
                             Trace.Fail("No handler for selected item");
+                            return;
                         }
 
                         newElement.Update();
@@ -368,46 +370,47 @@ namespace Foreman
         public async Task SuggestConnect(Pin pin, Point canvasPosition, Point screenPosition)
         {
             var startConnectionType = pin.Kind;
-            NodeElement supplierElement = pin.Kind == PinKind.Output ? pin.Node : null;
-            NodeElement consumerElement = pin.Kind == PinKind.Input ? pin.Node : null;
             Item item = pin.Item;
 
-            if (startConnectionType == PinKind.Output && consumerElement == null) {
-                var recipeOptionList = new List<Choice>();
+            if (startConnectionType == PinKind.Output) {
+                NodeElement supplierElement = pin.Node;
 
                 var itemOutputOption = new ItemChoice(item, "Create output node", item.FriendlyName);
                 var itemPassthroughOption = new ItemChoice(item, "Create pass-through node", item.FriendlyName);
 
-                recipeOptionList.Add(itemOutputOption);
-                recipeOptionList.Add(itemPassthroughOption);
-
-                foreach (Recipe recipe in DataCache.Current.RecipesConsuming(item).Where(IsEligible)) {
-                    recipeOptionList.Add(new RecipeChoice(recipe, "Use recipe " + recipe.FriendlyName,
-                        recipe.FriendlyName));
-                }
+                var recipeOptionList = new List<Choice> {
+                    itemOutputOption,
+                    itemPassthroughOption
+                };
+                AddChoices(recipeOptionList, DataCache.Current.RecipesConsuming(item).Where(IsEligible));
 
                 var c = await recipeOptionList.ChooseAsync(screenPosition);
                 if (c != null) {
-                    NodeElement newElement = null;
+                    NodeElement newElement;
                     if (c is RecipeChoice rc) {
                         newElement = new NodeElement(RecipeNode.Create(rc.Recipe, Graph), this);
                     } else if (c == itemOutputOption) {
-                        var node = ConsumerNode.Create(((ItemChoice)c).Item, Graph);
+                        var node = ConsumerNode.Create(((ItemChoice)c).Item!, Graph);
                         node.RateType = RateType.Auto;
                         newElement = new NodeElement(node, this);
                     } else if (c == itemPassthroughOption) {
-                        var node = PassthroughNode.Create(((ItemChoice)c).Item, Graph);
+                        var node = PassthroughNode.Create(((ItemChoice)c).Item!, Graph);
                         node.RateType = RateType.Auto;
                         newElement = new NodeElement(node, this);
                     } else {
                         Trace.Fail("Unhandled option: " + c);
+                        return;
+                    }
+
+                    var link = NodeLink.Create(supplierElement.DisplayedNode, newElement.DisplayedNode, item);
+                    if (link == null) {
+                        Debug.Fail("NodeLink null");
+                        return;
                     }
 
                     newElement.Update();
                     newElement.Position = canvasPosition;
-                    //new Vector(-newElement.Width / 2, -newElement.Height / 2));
 
-                    var link = NodeLink.Create(supplierElement.DisplayedNode, newElement.DisplayedNode, item);
                     var source = supplierElement.Outputs.First(x => x.Item == item);
                     var destination = newElement.Inputs.First(x => x.Item == item);
                     var connector = new Connector(link, source, destination);
@@ -416,39 +419,43 @@ namespace Foreman
                 }
 
                 Graph.UpdateNodeValues();
-            } else if (startConnectionType == PinKind.Input && supplierElement == null) {
-                var recipeOptionList = new List<Choice>();
+            } else if (startConnectionType == PinKind.Input) {
+                NodeElement consumerElement = pin.Node;
 
                 var itemSupplyOption = new ItemChoice(item, "Create infinite supply node", item.FriendlyName);
                 var itemPassthroughOption = new ItemChoice(item, "Create pass-through node", item.FriendlyName);
 
-                recipeOptionList.Add(itemSupplyOption);
-                recipeOptionList.Add(itemPassthroughOption);
-
-                foreach (Recipe recipe in DataCache.Current.RecipesSupplying(item).Where(IsEligible)) {
-                    recipeOptionList.Add(new RecipeChoice(recipe, "Use recipe " + recipe.FriendlyName,
-                        recipe.FriendlyName));
-                }
+                var recipeOptionList = new List<Choice> {
+                    itemSupplyOption,
+                    itemPassthroughOption
+                };
+                AddChoices(recipeOptionList, DataCache.Current.RecipesSupplying(item).Where(IsEligible));
 
                 var c = await recipeOptionList.ChooseAsync(screenPosition);
                 if (c != null) {
-                    NodeElement newElement = null;
+                    NodeElement newElement;
                     if (c is RecipeChoice rc) {
                         newElement = new NodeElement(RecipeNode.Create(rc.Recipe, Graph), this);
                     } else if (c == itemSupplyOption) {
-                        newElement = new NodeElement(SupplyNode.Create(((ItemChoice)c).Item, Graph), this);
+                        newElement = new NodeElement(SupplyNode.Create(((ItemChoice)c).Item!, Graph), this);
                     } else if (c == itemPassthroughOption) {
-                        var node = PassthroughNode.Create(((ItemChoice)c).Item, Graph);
+                        var node = PassthroughNode.Create(((ItemChoice)c).Item!, Graph);
                         node.RateType = RateType.Auto;
                         newElement = new NodeElement(node, this);
                     } else {
                         Trace.Fail("Unhandled option: " + c);
+                        return;
                     }
-                    newElement.Update();
-                    newElement.Position = canvasPosition;
-                    //new Vector(-newElement.Width / 2, -newElement.Height / 2));
 
                     var link = NodeLink.Create(newElement.DisplayedNode, consumerElement.DisplayedNode, item);
+                    if (link == null) {
+                        Debug.Fail("NodeLink null");
+                        return;
+                    }
+
+                    newElement.Update();
+                    newElement.Position = canvasPosition;
+
                     var source = newElement.Outputs.First(x => x.Item == item);
                     var destination = consumerElement.Inputs.First(x => x.Item == item);
                     var connector = new Connector(link, source, destination);
@@ -458,6 +465,13 @@ namespace Foreman
 
                 Graph.UpdateNodeValues();
             }
+        }
+
+        private static void AddChoices(List<Choice> choices, IEnumerable<Recipe> recipes)
+        {
+            choices.AddRange(
+                recipes.Select(x =>
+                    new RecipeChoice(x, "Use recipe " + x.FriendlyName, x.FriendlyName)));
         }
 
         public ProductionGraphViewModel(SerializationInfo info, StreamingContext context)
@@ -492,7 +506,7 @@ namespace Foreman
             Elements.Clear();
 
             //Has to go first, as all other data depends on which mods are loaded
-            var enabledMods = json["EnabledMods"].ToSet(t => (string)t);
+            var enabledMods = json["EnabledMods"]!.ToSet(t => (string)t!);
             bool modified = false;
             foreach (Mod mod in DataCache.Current.Mods) {
                 var modEnabled = enabledMods.Contains(mod.Name);
@@ -506,33 +520,33 @@ namespace Foreman
                 await Task.Run(() => DataCache.Reload(mods));
             }
 
-            Graph.SelectedAmountType = (AmountType)(int)json["AmountType"];
-            Graph.SelectedUnit = (RateUnit)(int)json["Unit"];
+            Graph.SelectedAmountType = (AmountType)(int)json["AmountType"]!;
+            Graph.SelectedUnit = (RateUnit)(int)json["Unit"]!;
 
-            List<JToken> nodes = json["Nodes"].ToList();
+            List<JToken> nodes = json["Nodes"]!.ToList();
             foreach (var node in nodes) {
-                ProductionNode newNode = null;
+                ProductionNode? newNode = null;
 
-                switch ((string)node["NodeType"]) {
+                switch ((string)node["NodeType"]!) {
                     case "Consumer": {
-                            string itemName = (string)node["ItemName"];
+                            string itemName = (string)node["ItemName"]!;
                             if (DataCache.Current.Items.ContainsKey(itemName)) {
                                 Item item = DataCache.Current.Items[itemName];
                                 newNode = ConsumerNode.Create(item, Graph);
                             } else {
-                                Item missingItem = new Item(itemName);
+                                var missingItem = new Item(itemName);
                                 missingItem.IsMissingItem = true;
                                 newNode = ConsumerNode.Create(missingItem, Graph);
                             }
                             break;
                         }
                     case "Supply": {
-                            string itemName = (string)node["ItemName"];
+                            string itemName = (string)node["ItemName"]!;
                             if (DataCache.Current.Items.ContainsKey(itemName)) {
                                 Item item = DataCache.Current.Items[itemName];
                                 newNode = SupplyNode.Create(item, Graph);
                             } else {
-                                Item missingItem = new Item(itemName);
+                                var missingItem = new Item(itemName);
                                 missingItem.IsMissingItem = true;
                                 DataCache.Current.Items.Add(itemName, missingItem);
                                 newNode = SupplyNode.Create(missingItem, Graph);
@@ -540,7 +554,7 @@ namespace Foreman
                             break;
                         }
                     case "PassThrough": {
-                            string itemName = (string)node["ItemName"];
+                            string itemName = (string)node["ItemName"]!;
                             if (DataCache.Current.Items.ContainsKey(itemName)) {
                                 Item item = DataCache.Current.Items[itemName];
                                 newNode = PassthroughNode.Create(item, Graph);
@@ -553,7 +567,7 @@ namespace Foreman
                             break;
                         }
                     case "Recipe": {
-                            string recipeName = (string)node["RecipeName"];
+                            string recipeName = (string)node["RecipeName"]!;
                             if (DataCache.Current.Recipes.ContainsKey(recipeName)) {
                                 Recipe recipe = DataCache.Current.Recipes[recipeName];
                                 newNode = RecipeNode.Create(recipe, Graph);
@@ -566,7 +580,7 @@ namespace Foreman
                             }
 
                             if (node["Assembler"] != null) {
-                                var assemblerKey = (string)node["Assembler"];
+                                var assemblerKey = (string)node["Assembler"]!;
                                 if (DataCache.Current.Assemblers.ContainsKey(assemblerKey)) {
                                     ((RecipeNode)newNode).Assembler = DataCache.Current.Assemblers[assemblerKey];
                                 }
@@ -582,17 +596,17 @@ namespace Foreman
                 }
 
                 if (newNode != null) {
-                    newNode.RateType = (RateType)(int)node["RateType"];
+                    newNode.RateType = (RateType)(int)node["RateType"]!;
                     if (newNode.RateType == RateType.Manual) {
                         if (node["DesiredRate"] != null) {
-                            newNode.DesiredRate = (float)node["DesiredRate"];
+                            newNode.DesiredRate = (float)node["DesiredRate"]!;
                         } else {
                             // Legacy data format stored desired rate in actual
-                            newNode.DesiredRate = (float)node["ActualRate"];
+                            newNode.DesiredRate = (float)node["ActualRate"]!;
                         }
                     }
                     if (node["BeaconModules"] != null) {
-                        foreach (var entry in node["BeaconModules"].ToObject<Dictionary<string, int>>()) {
+                        foreach (var entry in node["BeaconModules"]!.ToObject<Dictionary<string, int>>()!) {
                             var module = DataCache.Current.Modules.GetValueOrDefault(entry.Key);
                             if (module != null)
                                 newNode.BeaconModules.Add(module, entry.Value);
@@ -600,22 +614,21 @@ namespace Foreman
                     }
 
                     if (node["SpeedBonus"] != null)
-                        newNode.BeaconModules.OverrideSpeedBonus = node["SpeedBonus"].Value<double?>();
+                        newNode.BeaconModules.OverrideSpeedBonus = node["SpeedBonus"]?.Value<double?>();
                     if (node["ProductivityBonus"] != null)
-                        newNode.BeaconModules.OverrideProductivityBonus = node["ProductivityBonus"].Value<double?>();
+                        newNode.BeaconModules.OverrideProductivityBonus = node["ProductivityBonus"]?.Value<double?>();
                     if (node["ConsumptionBonus"] != null)
-                        newNode.BeaconModules.OverrideConsumptionBonus = node["ConsumptionBonus"].Value<double?>();
+                        newNode.BeaconModules.OverrideConsumptionBonus = node["ConsumptionBonus"]?.Value<double?>();
                 }
             }
 
-            List<JToken> nodeLinks = json["NodeLinks"].ToList();
+            List<JToken> nodeLinks = json["NodeLinks"]!.ToList();
             foreach (var nodeLink in nodeLinks) {
-                ProductionNode supplier = Graph.Nodes[(int)nodeLink["Supplier"]];
-                ProductionNode consumer = Graph.Nodes[(int)nodeLink["Consumer"]];
+                ProductionNode supplier = Graph.Nodes[(int)nodeLink["Supplier"]!];
+                ProductionNode consumer = Graph.Nodes[(int)nodeLink["Consumer"]!];
 
-                string itemName = (string)nodeLink["Item"];
+                string itemName = (string)nodeLink["Item"]!;
                 if (!DataCache.Current.Items.ContainsKey(itemName)) {
-                    Item missingItem = new Item(itemName);
                     missingItem.IsMissingItem = true;
                     DataCache.Current.Items.Add(itemName, missingItem);
                 }
@@ -629,20 +642,20 @@ namespace Foreman
                 NodeLink.Create(supplier, consumer, item);
             }
 
-            var enabledAssemblers = json["EnabledAssemblers"].ToSet(t => (string)t);
+            var enabledAssemblers = json["EnabledAssemblers"]!.ToSet(t => (string)t!);
             foreach (Assembler assembler in DataCache.Current.Assemblers.Values)
                 assembler.Enabled = enabledAssemblers.Contains(assembler.Name);
 
-            var enabledMiners = json["EnabledMiners"].ToSet(t => (string)t);
+            var enabledMiners = json["EnabledMiners"]!.ToSet(t => (string)t!);
             foreach (Miner miner in DataCache.Current.Miners.Values)
                 miner.Enabled = enabledMiners.Contains(miner.Name);
 
-            var enabledModules = json["EnabledModules"].ToSet(t => (string)t);
+            var enabledModules = json["EnabledModules"]!.ToSet(t => (string)t!);
             foreach (Module module in DataCache.Current.Modules.Values)
                 module.Enabled = enabledModules.Contains(module.Name);
 
-            if (json.TryGetValue("EnabledRecipes", out JToken enabledRecipesToken)) {
-                var enabledRecipes = enabledRecipesToken.ToSet(t => (string)t);
+            if (json.TryGetValue("EnabledRecipes", out JToken? enabledRecipesToken)) {
+                var enabledRecipes = enabledRecipesToken.ToSet(t => (string)t!);
                 foreach (Recipe recipe in DataCache.Current.Recipes.Values)
                     recipe.Enabled = enabledRecipes.Contains(recipe.Name);
             }
@@ -650,7 +663,7 @@ namespace Foreman
             Graph.UpdateNodeValues();
             AddRemoveElements();
 
-            var elementLocations = json["ElementLocations"].ToList();
+            var elementLocations = json["ElementLocations"]!.ToList();
             for (int i = 0; i < elementLocations.Count; ++i) {
                 var element = GetElementForNode(Graph.Nodes[i]);
                 element.Position = elementLocations[i].ToObject<Point>();

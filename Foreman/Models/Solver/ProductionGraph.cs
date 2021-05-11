@@ -18,7 +18,7 @@ namespace Foreman
 
     public class ProductionGraph
     {
-        private int[,] adjacencyMatrixCache;
+        private int[,]? adjacencyMatrixCache;
 
         public List<ProductionNode> Nodes { get; } = new();
 
@@ -132,7 +132,7 @@ namespace Foreman
             */
         }
 
-        public event EventHandler NodeValuesUpdated;
+        public event EventHandler? NodeValuesUpdated;
 
         public void UpdateNodeValues()
         {

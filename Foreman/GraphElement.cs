@@ -11,13 +11,6 @@ namespace Foreman
         {
         }
 
-        protected GraphElement(ProductionGraphViewModel parent)
-        {
-            Parent = parent;
-        }
-
-        public ProductionGraphViewModel Parent { get; }
-
         public bool IsSelected
         {
             get => isSelected;

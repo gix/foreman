@@ -19,7 +19,7 @@ namespace Foreman.Extensions
 
         public static PushBindingCollection GetBindings(DependencyObject d)
         {
-            var bindings = (PushBindingCollection)d.GetValue(BindingsProperty);
+            var bindings = (PushBindingCollection?)d.GetValue(BindingsProperty);
             if (bindings == null) {
                 d.SetValue(BindingsProperty, new PushBindingCollection(d));
                 bindings = (PushBindingCollection)d.GetValue(BindingsProperty);
@@ -45,20 +45,20 @@ namespace Foreman.Extensions
             ((INotifyCollectionChanged)this).CollectionChanged += CollectionChanged;
         }
 
-        public DependencyObject TargetObject { get; }
+        public DependencyObject? TargetObject { get; }
 
-        private void CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null) {
                 foreach (PushBinding binding in e.NewItems)
-                    binding.SetupTargetBinding(TargetObject);
+                    binding.SetupTargetBinding(TargetObject!);
             }
         }
     }
 
     public abstract class FreezableBindingBase : Freezable
     {
-        private Binding binding;
+        private Binding? binding;
 
         protected Binding Binding => binding ??= new Binding();
 
@@ -99,7 +99,7 @@ namespace Foreman.Extensions
         }
 
         [DefaultValue(null)]
-        public string ElementName
+        public string? ElementName
         {
             get => Binding.ElementName;
             set => Binding.ElementName = value;
@@ -148,21 +148,21 @@ namespace Foreman.Extensions
         }
 
         [DefaultValue(null)]
-        public PropertyPath Path
+        public PropertyPath? Path
         {
             get => Binding.Path;
             set => Binding.Path = value;
         }
 
         [DefaultValue(null)]
-        public RelativeSource RelativeSource
+        public RelativeSource? RelativeSource
         {
             get => Binding.RelativeSource;
             set => Binding.RelativeSource = value;
         }
 
         [DefaultValue(null)]
-        public object Source
+        public object? Source
         {
             get => Binding.Source;
             set => Binding.Source = value;
@@ -279,12 +279,12 @@ namespace Foreman.Extensions
         }
 
         [DefaultValue(null)]
-        public string TargetProperty { get; set; }
+        public string? TargetProperty { get; set; }
 
         [DefaultValue(null)]
-        public DependencyProperty TargetDependencyProperty { get; set; }
+        public DependencyProperty? TargetDependencyProperty { get; set; }
 
-        public void SetupTargetBinding(DependencyObject targetObject)
+        public void SetupTargetBinding(DependencyObject? targetObject)
         {
             if (targetObject == null)
                 return;
