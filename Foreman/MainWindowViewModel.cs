@@ -586,6 +586,9 @@ namespace Foreman
                 await GraphViewModel.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewModel)));
                 UpdateControlValues();
             }
+
+            GraphViewModel.Graph.UpdateNodeValues();
+            GraphViewModel.UpdateNodes();
         }
 
         private void SaveEnabledObjects()
