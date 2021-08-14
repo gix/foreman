@@ -32,11 +32,17 @@ namespace Foreman
             init => uniqueIcon = value;
         }
 
+        public LocalizationInfo? LocalizedName { get; set; }
+
         public string FriendlyName
         {
             get
             {
+                if (LocalizedName != null)
+                    return DataCache.Current.GetLocalizedString(Name, LocalizedName);
                 if (DataCache.Current.TryGetLocalizedString("recipe-name", Name, out var friendlyName))
+                    return friendlyName;
+                if (DataCache.Current.TryGetLocalizedString("item-name", Name, out friendlyName))
                     return friendlyName;
                 if (Results.Count == 1)
                     return Results.Keys.First().FriendlyName;

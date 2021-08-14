@@ -1153,15 +1153,18 @@ namespace Foreman
                 }
 
                 float time = timeSource.FloatOrDefault("energy_required", 0.5f);
+                if (time == 0.0f)
+                    time = DefaultRecipeTime;
 
                 Dictionary<Item, float> ingredients = ExtractIngredientsFromLuaRecipe(values);
                 Dictionary<Item, float> results = ExtractResultsFromLuaRecipe(values);
 
                 var newRecipe = new Recipe(
-                    name, time == 0.0f ? DefaultRecipeTime : time, ingredients, results) {
+                    name, time, ingredients, results) {
                     Category = values.StringOrDefault("category", "crafting"),
                     Icon = LoadModImage(values)
                 };
+                newRecipe.LocalizedName = GetLocalizationInfo(values);
 
                 foreach (Item result in results.Keys)
                     result.Recipes.Add(newRecipe);
