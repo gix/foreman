@@ -121,6 +121,7 @@
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
           <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <GroupBox Grid.Column="0" Header="Show production amounts as…"
@@ -147,14 +148,42 @@
             </Grid>
           </StackPanel>
         </GroupBox>
-        <GroupBox Grid.Column="1" Margin="3" Header="Assemblers"
+        <GroupBox Grid.Column="1" Margin="3" Header="Modules"
+                  VerticalAlignment="Stretch">
+          <Grid Margin="3">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Row="0" Grid.Column="0" Margin="3" Content="Default:"
+                   Target="{Binding ElementName=ModuleStrategySelector}"/>
+            <ComboBox x:Name="ModuleStrategySelector" Grid.Row="0" Grid.Column="1"
+                      Margin="3"
+                      Width="150"
+                      SelectedValue="{Binding SelectedModuleStrategy}"
+                      SelectedValuePath="Tag"
+                      VerticalAlignment="Top">
+              <ComboBoxItem Tag="{x:Static f:ModuleSelector.None}">None</ComboBoxItem>
+              <ComboBoxItem Tag="{x:Static f:ModuleSelector.Fastest}">Fastest</ComboBoxItem>
+              <ComboBoxItem Tag="{x:Static f:ModuleSelector.Productive}">Most Productive</ComboBoxItem>
+              <ComboBoxItem Tag="{x:Static f:ModuleSelector.Efficient}">Most Efficient</ComboBoxItem>
+            </ComboBox>
+            <Button Grid.Row="1" Grid.Column="1" Content="Set all to default"
+                    Command="{Binding ApplyDefaultModulesToNodesCommand}"/>
+          </Grid>
+        </GroupBox>
+        <GroupBox Grid.Column="2" Margin="3" Header="Assemblers"
                   VerticalAlignment="Stretch">
           <StackPanel>
             <CheckBox Margin="3" Content="Display Assemblers" IsChecked="{Binding ShowAssemblers}"/>
             <CheckBox Margin="3" Content="Display Miners/Pumpjacks" IsChecked="{Binding ShowMiners}"/>
           </StackPanel>
         </GroupBox>
-        <Grid Grid.Column="2" Margin="3" VerticalAlignment="Stretch">
+        <Grid Grid.Column="3" Margin="3" VerticalAlignment="Stretch">
           <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="Auto"/>
@@ -168,7 +197,7 @@
           <Button Grid.Row="1" Margin="0,3,0,0" Content="Enable/disable loaded objects"
                   Command="{Binding EnableDisableCommand}"/>
         </Grid>
-        <GroupBox Grid.Column="3" Margin="3" Header="Difficulty" VerticalAlignment="Stretch">
+        <GroupBox Grid.Column="4" Margin="3" Header="Difficulty" VerticalAlignment="Stretch">
           <StackPanel>
             <RadioButton Margin="3" Content="Normal"
                          IsChecked="{f:EnumToBoolBinding Path=Difficulty, EnumValue={x:Static v:Difficulty.Normal}}"/>

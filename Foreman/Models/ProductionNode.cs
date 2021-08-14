@@ -196,7 +196,7 @@ namespace Foreman
     {
         protected EffectableNode(ProductionGraph graph) : base(graph)
         {
-            Modules = ModuleSelector.Fastest;
+            Modules = ModuleSelector.Default;
         }
 
         public ModuleSelector Modules { get; set; }

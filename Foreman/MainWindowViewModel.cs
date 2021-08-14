@@ -36,6 +36,7 @@ namespace Foreman
         private string recipeFilterText = string.Empty;
         private AmountType amountType = AmountType.FixedAmount;
         private RateUnit selectedRateUnit = RateUnit.PerSecond;
+        private ModuleSelector selectedModuleStrategy = ModuleSelector.None;
         private string luaOutput = string.Empty;
 
         public MainWindowViewModel(IMainWindow view)
@@ -50,6 +51,7 @@ namespace Foreman
             CompleteGraphCommand = new AsyncDelegateCommand(CompleteGraph);
             ClearGraphCommand = new AsyncDelegateCommand(ClearGraph);
             ArrangeNodesCommand = new AsyncDelegateCommand(ArrangeNodes);
+            ApplyDefaultModulesToNodesCommand = new AsyncDelegateCommand(ApplyDefaultModulesToNodes);
             NewGraphCommand = new AsyncDelegateCommand(NewGraph);
             SaveGraphCommand = new AsyncDelegateCommand(SaveGraph);
             SaveGraphAsCommand = new AsyncDelegateCommand(SaveGraphAs);
@@ -74,6 +76,7 @@ namespace Foreman
         public AsyncDelegateCommand CompleteGraphCommand { get; }
         public AsyncDelegateCommand ClearGraphCommand { get; }
         public AsyncDelegateCommand ArrangeNodesCommand { get; }
+        public AsyncDelegateCommand ApplyDefaultModulesToNodesCommand { get; }
         public AsyncDelegateCommand NewGraphCommand { get; }
         public AsyncDelegateCommand SaveGraphCommand { get; }
         public AsyncDelegateCommand SaveGraphAsCommand { get; }
@@ -190,6 +193,16 @@ namespace Foreman
             }
         }
 
+        public ModuleSelector SelectedModuleStrategy
+        {
+            get => selectedModuleStrategy;
+            set
+            {
+                if (SetProperty(ref selectedModuleStrategy, value))
+                    OnSelectedModuleStrategyChanged();
+            }
+        }
+
         public string LuaOutput
         {
             get => luaOutput;
@@ -276,6 +289,7 @@ namespace Foreman
 
             ShowAssemblers = GraphViewModel.ShowAssemblers = Settings.Default.ShowAssemblers;
             ShowMiners = GraphViewModel.ShowMiners = Settings.Default.ShowMiners;
+            SelectedModuleStrategy = ModuleSelector.FromName(Settings.Default.DefaultModuleStrategy);
 
             await Task.Run(DataCache.Reload);
 
@@ -620,6 +634,18 @@ namespace Foreman
         private Task ArrangeNodes()
         {
             GraphViewModel.PositionNodes();
+            return Task.CompletedTask;
+        }
+
+        private Task ApplyDefaultModulesToNodes()
+        {
+            var graph = GraphViewModel.Graph;
+
+            foreach (var node in graph.Nodes.OfType<EffectableNode>())
+                node.Modules = ModuleSelector.Default;
+
+            graph.UpdateNodeValues();
+
             return Task.CompletedTask;
         }
 

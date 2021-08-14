@@ -484,6 +484,7 @@ namespace Foreman
         {
             info.AddValue("AmountType", Graph.SelectedAmountType);
             info.AddValue("Unit", Graph.SelectedUnit);
+            info.AddValue("ModuleStrategy", Graph.SelectedModuleStrategy);
             info.AddValue("Nodes", Graph.Nodes);
             info.AddValue("NodeLinks", Graph.GetAllNodeLinks());
             info.AddValue("ElementLocations",
@@ -523,6 +524,8 @@ namespace Foreman
 
             Graph.SelectedAmountType = (AmountType)(int)json["AmountType"]!;
             Graph.SelectedUnit = (RateUnit)(int)json["Unit"]!;
+            if (json["ModuleStrategy"] is { } t)
+                Graph.SelectedModuleStrategy = ModuleSelector.Load(t);
 
             List<JToken> nodes = json["Nodes"]!.ToList();
             foreach (var node in nodes) {

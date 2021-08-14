@@ -320,7 +320,8 @@ namespace Foreman.Views
             if (BaseNode is not EffectableNode node)
                 return;
 
-            var noneOption = new ItemChoice(null, "None", "None");
+            var defaultOption = new ItemChoice(null, "Default");
+            var noneOption = new ItemChoice(null, "None");
             var fastestOption = new ItemChoice(null, "Fastest");
             var mostProductiveOption = new ItemChoice(null, "Most Productive");
             var mostEfficientOption = new ItemChoice(null, "Most Efficient");
@@ -330,6 +331,7 @@ namespace Foreman.Views
                 .Where(a => a.Enabled && node.IsEffectableBy(a));
 
             var options = new List<Choice> {
+                defaultOption,
                 noneOption,
                 fastestOption,
                 mostProductiveOption,
@@ -344,10 +346,12 @@ namespace Foreman.Views
 
             var c = await options.ChooseAsync(placementTarget, PlacementMode.Right);
             if (c != null) {
-                if (c == fastestOption)
-                    node.Modules = ModuleSelector.Fastest;
+                if (c == defaultOption)
+                    node.Modules = ModuleSelector.Default;
                 else if (c == noneOption)
                     node.Modules = ModuleSelector.None;
+                else if (c == fastestOption)
+                    node.Modules = ModuleSelector.Fastest;
                 else if (c == mostProductiveOption)
                     node.Modules = ModuleSelector.Productive;
                 else if (c == mostEfficientOption)
@@ -369,7 +373,7 @@ namespace Foreman.Views
 
             var optionList = new List<Choice>();
 
-            var noneOption = new ItemChoice(null, "None", "None");
+            var noneOption = new ItemChoice(null, "None");
             optionList.Add(noneOption);
 
             var allowedModules = DataCache.Current.Modules.Values

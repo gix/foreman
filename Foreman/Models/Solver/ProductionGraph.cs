@@ -19,12 +19,25 @@ namespace Foreman
     public class ProductionGraph
     {
         private int[,]? adjacencyMatrixCache;
+        private ModuleSelector selectedModuleStrategy = ModuleSelector.Fastest;
 
         public List<ProductionNode> Nodes { get; } = new();
 
         public RateUnit SelectedUnit { get; set; } = RateUnit.PerSecond;
 
         public AmountType SelectedAmountType { get; set; } = AmountType.FixedAmount;
+
+        public ModuleSelector SelectedModuleStrategy
+        {
+            get => selectedModuleStrategy;
+            set
+            {
+                if (selectedModuleStrategy == value)
+                    return;
+                selectedModuleStrategy = value;
+                UpdateModuleStrategy();
+            }
+        }
 
         public IEnumerable<NodeLink> GetAllNodeLinks()
         {
@@ -133,6 +146,11 @@ namespace Foreman
         }
 
         public event EventHandler? NodeValuesUpdated;
+
+        private void UpdateModuleStrategy()
+        {
+            ModuleSelector.Default.Strategy = SelectedModuleStrategy;
+        }
 
         public void UpdateNodeValues()
         {

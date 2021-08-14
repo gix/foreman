@@ -3,6 +3,7 @@ namespace Foreman
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.Serialization;
     using Extensions;
@@ -14,13 +15,22 @@ namespace Foreman
         public abstract void GetObjectData(SerializationInfo info, StreamingContext context);
         public abstract string Name { get; }
 
-        public static ModuleSelector Fastest => new ModuleSelectorFastest();
+        public static DefaultModuleSelector Default { get; } = new();
+        public static ModuleSelector None { get; } = new ModuleSelectorNone();
+        public static ModuleSelector Fastest { get; } = new ModuleSelectorFastest();
+        public static ModuleSelector Productive { get; } = new ModuleSelectorProductivity();
+        public static ModuleSelector Efficient { get; } = new ModuleSelectorEfficiency();
 
-        public static ModuleSelector None => new ModuleSelectorNone();
-
-        public static ModuleSelector Productive => new ModuleSelectorProductivity();
-
-        public static ModuleSelector Efficient => new ModuleSelectorEfficiency();
+        public static ModuleSelector FromName(string name)
+        {
+            return name switch {
+                "None" => None,
+                "Fastest" => Fastest,
+                "Most Productive" => Productive,
+                "Most Efficient" => Efficient,
+                _ => None,
+            };
+        }
 
         public static ModuleSelector Load(JToken token)
         {
@@ -28,11 +38,14 @@ namespace Foreman
 
             var filterType = token["ModuleFilterType"]?.Value<string>();
             switch (filterType) {
-                case "Fastest":
-                    filter = Fastest;
+                case "Default":
+                    filter = Default;
                     break;
                 case "None":
                     filter = None;
+                    break;
+                case "Fastest":
+                    filter = Fastest;
                     break;
                 case "Most Productive":
                     filter = Productive;
@@ -113,6 +126,47 @@ namespace Foreman
         }
 
         [Serializable]
+        public class DefaultModuleSelector : ModuleSelector
+        {
+            private ModuleSelector? strategy;
+
+            [AllowNull]
+            public ModuleSelector Strategy
+            {
+                get => strategy ?? None;
+                set => strategy = value;
+            }
+
+            public override void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("ModuleFilterType", "Default");
+            }
+
+            public override string Name => "Default";
+
+            protected override IEnumerable<Module> AvailableModules()
+            {
+                return Strategy.AvailableModules();
+            }
+        }
+
+        [Serializable]
+        private class ModuleSelectorNone : ModuleSelector
+        {
+            public override void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("ModuleFilterType", "None");
+            }
+
+            public override string Name => "None";
+
+            protected override IEnumerable<Module> AvailableModules()
+            {
+                return Enumerable.Empty<Module>();
+            }
+        }
+
+        [Serializable]
         private class ModuleSelectorFastest : ModuleSelector
         {
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -157,22 +211,6 @@ namespace Foreman
             protected override IEnumerable<Module> AvailableModules()
             {
                 return DataCache.Current.Modules.Values.OrderBy(m => m.ConsumptionBonus);
-            }
-        }
-
-        [Serializable]
-        private class ModuleSelectorNone : ModuleSelector
-        {
-            public override void GetObjectData(SerializationInfo info, StreamingContext context)
-            {
-                info.AddValue("ModuleFilterType", "None");
-            }
-
-            public override string Name => "None";
-
-            protected override IEnumerable<Module> AvailableModules()
-            {
-                return Enumerable.Empty<Module>();
             }
         }
     }
