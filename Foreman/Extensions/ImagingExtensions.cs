@@ -30,13 +30,15 @@ namespace Foreman.Extensions
             return Color.FromArgb(bytes[3], bytes[2], bytes[1], bytes[0]);
         }
 
-        public static BitmapSource LoadImage(string filePath, int? iconSize = null)
+        public static BitmapSource LoadImage(
+            string filePath, int? iconSize = null, int? iconMipmaps = null)
         {
             using var stream = File.OpenRead(filePath);
-            return LoadImage(stream, iconSize);
+            return LoadImage(stream, iconSize, iconMipmaps);
         }
 
-        public static BitmapSource LoadImage(Stream source, int? iconSize = null)
+        public static BitmapSource LoadImage(
+            Stream source, int? iconSize = null, int? iconMipmaps = null)
         {
             if (!source.CanSeek) {
                 // BitmapImage assumes that unseekable streams are downloaded

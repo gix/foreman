@@ -618,21 +618,82 @@ namespace Foreman
                 return LoadModImage(iconPath, iconSize, iconMipmaps);
 
             var icons = values.TableOrDefault("icons");
-            if (icons != null) {
-                var baseImagePath = ((LuaTable)icons[1]).String("icon");
-                var baseImage = LoadModImage(baseImagePath);
-                // FIXME: Handle composite icons
-                return baseImage;
-            }
+            if (icons != null)
+                return LoadCompositeModImage(icons, iconSize);
 
             return null;
         }
 
-        private BitmapSource? LoadModImage(string filePath, int? iconSize = null)
+        private BitmapSource? LoadCompositeModImage(
+            LuaTable icons, int? compositeIconSize)
+        {
+            var visual = new DrawingVisual();
+            using (var dc = visual.RenderOpen()) {
+                bool first = true;
+
+                if (compositeIconSize == null) {
+                    LuaTable iconTable = icons.Values.OfType<LuaTable>().First();
+                    int? iconSize = iconTable.Int("icon_size");
+                    if (iconSize == null)
+                        return null;
+
+                    compositeIconSize = iconSize / 2;
+                }
+
+                foreach (LuaTable iconTable in icons.Values) {
+                    var iconPath = iconTable.String("icon");
+                    var iconSize = iconTable.Int("icon_size") ?? compositeIconSize;
+                    var iconMipmaps = iconTable.IntOrDefault("icon_mipmaps");
+                    var scale = iconTable.DoubleOrDefault("scale", 1.0);
+                    var shift = iconTable.VectorOrDefault("shift", new Vector()).Value;
+                    var tint = iconTable.ColorOrDefault("tint", Colors.White);
+
+                    if (first) {
+                        first = false;
+                        // The first image seems to always be halved when looking
+                        // in-game. With scale=1 the offsets of other layers are
+                        // too small.
+                        scale = 0.5;
+                    }
+
+                    BitmapSource? icon = LoadModImage(iconPath, iconSize, iconMipmaps);
+                    if (icon == null)
+                        return null;
+                    if (iconSize == null)
+                        return null;
+
+                    double length = iconSize.Value * scale;
+                    double offset = (compositeIconSize.Value - length) / 2;
+                    var rect = new Rect(
+                        new Point(offset, offset) + shift,
+                        new Size(length, length));
+
+                    if (tint.Value.A == 0) {
+                        // Skip
+                    } else if (tint.Value == Colors.White) {
+                        dc.DrawImage(icon, rect);
+                    } else {
+                        dc.DrawImage(icon, rect);
+                        dc.PushOpacityMask(new ImageBrush(icon));
+                        dc.DrawRectangle(new SolidColorBrush(tint.Value), null, rect);
+                        dc.Pop();
+                    }
+                }
+            }
+
+            var image = new RenderTargetBitmap(
+                compositeIconSize.Value, compositeIconSize.Value, 96, 96, PixelFormats.Pbgra32);
+            image.Render(visual);
+            image.Freeze();
+
+            return image;
+        }
+
+        private BitmapSource? LoadModImage(string filePath, int? iconSize = null, int? iconMipmaps = null)
         {
             if (TrySplitModPath(filePath, out string? modName, out string? relativePath)) {
                 var mod = Mods.FirstOrDefault(x => x.Name == modName);
-                return mod?.LoadImage(relativePath, iconSize);
+                return mod?.LoadImage(relativePath, iconSize, iconMipmaps);
             }
 
             if (!File.Exists(filePath)) {

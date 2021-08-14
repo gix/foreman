@@ -206,12 +206,12 @@ namespace Foreman
             return $"{Name}_{Version}/{filePath}";
         }
 
-        public BitmapSource? LoadImage(string filePath, int? iconSize = null)
+        public BitmapSource? LoadImage(string filePath, int? iconSize = null, int? iconMipmaps = null)
         {
             using Stream? input = OpenFile(filePath);
             if (input == null)
                 return null;
-            return ImagingExtensions.LoadImage(input, iconSize);
+            return ImagingExtensions.LoadImage(input, iconSize, iconMipmaps);
         }
 
         public void Register(Lua lua)
