@@ -116,9 +116,9 @@ namespace Foreman
             }
         }
 
-        private void OnGraphNodeValuesUpdated(object? sender, EventArgs e)
+        private void OnGraphNodeValuesUpdated(object? sender, ISet<ProductionNode>? nodes)
         {
-            UpdateNodes();
+            UpdateNodes(nodes);
         }
 
         public NodeElement GetElementForNode(ProductionNode node)
@@ -198,9 +198,13 @@ namespace Foreman
             UpdateNodes();
         }
 
-        public void UpdateNodes()
+        public void UpdateNodes(ISet<ProductionNode>? nodes = null)
         {
-            foreach (NodeElement node in Elements.OfType<NodeElement>().ToList())
+            var nodeElements = Elements.OfType<NodeElement>();
+            if (nodes != null)
+                nodeElements = nodeElements.Where(x => nodes.Contains(x.DisplayedNode));
+
+            foreach (NodeElement node in nodeElements.ToList())
                 node.Update();
         }
 

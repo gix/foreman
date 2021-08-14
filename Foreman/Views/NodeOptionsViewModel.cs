@@ -124,7 +124,7 @@ namespace Foreman.Views
                     }
 
                     BaseNode.DesiredRate = (float)newAmount;
-                    Graph.UpdateNodeValues();
+                    Graph.UpdateNodeValues(BaseNode);
                 }
             }
         }

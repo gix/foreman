@@ -380,14 +380,12 @@ namespace Foreman
         {
             GraphViewModel.Graph.SelectedAmountType = AmountType;
             GraphViewModel.Graph.UpdateNodeValues();
-            GraphViewModel.UpdateNodes();
         }
 
         private void OnSelectedRateUnitChanged()
         {
             GraphViewModel.Graph.SelectedUnit = SelectedRateUnit;
             GraphViewModel.Graph.UpdateNodeValues();
-            GraphViewModel.UpdateNodes();
         }
 
         private Task Exit()

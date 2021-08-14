@@ -20,6 +20,18 @@ namespace Foreman
             graph.UpdateLinkThroughputs();
         }
 
+        public static void FindOptimalGraphToSatisfyFixedNodes(
+            this ProductionGraph graph, ISet<ProductionNode> nodeGroup)
+        {
+            foreach (ProductionNode node in nodeGroup.Where(n => n.RateType == RateType.Auto)) {
+                node.ResetSolvedRate();
+            }
+
+            OptimiseNodeGroup(nodeGroup);
+
+            graph.UpdateLinkThroughputs();
+        }
+
         public static void OptimiseNodeGroup(IEnumerable<ProductionNode> nodeGroup)
         {
             var solver = new ProductionSolver();
