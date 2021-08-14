@@ -1,4 +1,4 @@
-﻿namespace ForemanTest
+namespace ForemanTest
 {
     using System;
     using System.Linq;
