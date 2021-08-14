@@ -892,7 +892,15 @@ namespace Foreman
 
             ParseModDependencies(newMod);
 
-            Mods.Add(newMod);
+            var existing = Mods.FindIndex(x => x.Name == newMod.Name);
+            if (existing != -1) {
+                if (parsedVersion < Mods[existing].ParsedVersion)
+                    return;
+
+                Mods[existing] = newMod;
+            } else {
+                Mods.Add(newMod);
+            }
         }
 
         private void ParseModDependencies(Mod mod)
