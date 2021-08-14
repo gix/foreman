@@ -175,5 +175,35 @@
     <DataTemplate DataType="{x:Type v:NodeOptionsViewModel}">
       <v:NodeOptionsView/>
     </DataTemplate>
+
+    <DataTemplate DataType="{x:Type f:ProgressInfo}">
+      <Border Padding="10" Background="#EEEEEEEE" BorderThickness="1"
+              BorderBrush="#EECCCCCC" HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              MinWidth="300">
+        <StackPanel>
+          <TextBlock Text="{Binding Operation}" Margin="0,0,0,6"/>
+          <ProgressBar x:Name="ProgressBar" BorderThickness="0" Height="4"
+                       Value="{Binding CurrentItem}"
+                       Maximum="{Binding MaximumItems}"
+                       Foreground="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"
+                       Background="Transparent"
+                       Visibility="Collapsed"/>
+        </StackPanel>
+      </Border>
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding ProgressType}" Value="{x:Static f:ProgressType.None}">
+          <Setter TargetName="ProgressBar" Property="Visibility" Value="Collapsed"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding ProgressType}" Value="{x:Static f:ProgressType.Indeterminate}">
+          <Setter TargetName="ProgressBar" Property="Visibility" Value="Visible"/>
+          <Setter TargetName="ProgressBar" Property="IsIndeterminate" Value="True"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding ProgressType}" Value="{x:Static f:ProgressType.Determinate}">
+          <Setter TargetName="ProgressBar" Property="Visibility" Value="Visible"/>
+          <Setter TargetName="ProgressBar" Property="IsIndeterminate" Value="False"/>
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
   </Application.Resources>
 </Application>

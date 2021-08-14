@@ -14,7 +14,11 @@
         TextOptions.TextFormattingMode="Display"
         Width="1200"
         Height="800"
-        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+        Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
+        IsEnabled="{Binding IsEnabled}">
+  <b:Interaction.Behaviors>
+    <f:ShowProgressAdornerBehavior Progress="{Binding LoadProgress}"/>
+  </b:Interaction.Behaviors>
   <Window.Resources>
     <Style TargetType="{x:Type Button}">
       <Setter Property="MinWidth" Value="75"/>

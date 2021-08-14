@@ -24,6 +24,8 @@ namespace Foreman
     {
         private readonly IMainWindow view;
 
+        private bool isEnabled;
+        private ProgressInfo? loadProgress;
         private string? currentGraphFile;
         private List<Item> unfilteredItemList = new();
         private List<Recipe> unfilteredRecipeList = new();
@@ -60,12 +62,35 @@ namespace Foreman
             ExportImageCommand = new AsyncDelegateCommand(ExportImage);
             ChangeFactorioDirectoryCommand = new AsyncDelegateCommand(ChangeFactorioDirectory);
             ChangeModDirectoryCommand = new AsyncDelegateCommand(ChangeModDirectory);
-            ReloadGraphCommand = new AsyncDelegateCommand(ReloadGraph);
-            ReloadDataCommand = new AsyncDelegateCommand(ReloadData);
-            EnableDisableCommand = new AsyncDelegateCommand(EnableDisableItems);
+            ReloadGraphCommand = new AsyncDelegateCommand(OnReloadGraph);
+            ReloadDataCommand = new AsyncDelegateCommand(OnReloadData);
+            EnableDisableCommand = new AsyncDelegateCommand(OnEnableDisableItems);
             AddItemsCommand = new AsyncDelegateCommand<UIElement>(AddItems, CanAddItems);
             AddRecipesCommand = new AsyncDelegateCommand(AddRecipes, CanAddRecipes);
             ShowLuaLogCommand = new AsyncDelegateCommand(ShowLuaLog);
+        }
+
+        public bool IsEnabled
+        {
+            get => isEnabled;
+            set => SetProperty(ref isEnabled, value);
+        }
+
+        public ProgressInfo? LoadProgress
+        {
+            get => loadProgress;
+            set => SetProperty(ref loadProgress, value);
+        }
+
+        private ProgressInfo CreateProgress()
+        {
+            return new ProgressInfo(x => {
+                IsEnabled = false;
+                LoadProgress = x;
+            }, _ => {
+                LoadProgress = null;
+                IsEnabled = true;
+            });
         }
 
         public ProductionGraphViewModel GraphViewModel { get; }
@@ -291,7 +316,8 @@ namespace Foreman
             ShowMiners = GraphViewModel.ShowMiners = Settings.Default.ShowMiners;
             SelectedModuleStrategy = ModuleSelector.FromName(Settings.Default.DefaultModuleStrategy);
 
-            await Task.Run(DataCache.Reload);
+            using (var progress = CreateProgress())
+                await Task.Run(() => DataCache.Reload(progress));
 
             var languages = DataCache.Current.Languages;
             Languages.AddRange(languages);
@@ -453,33 +479,37 @@ namespace Foreman
         {
             var dialog = new DirectoryChooserDialog(Settings.Default.FactorioPath, "Select Factorio directory");
             dialog.Title = "Locate the Factorio directory";
-            if (dialog.ShowDialog(view.Handle) == true) {
-                Settings.Default.FactorioPath = dialog.SelectedPath;
-                Settings.Default.Save();
+            if (dialog.ShowDialog(view.Handle) != true)
+                return;
 
-                JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
-                await GraphViewModel.LoadFromJson(savedGraph);
-                UpdateControlValues();
-            }
+            Settings.Default.FactorioPath = dialog.SelectedPath;
+            Settings.Default.Save();
+
+            await ReloadGraph();
         }
 
         private async Task ChangeModDirectory()
         {
             var dialog = new DirectoryChooserDialog(Settings.Default.FactorioModPath, "Select Factorio mods directory");
             dialog.Title = "Locate the mods directory";
-            if (dialog.ShowDialog(view) == true) {
-                Settings.Default.FactorioModPath = dialog.SelectedPath;
-                Settings.Default.Save();
+            if (dialog.ShowDialog(view) != true)
+                return;
 
-                JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
-                await GraphViewModel.LoadFromJson(savedGraph);
-                UpdateControlValues();
-            }
+            Settings.Default.FactorioModPath = dialog.SelectedPath;
+            Settings.Default.Save();
+
+            await ReloadGraph();
+        }
+
+        private async Task OnReloadGraph()
+        {
+            await ReloadGraph();
         }
 
         private async Task ReloadGraph()
         {
-            await GraphViewModel.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewModel)));
+            var savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
+            await GraphViewModel.LoadFromJson(savedGraph, ReloadData);
             UpdateControlValues();
         }
 
@@ -553,7 +583,8 @@ namespace Foreman
 
             try {
                 var text = await File.ReadAllTextAsync(filePath);
-                await GraphViewModel.LoadFromJson(JObject.Parse(text));
+                await GraphViewModel.LoadFromJson(
+                    JObject.Parse(text), ReloadData);
 
                 currentGraphFile = filePath;
                 RecentGraphs.Add(filePath);
@@ -567,24 +598,35 @@ namespace Foreman
             UpdateControlValues();
         }
 
-        private async Task ReloadData()
+        private async Task OnReloadData()
         {
-            var mods = DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList();
-            await Task.Run(() => DataCache.Reload(mods));
+            using (var progress = CreateProgress())
+                await ReloadData(progress);
             UpdateControlValues();
         }
 
-        private async Task EnableDisableItems()
+        private async Task ReloadData()
+        {
+            using var progress = CreateProgress();
+            await ReloadData(progress);
+        }
+
+        private async Task ReloadData(IProgress<string> progress)
+        {
+            var mods = DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList();
+            await Task.Run(() => DataCache.Reload(mods, progress));
+        }
+
+        private async Task OnEnableDisableItems()
         {
             var dialog = new EnableDisableItemsDialog();
             dialog.ShowDialog(view);
             SaveEnabledObjects();
 
             if (dialog.ModsChanged) {
-                var mods = DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList();
-                await Task.Run(() => DataCache.Reload(mods));
-                await GraphViewModel.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewModel)));
-                UpdateControlValues();
+                using (var progress = CreateProgress())
+                    await ReloadData(progress);
+                await ReloadGraph();
             }
 
             GraphViewModel.Graph.UpdateNodeValues();
@@ -703,9 +745,7 @@ namespace Foreman
             Settings.Default.FactorioDifficulty = DataCache.Current.Difficulty;
             Settings.Default.Save();
 
-            JObject savedGraph = JObject.Parse(JsonConvert.SerializeObject(GraphViewModel));
-            await GraphViewModel.LoadFromJson(savedGraph);
-            UpdateControlValues();
+            await ReloadGraph();
         }
 
         private Window? luaLogWindow;

@@ -504,7 +504,7 @@ namespace Foreman
                 DataCache.Current.Recipes.Values.Where(r => r.Enabled).Select(r => r.Name));
         }
 
-        public async Task LoadFromJson(JObject json)
+        public async Task LoadFromJson(JObject json, Func<Task> reloadData)
         {
             var notifications = new List<string>();
 
@@ -522,8 +522,7 @@ namespace Foreman
             }
 
             if (modified) {
-                var mods = DataCache.Current.Mods.Where(m => m.Enabled).Select(m => m.Name).ToList();
-                await Task.Run(() => DataCache.Reload(mods));
+                await reloadData();
             }
 
             Graph.SelectedAmountType = (AmountType)(int)json["AmountType"]!;

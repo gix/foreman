@@ -11,6 +11,7 @@ namespace Foreman
     using System.Security.Cryptography;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
+    using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
     using Extensions;
@@ -19,7 +20,6 @@ namespace Foreman
     using NLua;
     using Properties;
     using Units;
-    using Application = System.Windows.Forms.Application;
     using Path = System.IO.Path;
 
     public class Language
@@ -214,17 +214,17 @@ namespace Foreman
             return Recipes.Values.Where(x => x.Enabled && x.Ingredients.ContainsKey(item));
         }
 
-        public static Task Reload()
+        public static Task Reload(IProgress<string> progress)
         {
-            return Reload(null);
+            return Reload(null, progress);
         }
 
-        public static async Task Reload(List<string>? enabledMods)
+        public static async Task Reload(List<string>? enabledMods, IProgress<string> progress)
         {
             var newData = new DataCache();
             newData.Logger = Current.Logger;
             newData.Difficulty = Current.Difficulty;
-            await newData.LoadAllData(enabledMods);
+            await newData.LoadAllData(enabledMods, progress);
             Current = newData;
         }
 
@@ -463,7 +463,7 @@ namespace Foreman
             return lua;
         }
 
-        private async Task LoadAllData(List<string>? enabledMods)
+        private async Task LoadAllData(List<string>? enabledMods, IProgress<string> progress)
         {
             Clear();
             FindAllMods(enabledMods);
@@ -473,6 +473,7 @@ namespace Foreman
             Dictionary<string, Dictionary<string, object>> settingsMap;
 
             // 1. settings stage
+            progress.Report("Loading mod settings");
             using (var lua = CreateFactorioLua(Logger)) {
                 string basePackagePath = (string)lua["package.path"];
 
@@ -499,6 +500,7 @@ namespace Foreman
                 settingsMap = ExtractSettings(lua);
             }
 
+            progress.Report("Loading mods");
             using (var lua = CreateFactorioLua(Logger)) {
                 string basePackagePath = (string)lua["package.path"];
 
@@ -548,17 +550,20 @@ namespace Foreman
                     }
                 }
 
-                LoadMods(lua, orderedMods, basePackagePath);
+                LoadMods(lua, orderedMods, basePackagePath, progress);
 
                 //------------------------------------------------------------------------------------------
                 // Lua files have all been executed, now it's time to extract their data from the lua engine
                 //------------------------------------------------------------------------------------------
 
+                progress.Report("Reading items and recipes");
                 InterpretRawData(lua.GetTable("data.raw"));
+                progress.Report("Loading languages");
                 LoadAllLanguages();
                 await ChangeLocaleAsync(DefaultLocale);
             }
 
+            progress.Report("Detecting cyclic recipes");
             MarkCyclicRecipes();
 
             ReportErrors();
@@ -582,11 +587,15 @@ namespace Foreman
             return map;
         }
 
-        private void LoadMods(FactorioLua lua, List<Mod> mods, string basePackagePath)
+        private void LoadMods(
+            FactorioLua lua, List<Mod> mods, string basePackagePath, IProgress<string> progress)
         {
             foreach (string filename in new[] { "data.lua", "data-updates.lua", "data-final-fixes.lua" }) {
+                int c = 1;
                 foreach (var mod in mods) {
+                    progress.Report($"Loading mods {c}/{mods.Count}: {mod.Name}");
                     LoadMod(lua, mod, basePackagePath, filename);
+                    ++c;
                 }
             }
         }
