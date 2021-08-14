@@ -210,18 +210,27 @@ namespace Foreman
 
         public void AddRemoveElements()
         {
-            Elements.RemoveWhere(e => e is Connector c && !Graph.GetAllNodeLinks().Contains(c.DisplayedLink));
-            Elements.RemoveWhere(e => e is NodeElement n && !Graph.Nodes.Contains(n.DisplayedNode));
+            var graphNodes = Graph.Nodes.ToSet();
+            var graphLinks = Graph.GetAllNodeLinks().ToSet();
 
-            foreach (ProductionNode node in Graph.Nodes) {
-                if (Elements.OfType<NodeElement>().All(e => e.DisplayedNode != node))
-                    Elements.Add(new NodeElement(node, this));
+            var viewLinks = Elements.OfType<Connector>().Select(x => x.DisplayedLink).ToSet();
+            var nodeMap = Elements.OfType<NodeElement>().ToDictionary(x => x.DisplayedNode, x => x);
+
+            Elements.RemoveWhere(e => e is Connector c && !graphLinks.Contains(c.DisplayedLink));
+            Elements.RemoveWhere(e => e is NodeElement n && !graphNodes.Contains(n.DisplayedNode));
+
+            foreach (ProductionNode node in graphNodes) {
+                if (!nodeMap.ContainsKey(node)) {
+                    var element = new NodeElement(node, this);
+                    nodeMap.Add(node, element);
+                    Elements.Add(element);
+                }
             }
 
-            foreach (NodeLink link in Graph.GetAllNodeLinks()) {
-                if (Elements.OfType<Connector>().All(e => e.DisplayedLink != link)) {
-                    var source = GetElementForNode(link.Supplier).Outputs.FirstOrDefault(x => x.Item == link.Item);
-                    var destination = GetElementForNode(link.Consumer).Inputs.FirstOrDefault(x => x.Item == link.Item);
+            foreach (NodeLink link in graphLinks) {
+                if (!viewLinks.Contains(link)) {
+                    var source = nodeMap[link.Supplier].GetOutputFor(link.Item);
+                    var destination = nodeMap[link.Consumer].GetInputFor(link.Item);
                     Elements.Add(new Connector(link, source, destination));
                 }
             }
