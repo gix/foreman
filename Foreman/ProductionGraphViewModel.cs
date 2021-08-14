@@ -537,70 +537,70 @@ namespace Foreman
 
                 switch ((string)node["NodeType"]!) {
                     case "Consumer": {
-                            string itemName = (string)node["ItemName"]!;
-                            if (DataCache.Current.Items.ContainsKey(itemName)) {
-                                Item item = DataCache.Current.Items[itemName];
-                                newNode = ConsumerNode.Create(item, Graph);
-                            } else {
-                                var missingItem = new Item(itemName);
-                                missingItem.IsMissingItem = true;
-                                newNode = ConsumerNode.Create(missingItem, Graph);
-                            }
-                            break;
+                        string itemName = (string)node["ItemName"]!;
+                        if (DataCache.Current.Items.ContainsKey(itemName)) {
+                            Item item = DataCache.Current.Items[itemName];
+                            newNode = ConsumerNode.Create(item, Graph);
+                        } else {
+                            var missingItem = new Item(itemName);
+                            missingItem.IsMissingItem = true;
+                            newNode = ConsumerNode.Create(missingItem, Graph);
                         }
+                        break;
+                    }
                     case "Supply": {
-                            string itemName = (string)node["ItemName"]!;
-                            if (DataCache.Current.Items.ContainsKey(itemName)) {
-                                Item item = DataCache.Current.Items[itemName];
-                                newNode = SupplyNode.Create(item, Graph);
-                            } else {
-                                var missingItem = new Item(itemName);
-                                missingItem.IsMissingItem = true;
-                                DataCache.Current.Items.Add(itemName, missingItem);
-                                newNode = SupplyNode.Create(missingItem, Graph);
-                            }
-                            break;
+                        string itemName = (string)node["ItemName"]!;
+                        if (DataCache.Current.Items.ContainsKey(itemName)) {
+                            Item item = DataCache.Current.Items[itemName];
+                            newNode = SupplyNode.Create(item, Graph);
+                        } else {
+                            var missingItem = new Item(itemName);
+                            missingItem.IsMissingItem = true;
+                            DataCache.Current.Items.Add(itemName, missingItem);
+                            newNode = SupplyNode.Create(missingItem, Graph);
                         }
+                        break;
+                    }
                     case "PassThrough": {
-                            string itemName = (string)node["ItemName"]!;
-                            if (DataCache.Current.Items.ContainsKey(itemName)) {
-                                Item item = DataCache.Current.Items[itemName];
-                                newNode = PassthroughNode.Create(item, Graph);
-                            } else {
-                                var missingItem = new Item(itemName);
-                                missingItem.IsMissingItem = true;
-                                DataCache.Current.Items.Add(itemName, missingItem);
-                                newNode = PassthroughNode.Create(missingItem, Graph);
-                            }
-                            break;
+                        string itemName = (string)node["ItemName"]!;
+                        if (DataCache.Current.Items.ContainsKey(itemName)) {
+                            Item item = DataCache.Current.Items[itemName];
+                            newNode = PassthroughNode.Create(item, Graph);
+                        } else {
+                            var missingItem = new Item(itemName);
+                            missingItem.IsMissingItem = true;
+                            DataCache.Current.Items.Add(itemName, missingItem);
+                            newNode = PassthroughNode.Create(missingItem, Graph);
                         }
+                        break;
+                    }
                     case "Recipe": {
-                            string recipeName = (string)node["RecipeName"]!;
-                            if (DataCache.Current.Recipes.ContainsKey(recipeName)) {
-                                Recipe recipe = DataCache.Current.Recipes[recipeName];
-                                newNode = RecipeNode.Create(recipe, Graph);
-                            } else {
-                                var missingRecipe = new Recipe(recipeName, 0f, new Dictionary<Item, float>(),
-                                    new Dictionary<Item, float>());
-                                missingRecipe.IsMissingRecipe = true;
-                                DataCache.Current.Recipes.Add(recipeName, missingRecipe);
-                                newNode = RecipeNode.Create(missingRecipe, Graph);
-                            }
-
-                            if (node["Assembler"] != null) {
-                                var assemblerKey = (string)node["Assembler"]!;
-                                if (DataCache.Current.Assemblers.ContainsKey(assemblerKey)) {
-                                    ((RecipeNode)newNode).Assembler = DataCache.Current.Assemblers[assemblerKey];
-                                }
-                            }
-
-                            ((RecipeNode)newNode).Modules = ModuleSelector.Load(node);
-                            break;
+                        string recipeName = (string)node["RecipeName"]!;
+                        if (DataCache.Current.Recipes.ContainsKey(recipeName)) {
+                            Recipe recipe = DataCache.Current.Recipes[recipeName];
+                            newNode = RecipeNode.Create(recipe, Graph);
+                        } else {
+                            var missingRecipe = new Recipe(recipeName, 0f, new Dictionary<Item, float>(),
+                                new Dictionary<Item, float>());
+                            missingRecipe.IsMissingRecipe = true;
+                            DataCache.Current.Recipes.Add(recipeName, missingRecipe);
+                            newNode = RecipeNode.Create(missingRecipe, Graph);
                         }
+
+                        if (node["Assembler"] != null) {
+                            var assemblerKey = (string)node["Assembler"]!;
+                            if (DataCache.Current.Assemblers.ContainsKey(assemblerKey)) {
+                                ((RecipeNode)newNode).Assembler = DataCache.Current.Assemblers[assemblerKey];
+                            }
+                        }
+
+                        ((RecipeNode)newNode).Modules = ModuleSelector.Load(node);
+                        break;
+                    }
                     default: {
-                            Trace.Fail("Unknown node type: " + node["NodeType"]);
-                            break;
-                        }
+                        Trace.Fail("Unknown node type: " + node["NodeType"]);
+                        break;
+                    }
                 }
 
                 if (newNode != null) {
