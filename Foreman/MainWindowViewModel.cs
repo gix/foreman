@@ -388,6 +388,13 @@ namespace Foreman
             GraphViewModel.Graph.UpdateNodeValues();
         }
 
+        private void OnSelectedModuleStrategyChanged()
+        {
+            Settings.Default.DefaultModuleStrategy = SelectedModuleStrategy.Name;
+            GraphViewModel.Graph.SelectedModuleStrategy = SelectedModuleStrategy;
+            GraphViewModel.Graph.UpdateNodeValues();
+        }
+
         private Task Exit()
         {
             Application.Current.Shutdown();
