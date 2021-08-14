@@ -23,9 +23,7 @@ namespace Foreman.Controls
         ///   Cached pen based on <see cref="Thickness"/> to widen the line
         ///   geometry.
         /// </summary>
-        private Pen wideningPen = new(Brushes.Black, 2.0);
-
-        protected Pen WideningPen => wideningPen;
+        protected Pen WideningPen { get; private set; } = new(Brushes.Black, 2.0);
 
         public static readonly DependencyProperty DirectionProperty =
             DependencyProperty.Register(
@@ -69,7 +67,7 @@ namespace Foreman.Controls
         private static void OnThicknessChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var source = (ConnectorShape)d;
-            source.wideningPen = new Pen(Brushes.Black, (double)e.NewValue);
+            source.WideningPen = new Pen(Brushes.Black, (double)e.NewValue);
         }
 
         public static readonly DependencyProperty PointsProperty =
@@ -118,9 +116,9 @@ namespace Foreman.Controls
         ///   Gets or sets the intermediate points that make up the line between
         ///   the start and the end.
         /// </summary>
-        public PointCollection Points
+        public PointCollection? Points
         {
-            get => (PointCollection)GetValue(PointsProperty);
+            get => (PointCollection?)GetValue(PointsProperty);
             set => SetValue(PointsProperty, value);
         }
 
@@ -131,26 +129,26 @@ namespace Foreman.Controls
                 if (Points == null || Points.Count < 2)
                     return new GeometryGroup();
 
-                var lineGeometry = GenerateLineGeometry();
+                Geometry lineGeometry = GenerateLineGeometry(Points);
                 if (ArrowHeadVisibility != Visibility.Visible)
                     return lineGeometry;
 
-                var arrowHeadGeometry = GenerateArrowHeadGeometry();
+                Geometry arrowHeadGeometry = GenerateArrowHeadGeometry(Points);
                 return new CombinedGeometry(lineGeometry, arrowHeadGeometry);
             }
         }
 
-        protected abstract Geometry GenerateLineGeometry();
-        protected abstract Geometry GenerateArrowHeadGeometry();
+        protected abstract Geometry GenerateLineGeometry(PointCollection points);
+        protected abstract Geometry GenerateArrowHeadGeometry(PointCollection points);
 
         protected Geometry GenerateArrowHeadGeometry(Point midPoint, Vector direction)
         {
-            var tip = midPoint + direction * ArrowHeadLength / 2;
-            var basePoint = tip - direction * ArrowHeadLength;
+            Point tip = midPoint + (direction * ArrowHeadLength / 2);
+            Point basePoint = tip - (direction * ArrowHeadLength);
             var crossDir = new Vector(-direction.Y, direction.X);
 
-            var pt2 = basePoint - crossDir * (ArrowHeadWidth / 2);
-            var pt3 = basePoint + crossDir * (ArrowHeadWidth / 2);
+            Point pt2 = basePoint - (crossDir * (ArrowHeadWidth / 2));
+            Point pt3 = basePoint + (crossDir * (ArrowHeadWidth / 2));
 
             var arrowHead = new PathFigure {
                 IsClosed = true,
@@ -172,21 +170,21 @@ namespace Foreman.Controls
     public class AngledConnectorShape : ConnectorShape
     {
         /// <summary>Generate the shapes geometry.</summary>
-        protected override Geometry GenerateLineGeometry()
+        protected override Geometry GenerateLineGeometry(PointCollection points)
         {
-            Debug.Assert(Points.Count >= 2);
+            Debug.Assert(points.Count >= 2);
 
             var geometry = new PathGeometry();
 
             Point startPoint, endPoint, midPoint;
-            if (Points.Count == 2) {
-                startPoint = Points[0];
-                endPoint = Points[1];
+            if (points.Count == 2) {
+                startPoint = points[0];
+                endPoint = points[1];
                 midPoint = PointUtils.MidPoint(startPoint, endPoint);
             } else {
-                startPoint = Points[0];
-                midPoint = Points[1];
-                endPoint = Points[2];
+                startPoint = points[0];
+                midPoint = points[1];
+                endPoint = points[2];
             }
 
             var cornerPoint1 = new Point(midPoint.X, startPoint.Y);
@@ -205,22 +203,22 @@ namespace Foreman.Controls
             return geometry.GetWidenedPathGeometry(WideningPen);
         }
 
-        protected override Geometry GenerateArrowHeadGeometry()
+        protected override Geometry GenerateArrowHeadGeometry(PointCollection points)
         {
             Point startPoint, endPoint, midPoint;
-            if (Points.Count == 2) {
-                startPoint = Points[0];
-                endPoint = Points[1];
+            if (points.Count == 2) {
+                startPoint = points[0];
+                endPoint = points[1];
                 midPoint = PointUtils.MidPoint(startPoint, endPoint);
             } else {
-                startPoint = Points[0];
-                midPoint = Points[1];
-                endPoint = Points[2];
+                startPoint = points[0];
+                midPoint = points[1];
+                endPoint = points[2];
             }
 
-            var horizontal = Math.Abs(endPoint.Y - startPoint.Y) <= ArrowHeadWidth / 2;
+            bool horizontal = Math.Abs(endPoint.Y - startPoint.Y) <= ArrowHeadWidth / 2;
 
-            var direction = endPoint - startPoint;
+            Vector direction = endPoint - startPoint;
             if (horizontal)
                 direction.Y = 0;
             else
@@ -233,22 +231,22 @@ namespace Foreman.Controls
 
     public class StraightConnectorShape : ConnectorShape
     {
-        protected override Geometry GenerateLineGeometry()
+        protected override Geometry GenerateLineGeometry(PointCollection points)
         {
-            Point startPoint = Points[0];
-            Point endPoint = Points[Points.Count - 1];
+            Point startPoint = points[0];
+            Point endPoint = points[^1];
 
             var geometry = new LineGeometry(startPoint, endPoint);
             return geometry.GetWidenedPathGeometry(WideningPen);
         }
 
-        protected override Geometry GenerateArrowHeadGeometry()
+        protected override Geometry GenerateArrowHeadGeometry(PointCollection points)
         {
-            Point startPoint = Points[0];
-            Point endPoint = Points[Points.Count - 1];
+            Point startPoint = points[0];
+            Point endPoint = points[^1];
             Point midPoint = PointUtils.MidPoint(startPoint, endPoint);
 
-            var direction = endPoint - startPoint;
+            Vector direction = endPoint - startPoint;
             direction.Normalize();
 
             return GenerateArrowHeadGeometry(midPoint, direction);
@@ -257,11 +255,11 @@ namespace Foreman.Controls
 
     public class CurvedConnectorShape : ConnectorShape
     {
-        protected override Geometry GenerateLineGeometry()
+        protected override Geometry GenerateLineGeometry(PointCollection points)
         {
             var geometry = new PathGeometry();
 
-            GetControlPoints(out Point p0, out Point p1, out Point p2, out Point p3);
+            GetControlPoints(points, out Point p0, out Point p1, out Point p2, out Point p3);
 
             var fig = new PathFigure {
                 IsClosed = false,
@@ -274,16 +272,16 @@ namespace Foreman.Controls
             return geometry.GetWidenedPathGeometry(WideningPen);
         }
 
-        protected override Geometry GenerateArrowHeadGeometry()
+        protected override Geometry GenerateArrowHeadGeometry(PointCollection points)
         {
-            GetControlPoints(out Point p0, out Point p1, out Point p2, out Point p3);
+            GetControlPoints(points, out Point p0, out Point p1, out Point p2, out Point p3);
 
             // Compute the mid point of the bezier segment.
             //
             // P(t)   = (1-t)^3 * P0 + 3t(1-t)^2 * P1 + 3t^2 (1-t) * P2 + t^3 * P3
             // P(0.5) = 0.125 * P0 + 0.375 * P1 + 0.375 * P2 + 0.125 * P3
-            var midPointX = 0.125 * p0.X + 0.375 * p1.X + 0.375 * p2.X + 0.125 * p3.X;
-            var midPointY = 0.125 * p0.Y + 0.375 * p1.Y + 0.375 * p2.Y + 0.125 * p3.Y;
+            var midPointX = (0.125 * p0.X) + (0.375 * p1.X) + (0.375 * p2.X) + (0.125 * p3.X);
+            var midPointY = (0.125 * p0.Y) + (0.375 * p1.Y) + (0.375 * p2.Y) + (0.125 * p3.Y);
             var midPoint = new Point(midPointX, midPointY);
 
             // Compute the gradient at the mid point.
@@ -300,77 +298,99 @@ namespace Foreman.Controls
         }
 
         private void GetControlPoints(
-            out Point p0, out Point p1, out Point p2, out Point p3)
+            PointCollection points, out Point p0, out Point p1, out Point p2, out Point p3)
         {
-            double length = Math.Abs((Points[1] - Points[0]).Length);
+            double length = Math.Abs((points[1] - points[0]).Length);
             double handleOffset = Math.Min(50, length / 2);
 
-            if (Points.Count == 2) {
-                Point startPoint = Points[0];
-                Point endPoint = Points[1];
+            if (points.Count == 2) {
+                Point startPoint = points[0];
+                Point endPoint = points[1];
 
                 p0 = startPoint;
-                if (Direction == ConnectorShapeDirection.Horizontal) {
-                    double midPointX = startPoint.X + (endPoint.X - startPoint.X) / 2;
-                    p1 = new Point(midPointX, startPoint.Y);
-                    p2 = new Point(midPointX, endPoint.Y);
-                } else if (Direction == ConnectorShapeDirection.Leftwards) {
-                    double midPointX = startPoint.X + (endPoint.X - startPoint.X) / 2;
-                    p1 = new Point(Math.Min(startPoint.Y - handleOffset, midPointX), startPoint.Y);
-                    p2 = new Point(Math.Max(endPoint.Y + handleOffset, midPointX), endPoint.Y);
-                } else if (Direction == ConnectorShapeDirection.Rightwards) {
-                    double midPointX = startPoint.X + (endPoint.X - startPoint.X) / 2;
-                    p1 = new Point(Math.Max(startPoint.Y + handleOffset, midPointX), startPoint.Y);
-                    p2 = new Point(Math.Min(endPoint.Y - handleOffset, midPointX), endPoint.Y);
-                } else if (Direction == ConnectorShapeDirection.Vertical) {
-                    double midPointY = startPoint.Y + (endPoint.Y - startPoint.Y) / 2;
-                    p1 = new Point(startPoint.X, midPointY);
-                    p2 = new Point(endPoint.X, midPointY);
-                } else if (Direction == ConnectorShapeDirection.Upwards) {
-                    double midPointY = startPoint.Y + (endPoint.Y - startPoint.Y) / 2;
-                    p1 = new Point(startPoint.X, Math.Min(startPoint.Y - handleOffset, midPointY));
-                    p2 = new Point(endPoint.X, Math.Max(endPoint.Y + handleOffset, midPointY));
-                } else if (Direction == ConnectorShapeDirection.Downwards) {
-                    double midPointY = startPoint.Y + (endPoint.Y - startPoint.Y) / 2;
-                    p1 = new Point(startPoint.X, Math.Max(startPoint.Y + handleOffset, midPointY));
-                    p2 = new Point(endPoint.X, Math.Min(endPoint.Y - handleOffset, midPointY));
-                } else {
-                    throw new NotImplementedException();
+                switch (Direction) {
+                    case ConnectorShapeDirection.Horizontal: {
+                        double midPointX = startPoint.X + ((endPoint.X - startPoint.X) / 2);
+                        p1 = new Point(midPointX, startPoint.Y);
+                        p2 = new Point(midPointX, endPoint.Y);
+                        break;
+                    }
+                    case ConnectorShapeDirection.Leftwards: {
+                        double midPointX = startPoint.X + ((endPoint.X - startPoint.X) / 2);
+                        p1 = new Point(Math.Min(startPoint.Y - handleOffset, midPointX), startPoint.Y);
+                        p2 = new Point(Math.Max(endPoint.Y + handleOffset, midPointX), endPoint.Y);
+                        break;
+                    }
+                    case ConnectorShapeDirection.Rightwards: {
+                        double midPointX = startPoint.X + ((endPoint.X - startPoint.X) / 2);
+                        p1 = new Point(Math.Max(startPoint.Y + handleOffset, midPointX), startPoint.Y);
+                        p2 = new Point(Math.Min(endPoint.Y - handleOffset, midPointX), endPoint.Y);
+                        break;
+                    }
+                    case ConnectorShapeDirection.Vertical: {
+                        double midPointY = startPoint.Y + ((endPoint.Y - startPoint.Y) / 2);
+                        p1 = new Point(startPoint.X, midPointY);
+                        p2 = new Point(endPoint.X, midPointY);
+                        break;
+                    }
+                    case ConnectorShapeDirection.Upwards: {
+                        double midPointY = startPoint.Y + ((endPoint.Y - startPoint.Y) / 2);
+                        p1 = new Point(startPoint.X, Math.Min(startPoint.Y - handleOffset, midPointY));
+                        p2 = new Point(endPoint.X, Math.Max(endPoint.Y + handleOffset, midPointY));
+                        break;
+                    }
+                    case ConnectorShapeDirection.Downwards: {
+                        double midPointY = startPoint.Y + ((endPoint.Y - startPoint.Y) / 2);
+                        p1 = new Point(startPoint.X, Math.Max(startPoint.Y + handleOffset, midPointY));
+                        p2 = new Point(endPoint.X, Math.Min(endPoint.Y - handleOffset, midPointY));
+                        break;
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException(
+                            nameof(Direction), Direction, "Unknown connector direction");
                 }
                 p3 = endPoint;
-            } else if (Points.Count == 3) {
-                Point startPoint = Points[0];
-                Point endPoint = Points[1];
-                Point midPoint = Points[2];
+            } else if (points.Count == 3) {
+                Point startPoint = points[0];
+                Point endPoint = points[1];
+                Point midPoint = points[2];
 
                 p0 = startPoint;
-                if (Direction == ConnectorShapeDirection.Horizontal) {
-                    p1 = new Point(midPoint.X, startPoint.Y);
-                    p2 = new Point(midPoint.X, endPoint.Y);
-                } else if (Direction == ConnectorShapeDirection.Leftwards) {
-                    p1 = new Point(Math.Min(startPoint.Y - handleOffset, midPoint.X), startPoint.Y);
-                    p2 = new Point(Math.Max(endPoint.Y + handleOffset, midPoint.X), endPoint.Y);
-                } else if (Direction == ConnectorShapeDirection.Rightwards) {
-                    p1 = new Point(Math.Max(startPoint.Y + handleOffset, midPoint.X), startPoint.Y);
-                    p2 = new Point(Math.Min(endPoint.Y - handleOffset, midPoint.X), endPoint.Y);
-                } else if (Direction == ConnectorShapeDirection.Vertical) {
-                    p1 = new Point(startPoint.X, midPoint.Y);
-                    p2 = new Point(endPoint.X, midPoint.Y);
-                } else if (Direction == ConnectorShapeDirection.Upwards) {
-                    p1 = new Point(startPoint.X, Math.Min(startPoint.Y - handleOffset, midPoint.Y));
-                    p2 = new Point(endPoint.X, Math.Max(endPoint.Y + handleOffset, midPoint.Y));
-                } else if (Direction == ConnectorShapeDirection.Downwards) {
-                    p1 = new Point(startPoint.X, Math.Max(startPoint.Y + handleOffset, midPoint.Y));
-                    p2 = new Point(endPoint.X, Math.Min(endPoint.Y - handleOffset, midPoint.Y));
-                } else {
-                    throw new NotImplementedException();
+                switch (Direction) {
+                    case ConnectorShapeDirection.Horizontal:
+                        p1 = new Point(midPoint.X, startPoint.Y);
+                        p2 = new Point(midPoint.X, endPoint.Y);
+                        break;
+                    case ConnectorShapeDirection.Leftwards:
+                        p1 = new Point(Math.Min(startPoint.Y - handleOffset, midPoint.X), startPoint.Y);
+                        p2 = new Point(Math.Max(endPoint.Y + handleOffset, midPoint.X), endPoint.Y);
+                        break;
+                    case ConnectorShapeDirection.Rightwards:
+                        p1 = new Point(Math.Max(startPoint.Y + handleOffset, midPoint.X), startPoint.Y);
+                        p2 = new Point(Math.Min(endPoint.Y - handleOffset, midPoint.X), endPoint.Y);
+                        break;
+                    case ConnectorShapeDirection.Vertical:
+                        p1 = new Point(startPoint.X, midPoint.Y);
+                        p2 = new Point(endPoint.X, midPoint.Y);
+                        break;
+                    case ConnectorShapeDirection.Upwards:
+                        p1 = new Point(startPoint.X, Math.Min(startPoint.Y - handleOffset, midPoint.Y));
+                        p2 = new Point(endPoint.X, Math.Max(endPoint.Y + handleOffset, midPoint.Y));
+                        break;
+                    case ConnectorShapeDirection.Downwards:
+                        p1 = new Point(startPoint.X, Math.Max(startPoint.Y + handleOffset, midPoint.Y));
+                        p2 = new Point(endPoint.X, Math.Min(endPoint.Y - handleOffset, midPoint.Y));
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(
+                            nameof(Direction), Direction, "Unknown connector direction");
                 }
                 p3 = endPoint;
-            } else if (Points.Count == 4) {
-                p0 = Points[0];
-                p1 = Points[1];
-                p2 = Points[2];
-                p3 = Points[3];
+            } else if (points.Count == 4) {
+                p0 = points[0];
+                p1 = points[1];
+                p2 = points[2];
+                p3 = points[3];
             } else {
                 throw new InvalidOperationException("Invalid number of points.");
             }

@@ -79,25 +79,6 @@ namespace Foreman.Controls
             RaiseEvent(e);
         }
 
-        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
-        {
-            base.OnMouseLeftButtonDown(e);
-            return;
-
-            //if (IsSelected && Keyboard.Modifiers == ModifierKeys.None) {
-            //    // Suppress the default selection behavior and defer it until
-            //    // the next mouse up event.
-            //    e.Handled = true;
-            //    deferredSelect = true;
-            //    deferredSelectOrigin = e.GetPosition(ParentCanvas);
-            //    if (SelectorUtils.IsSelectable(this))
-            //        Focus();
-            //} else
-            //    deferredSelect = false;
-
-            //base.OnMouseLeftButtonDown(e);
-        }
-
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);

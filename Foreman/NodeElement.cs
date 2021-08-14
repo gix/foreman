@@ -261,7 +261,7 @@ namespace Foreman
                     permutation.Modules[i].Icon, new Rect(x, y + (r * moduleSize), moduleSize, moduleSize)));
 
                 ++i;
-                if (i < permutation.Modules.Count && permutation.Modules[i] != null) {
+                if (i < permutation.Modules.Count) {
                     dg.Children.Add(new ImageDrawing(
                         permutation.Modules[i].Icon, new Rect(x + moduleSize, y + (r * moduleSize), moduleSize, moduleSize)));
                     ++i;

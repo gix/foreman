@@ -62,7 +62,7 @@ namespace ForemanTest
         // The same builder can be passed to multiple different invocations, to enable building of complex graphs.
         internal void Link(params ProductionNodeBuilder[] nodeBuilders)
         {
-            var bs = ((IEnumerable<ProductionNodeBuilder>)nodeBuilders);
+            var bs = (IEnumerable<ProductionNodeBuilder>)nodeBuilders;
             var pairs = bs.Zip(bs.Skip(1), Tuple.Create);
 
             links.AddRange(pairs);
@@ -72,18 +72,15 @@ namespace ForemanTest
         {
             var graph = new ProductionGraph();
 
-            foreach (var node in nodes)
-            {
+            foreach (var node in nodes) {
                 node.Build(graph);
             }
 
-            foreach (var link in links)
-            {
+            foreach (var link in links) {
                 var lhs = link.Item1;
                 var rhs = link.Item2;
 
-                foreach (var item in lhs.Built.Outputs.Intersect(rhs.Built.Inputs))
-                {
+                foreach (var item in lhs.Built.Outputs.Intersect(rhs.Built.Inputs)) {
                     NodeLink.Create(lhs.Built, rhs.Built, item);
                 }
             }
@@ -125,12 +122,10 @@ namespace ForemanTest
             {
                 Built = createFunction(new Item(itemName), graph);
 
-                if (target > 0)
-                {
+                if (target > 0) {
                     Built.DesiredRate = target;
                     Built.RateType = RateType.Manual;
-                } else
-                {
+                } else {
                     Built.RateType = RateType.Auto;
                 }
             }
@@ -155,19 +150,16 @@ namespace ForemanTest
             internal override void Build(ProductionGraph graph)
             {
                 var duration = 1;
-                if (name == null)
-                    name = "recipe-" + GetSequence();
+                name ??= "recipe-" + GetSequence();
 
-                Recipe recipe = new Recipe(name, duration, itemizeKeys(inputs), itemizeKeys(outputs));
+                var recipe = new Recipe(name, duration, itemizeKeys(inputs), itemizeKeys(outputs));
                 Built = RecipeNode.Create(recipe, graph);
                 Built.BeaconModules.OverrideProductivityBonus = efficiency;
 
-                if (target > 0)
-                {
+                if (target > 0) {
                     Built.DesiredRate = target;
                     Built.RateType = RateType.Manual;
-                } else
-                {
+                } else {
                     Built.RateType = RateType.Auto;
                 }
             }

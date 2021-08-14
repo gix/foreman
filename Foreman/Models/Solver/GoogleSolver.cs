@@ -8,9 +8,9 @@ namespace Foreman
     // A super thin wrapper around OrTools.LinearSolver to make up for its deficiences as a generated class.
     public class GoogleSolver
     {
-        private Solver solver;
-        private List<Variable> variables;
-        private List<Constraint> constraints;
+        private readonly Solver solver;
+        private readonly List<Variable> variables;
+        private readonly List<Constraint> constraints;
 
         public static GoogleSolver Create()
         {

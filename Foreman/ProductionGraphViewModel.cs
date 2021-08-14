@@ -358,9 +358,7 @@ namespace Foreman
                 return;
 
             if (output.Kind == PinKind.Input) {
-                var temp = output;
-                output = input;
-                input = temp;
+                (output, input) = (input, output);
             }
 
             var link = NodeLink.Create(output.Node.DisplayedNode, input.Node.DisplayedNode, input.Item);

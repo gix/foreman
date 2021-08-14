@@ -63,7 +63,7 @@ namespace Foreman
         private void Initialize(string str, char quoteChar, char separator)
         {
             this.str = str;
-            strLen = str?.Length ?? 0;
+            strLen = str.Length;
             currentTokenIndex = -1;
             this.quoteChar = quoteChar;
             argSeparator = separator;
@@ -98,37 +98,16 @@ namespace Foreman
                     string.Format(TokenizerHelperExtraDataEncountered, charIndex, str));
         }
 
-        /// <summary>Advances to the NextToken</summary>
-        /// <returns>
-        ///   true if next token was found, false if at end of string
-        /// </returns>
-        public bool NextToken()
-        {
-            return NextToken(false);
-        }
-
         /// <summary>
         ///   Advances to the NextToken, throwing an exception if not present
         /// </summary>
         /// <returns>The next token found</returns>
-        public string? NextTokenRequired()
+        internal string? NextTokenRequired(bool allowQuotedToken = false)
         {
-            if (!NextToken(false))
+            if (!NextToken(allowQuotedToken)) {
                 throw new InvalidOperationException(
                     string.Format(TokenizerHelperPrematureStringTermination, str));
-
-            return GetCurrentToken();
-        }
-
-        /// <summary>
-        ///   Advances to the NextToken, throwing an exception if not present
-        /// </summary>
-        /// <returns>The next token found</returns>
-        internal string? NextTokenRequired(bool allowQuotedToken)
-        {
-            if (!NextToken(allowQuotedToken))
-                throw new InvalidOperationException(
-                    string.Format(TokenizerHelperPrematureStringTermination, str));
+            }
 
             return GetCurrentToken();
         }
@@ -137,7 +116,7 @@ namespace Foreman
         /// <returns>
         ///   true if next token was found, false if at end of string
         /// </returns>
-        public bool NextToken(bool allowQuotedToken)
+        public bool NextToken(bool allowQuotedToken = false)
         {
             // use the currently-set separator character.
             return NextToken(allowQuotedToken, argSeparator);

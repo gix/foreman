@@ -5,7 +5,7 @@ namespace Foreman.Controls
 
     public static class SelectorUtils
     {
-        public static bool IsSelectable(DependencyObject container)
+        public static bool IsSelectable(DependencyObject? container)
         {
             if (container == null)
                 return false;
@@ -24,9 +24,9 @@ namespace Foreman.Controls
             return true;
         }
 
-        public static bool ItemGetIsSelectable(object item)
+        public static bool ItemGetIsSelectable(object? item)
         {
-            return item != null && !(item is Separator);
+            return item is not null and not Separator;
         }
     }
 }

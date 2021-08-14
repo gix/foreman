@@ -7,13 +7,6 @@ namespace Foreman
     using System.Linq;
     using System.Runtime.Serialization;
 
-    public enum NodeType
-    {
-        Recipe,
-        Supply,
-        Consumer
-    }
-
     public enum RateType
     {
         Auto,
@@ -125,12 +118,12 @@ namespace Foreman
             Graph = graph;
         }
 
-        public bool Supplies(Item item)
+        public bool Supplies(Item? item)
         {
             return item != null && Outputs.Contains(item);
         }
 
-        public bool Consumes(Item item)
+        public bool Consumes(Item? item)
         {
             return item != null && Inputs.Contains(item);
         }

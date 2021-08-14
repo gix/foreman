@@ -1301,7 +1301,7 @@ namespace Foreman.Controls
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
-        Rect IScrollInfo.MakeVisible(Visual visual, Rect rectangle)
+        Rect IScrollInfo.MakeVisible(Visual? visual, Rect rectangle)
         {
             if (rectangle.IsEmpty || visual == null || !IsAncestorOf(visual))
                 return Rect.Empty;

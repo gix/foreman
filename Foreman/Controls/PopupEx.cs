@@ -5,7 +5,6 @@ namespace Foreman.Controls
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Security;
-    using System.Security.Permissions;
     using System.Windows;
     using System.Windows.Controls.Primitives;
     using System.Windows.Interop;
@@ -140,8 +139,6 @@ namespace Foreman.Controls
                 if (isChildPopup) {
                     if (parent != IntPtr.Zero)
                         param.ParentWindow = parent;
-                    else
-                        new UIPermission(UIPermissionWindow.AllWindows).Demand();
                 } else {
                     param.UsesPerPixelOpacity = transparent;
                     if (parent != IntPtr.Zero && ConnectedToForegroundWindow(parent))
@@ -151,13 +148,8 @@ namespace Foreman.Controls
                 // create popup's window object
                 var newWindow = new HwndSource(param);
 
-                new UIPermission(UIPermissionWindow.AllWindows).Assert(); //BlessedAssert
-                try {
-                    // add hook to the popup's window
-                    newWindow.AddHook(hook);
-                } finally {
-                    CodeAccessPermission.RevertAssert();
-                }
+                // add hook to the popup's window
+                newWindow.AddHook(hook);
 
                 // initialize the private critical window object
                 pshWindowField.SetValue(psh, securityCriticalDataClassOfWindowCtor.Invoke(

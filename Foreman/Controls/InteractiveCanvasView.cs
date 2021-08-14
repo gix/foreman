@@ -641,7 +641,7 @@ namespace Foreman.Controls
 
                 foreach (var obj in view.HitTestAll(bounds)) {
                     var element = obj.FindAncestor<InteractiveCanvasItem>();
-                    if (element != null && element.IsDraggable)
+                    if (element is { IsDraggable: true })
                         view.Select(element);
                 }
 

@@ -11,10 +11,9 @@ namespace Foreman
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (!(value is Color) || !targetType.IsAssignableFrom(typeof(SolidColorBrush)))
+            if (value is not Color color || !targetType.IsAssignableFrom(typeof(SolidColorBrush)))
                 return Binding.DoNothing;
 
-            var color = (Color)value;
             if (IgnoreAlpha)
                 color.A = 255;
             return new SolidColorBrush(color);

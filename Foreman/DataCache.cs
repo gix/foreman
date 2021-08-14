@@ -2,13 +2,10 @@ namespace Foreman
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
-    using System.Reflection;
-    using System.Security.Cryptography;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using System.Windows;
@@ -20,137 +17,12 @@ namespace Foreman
     using NLua;
     using Properties;
     using Units;
-    using Path = System.IO.Path;
-
-    public class Language
-    {
-        public Language(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; }
-        private string? localName;
-
-        [AllowNull]
-        public string LocalName
-        {
-            get => !string.IsNullOrWhiteSpace(localName) ? localName : Name;
-            set => localName = value;
-        }
-    }
-
-    public class LocalizedStringDictionary
-    {
-        private readonly Dictionary<(string, string), string> dictionary = new();
-
-        public void Clear()
-        {
-            dictionary.Clear();
-        }
-
-        [MaybeNull]
-        public string this[string section, string key]
-        {
-            get => dictionary.GetValueOrDefault((section, key));
-            set => dictionary[(section, key)] = value;
-        }
-
-        public bool TryGetValue(string section, string key, [MaybeNullWhen(false)] out string value)
-        {
-            return dictionary.TryGetValue((section, key), out value);
-        }
-    }
-
-    public abstract class LocalizationInfo
-    {
-        public abstract string? Interpolate(LocalizedStringDictionary localized);
-
-        public static LocalizationInfo Create(
-            string section, string name, string placeholderSection, string placeholderName)
-        {
-            return new SingleLocalizationInfo(section, name, placeholderSection, placeholderName);
-        }
-
-        public static LocalizationInfo Create(
-            string section, string name, List<string> placeholders)
-        {
-            return new MultiLocalizationInfo(section, name, placeholders);
-        }
-
-        private sealed class SingleLocalizationInfo : LocalizationInfo
-        {
-            private readonly string section;
-            private readonly string name;
-            private readonly string placeholderSection;
-            private readonly string placeholderName;
-
-            public SingleLocalizationInfo(
-                string section, string name, string placeholderSection, string placeholderName)
-            {
-                this.section = section;
-                this.name = name;
-                this.placeholderSection = placeholderSection;
-                this.placeholderName = placeholderName;
-            }
-
-            public override string? Interpolate(LocalizedStringDictionary localized)
-            {
-                return localized[section, name]?.Replace(
-                    "__1__", localized[placeholderSection, placeholderName]);
-            }
-        }
-
-        private sealed class MultiLocalizationInfo : LocalizationInfo
-        {
-            private readonly string section;
-            private readonly string name;
-            private readonly List<string> placeholders;
-
-            public MultiLocalizationInfo(
-                string section, string name, List<string> placeholders)
-            {
-                this.section = section;
-                this.name = name;
-                this.placeholders = placeholders;
-            }
-
-            public override string? Interpolate(LocalizedStringDictionary localized)
-            {
-                var str = localized[section, name];
-                if (str == null)
-                    return null;
-
-                for (int p = 1, i = 0, e = placeholders.Count / 2; i < e; ++p, i += 2) {
-                    str = str.Replace(
-                        $"__{p}__",
-                        localized[placeholders[i],
-                            placeholders[i + 1]]);
-                }
-
-                return str;
-            }
-        }
-    }
-
-    public interface ILogger
-    {
-        void Log(string format, params object?[] args);
-    }
-
-    public class DebugLogger : ILogger
-    {
-        public void Log(string format, params object?[] args)
-        {
-            Debugger.Log(0, null, string.Format(format, args));
-        }
-    }
 
     public class DataCache
     {
         private static DataCache current = new();
 
-        public DataCache()
+        private DataCache()
         {
             UnknownIcon = LoadUnknownIcon();
         }
@@ -202,8 +74,6 @@ namespace Foreman
         public Dictionary<string, Exception> FailedFiles { get; } = new();
         public Dictionary<string, Exception> FailedModRegistrations { get; } = new();
 
-        public Dictionary<string, byte[]> ZipHashes { get; } = new();
-
         public IEnumerable<Recipe> RecipesSupplying(Item item)
         {
             return Recipes.Values.Where(x => x.Enabled && x.Results.ContainsKey(item));
@@ -228,237 +98,13 @@ namespace Foreman
             Current = newData;
         }
 
-        private class FactorioLua : Lua
-        {
-            private readonly ILogger logger;
-            private readonly LuaFunction print;
-            private readonly LuaFunction log;
-            private readonly LuaFunction tableSize;
-            private readonly LuaFunction searcher;
-            private readonly LuaFunction loader;
-            private Mod? currentMod;
-            private Dictionary<string, Mod> mods = new();
-
-            public FactorioLua(ILogger logger)
-            {
-                this.logger = logger;
-                logger.Log("LUA: Initializing new interpreter");
-
-                print = RegisterFunction(
-                    "print",
-                    this,
-                    typeof(FactorioLua).GetMethod(
-                        nameof(Print), BindingFlags.Instance | BindingFlags.NonPublic));
-                log = RegisterFunction(
-                    "log",
-                    this,
-                    typeof(FactorioLua).GetMethod(
-                        nameof(Log), BindingFlags.Instance | BindingFlags.NonPublic));
-
-                tableSize = RegisterFunction(
-                    "table_size",
-                    typeof(FactorioLua).GetMethod(
-                        nameof(TableSize), BindingFlags.Static | BindingFlags.NonPublic));
-
-                // Remove all-in-one loader searcher
-                DoString(@"table.remove(package.searchers, 4)");
-                // Remove package.cpath searcher
-                DoString(@"table.remove(package.searchers, 3)");
-                // Remove package.path searcher
-                DoString(@"table.remove(package.searchers, 2)");
-                // Remove package.preload searcher
-                DoString(@"table.remove(package.searchers, 1)");
-
-                searcher = RegisterFunction("__foreman_searcher__", this,
-                    GetType().GetMethod(nameof(PackageSearcher), BindingFlags.Instance | BindingFlags.NonPublic));
-                loader = RegisterFunction("__foreman_loader__", this,
-                    GetType().GetMethod(nameof(PackageLoader), BindingFlags.Instance | BindingFlags.NonPublic));
-
-                DoString(@"
-                    local loader_wrapper = function(modname, arg)
-                        return __foreman_loader__(modname, arg)
-                    end
-                    local searcher_wrapper = function(modname)
-                        local loader, arg = __foreman_searcher__(modname)
-                        if not loader or type(loader) == 'string' then
-                            return loader
-                        end
-                        return loader_wrapper, arg
-                    end
-                    table.insert(package.searchers, searcher_wrapper)
-                ");
-
-                DoString("serpent = require('serpent')");
-            }
-
-            public override void Dispose()
-            {
-                loader.Dispose();
-                searcher.Dispose();
-                tableSize.Dispose();
-                base.Dispose();
-            }
-
-            public void SetMods(List<Mod> mods)
-            {
-                this.mods = mods.ToDictionary(x => x.Name);
-
-                // https://lua-api.factorio.com/latest/Data-Lifecycle.html:
-                //   Additionally, a global table named mods exists that contains
-                //   a mapping of mod name to mod version for all enabled mods.
-
-                NewTable("mods");
-                using var table = GetTable("mods");
-                foreach (Mod mod in mods)
-                    table[mod.Name] = mod.Version;
-            }
-
-            private void Print(params object[] args)
-            {
-                string fmt = args.Length switch {
-                    0 => "\n",
-                    1 => "{0}\n",
-                    2 => "{0}, {1}\n",
-                    3 => "{0}, {1}, {2}\n",
-                    4 => "{0}, {1}, {2}, {3}\n",
-                    { } n => string.Join(", ", Enumerable.Range(0, n - 1).Select(x => "{" + x + '}')) + '\n',
-                };
-
-                logger.Log(fmt, args);
-            }
-
-            private void Log(params object[] args)
-            {
-                string fmt = args.Length switch {
-                    0 => "\n",
-                    1 => "{0}\n",
-                    2 => "{0}, {1}\n",
-                    3 => "{0}, {1}, {2}\n",
-                    4 => "{0}, {1}, {2}, {3}\n",
-                    { } n => string.Join(", ", Enumerable.Range(0, n - 1).Select(x => "{" + x + '}')) + '\n',
-                };
-
-                logger.Log(fmt, args);
-            }
-
-            private static int TableSize(LuaTable table)
-            {
-                return table.Keys.Count;
-            }
-
-            private object? PackageSearcher(string module, out object? loaderArg)
-            {
-                loaderArg = null;
-
-                if (module == "serpent") {
-                    logger.Log("LUA: Resolving [{0}] '{1}' with: <internal module>", currentMod?.Name, module);
-                    return loader;
-                }
-
-                if (module.StartsWith("__")) {
-                    var match = Regex.Match(module, @"\A__(?<mod>[^\\/\.]+)__[/%.](?<path>.+)\z");
-                    if (match.Success) {
-                        string modName = match.Groups["mod"].Value;
-                        string path = match.Groups["path"].Value;
-                        if (mods.TryGetValue(modName, out var explicitMod)) {
-                            if (explicitMod.Search(path, out loaderArg)) {
-                                logger.Log("LUA: Resolving [{0}] '{1}' with: mod='{2}', entry='{3}'", currentMod?.Name, module, explicitMod.Name, loaderArg);
-                                return loader;
-                            }
-                        }
-
-                        logger.Log("LUA: Resolving [{0}] '{1}' with: NOT FOUND!", currentMod?.Name, module);
-                        return null;
-                    }
-                }
-
-                if (currentMod != null && currentMod.Search(module, out loaderArg)) {
-                    logger.Log("LUA: Resolving [{0}] '{1}' with: mod='{2}', entry='{3}'", currentMod.Name, module, currentMod.Name, loaderArg);
-                    return loader;
-                }
-
-                if (mods.TryGetValue("core", out Mod? coreMod)) {
-                    string relPath = module.Replace('.', '/') + ".lua";
-                    string path = Path.Combine(coreMod.ModPath, "lualib", relPath);
-                    if (File.Exists(path)) {
-                        loaderArg = path;
-                        logger.Log("LUA: Resolving [{0}] '{1}' with: mod='{2}', entry='{3}'", currentMod?.Name, module, coreMod.Name, loaderArg);
-                        return loader;
-                    }
-                }
-
-                logger.Log("LUA: Resolving [{0}] '{1}' with: NOT FOUND!", currentMod?.Name, module);
-                return null;
-            }
-
-            private object? PackageLoader(string module, string path)
-            {
-                if (module == "serpent") {
-                    using var stream = GetType().Assembly
-                        .GetManifestResourceStream(typeof(Resources), "Serpent.lua");
-                    return DoString(stream!.ReadAllText())?[0];
-                }
-
-                if (currentMod == null)
-                    return null;
-
-                object? result;
-                if (Path.IsPathRooted(path) && File.Exists(path)) {
-                    //result = DoFile(path)?[0];
-                    result = DoString(File.ReadAllText(path))?[0];
-                } else {
-                    result = currentMod.Loader(this, path);
-                }
-
-                return result;
-            }
-
-            public void PushMod(Mod mod)
-            {
-                currentMod = mod;
-                mod.Register(this);
-            }
-
-            public void PopMod(Mod mod)
-            {
-                mod.Unregister(this);
-                currentMod = null;
-            }
-        }
-
-        private FactorioLua CreateFactorioLua(ILogger logger)
+        private static FactorioLua CreateFactorioLua(ILogger logger)
         {
             var lua = new FactorioLua(logger);
 
-            var asm = GetType().Assembly;
-            using (var stream = asm.GetManifestResourceStream(typeof(Resources), "FactorioDefines.lua")) {
-                lua.DoString(stream!.ReadAllText());
-            }
-
-            //            lua.DoString(@"
-            //                local orig_require = require
-            //
-            //                function relative_require(modname)
-            //                  if string.match(modname, '__.+__[/%.]') then
-            //                    return orig_require(string.gsub(modname, '__.+__[/%.]', ''))
-            //                  end
-            //
-            //                  local regular_searcher = package.searchers[1]
-            //                  local searcher = function(inner)
-            //                    if string.match(modname, '(.*)%.') then
-            //                      return regular_searcher(string.match(modname, '(.*)%.') .. '.' .. inner)
-            //                    end
-            //                  end
-            //                  table.insert(package.searchers, 1, searcher)
-            //                  local result = orig_require(modname)
-            //                  table.remove(package.searchers, 1)
-            //                  return result
-            //                end
-            //                _G.require = relative_require
-            //");
-
-            //AddLuaPackagePath(lua, Path.Combine(DataPath, "core", "lualib")); // Core lua functions
-            //AddLuaPackagePath(lua, Path.Combine(DataPath, "base")); // Base mod
+            var asm = typeof(DataCache).Assembly;
+            using var stream = asm.GetManifestResourceStream(typeof(Resources), "FactorioDefines.lua");
+            lua.DoString(stream!.ReadAllText());
 
             return lua;
         }
@@ -516,7 +162,7 @@ namespace Foreman
 
                 lua.SetMods(orderedMods);
 
-                lua.DoString(@"
+                _ = lua.DoString(@"
                     --function module(modname,...)
                     --end
 
@@ -539,12 +185,12 @@ namespace Foreman
 ");
 
                 lua.NewTable("settings");
-                foreach (var entry in settingsMap) {
-                    var key = $"settings.{entry.Key}";
+                foreach (var (name, value) in settingsMap) {
+                    var key = $"settings.{name}";
                     lua.NewTable(key);
                     using var settingsForType = lua.GetTable(key);
-                    foreach (var subEntry in entry.Value) {
-                        using var t = (LuaTable)lua.DoString("return {}")[0];
+                    foreach (var subEntry in value) {
+                        using var t = lua.CreateTable();
                         t["value"] = subEntry.Value;
                         settingsForType[subEntry.Key] = t;
                     }
@@ -573,7 +219,7 @@ namespace Foreman
         {
             var map = new Dictionary<string, Dictionary<string, object>>();
 
-            using var data = lua.GetTable("data.raw");
+            using LuaTable data = lua.GetTable("data.raw");
             foreach (LuaTable settingTable in data.Values) {
                 foreach (LuaTable setting in settingTable.Values) {
                     string name = setting.String("name");
@@ -673,7 +319,7 @@ namespace Foreman
             }
         }
 
-        private BitmapSource LoadUnknownIcon()
+        private static BitmapSource LoadUnknownIcon()
         {
             var assembly = typeof(DataCache).Assembly;
             using (var stream = assembly.GetManifestResourceStream(typeof(DataCache), "UnknownIcon.png")) {
@@ -742,20 +388,10 @@ namespace Foreman
             }
         }
 
-        private void AddLuaPackagePath(Lua lua, string dir)
+        private void FindAllMods(List<string>? enabledMods)
         {
-            try {
-                string luaCommand =
-                    $"package.path = package.path .. ';{dir}{Path.DirectorySeparatorChar}?.lua'";
-                luaCommand = luaCommand.Replace("\\", "\\\\");
-                lua.DoString(luaCommand);
-            } catch (Exception ex) {
-                FailedModRegistrations[dir] = ex;
-            }
-        }
+            // NB: Vanilla game counts as a mod too.
 
-        private void FindAllMods(List<string>? enabledMods) //Vanilla game counts as a mod too.
-        {
             if (Directory.Exists(DataPath)) {
                 foreach (string dir in Directory.EnumerateDirectories(DataPath))
                     ReadModInfoFile(dir);
@@ -793,8 +429,8 @@ namespace Foreman
                     splitModStrings.Add(split[0], split[1]);
                 }
                 foreach (Mod mod in Mods) {
-                    if (splitModStrings.ContainsKey(mod.Name)) {
-                        mod.Enabled = (splitModStrings[mod.Name] == "True");
+                    if (splitModStrings.TryGetValue(mod.Name, out var value)) {
+                        mod.Enabled = value == "True";
                     } else if (enabledModsFromFile.ContainsKey(mod.Name)) {
                         mod.Enabled = enabledModsFromFile[mod.Name];
                     } else {
@@ -817,43 +453,6 @@ namespace Foreman
                 ReadModInfo(File.ReadAllText(path), dir);
             } catch (Exception) {
                 ErrorLogging.LogLine($"The mod at '{dir}' has an invalid info.json file");
-            }
-        }
-
-        private static string GetTempModPath(string modZipFile)
-        {
-            var name = Path.GetFileNameWithoutExtension(modZipFile);
-            return Path.Combine(Path.GetTempPath(), "ForemanMods", name);
-        }
-
-        private void UnzipMod(string modZipFile)
-        {
-            string fullPath = Path.GetFullPath(modZipFile);
-            byte[] hash;
-            bool needsExtraction = false;
-
-            using (var md5 = MD5.Create())
-            using (var stream = File.OpenRead(fullPath))
-                hash = md5.ComputeHash(stream);
-
-            if (ZipHashes.ContainsKey(fullPath)) {
-                if (!ZipHashes[fullPath].SequenceEqual(hash)) {
-                    needsExtraction = true;
-                    ZipHashes[fullPath] = hash;
-                }
-            } else {
-                needsExtraction = true;
-                ZipHashes.Add(fullPath, hash);
-            }
-
-            string outputDir = GetTempModPath(modZipFile);
-
-            if (needsExtraction) {
-                try {
-                    Directory.Delete(outputDir, true);
-                } catch (DirectoryNotFoundException) {
-                }
-                ZipFile.ExtractToDirectory(modZipFile, outputDir);
             }
         }
 
@@ -934,7 +533,7 @@ namespace Foreman
                     if (!Version.TryParse(match.Groups["version"].Value, out version))
                         version = new Version(0, 0, 0, 0);
 
-                    versionType = match.Groups["op"]?.Value switch {
+                    versionType = match.Groups["op"].Value switch {
                         "=" => DependencyType.EqualTo,
                         ">" => DependencyType.GreaterThan,
                         ">=" => DependencyType.GreaterThanOrEqual,
@@ -998,7 +597,7 @@ namespace Foreman
                 if (line == null)
                     break;
 
-                if (line.StartsWith("[") && line.EndsWith("]")) {
+                if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal)) {
                     iniSection = line.Trim('[', ']');
                     continue;
                 }
@@ -1011,12 +610,12 @@ namespace Foreman
 
         private BitmapSource? LoadModImage(LuaTable values)
         {
-            {
-                var iconSize = values.Int("icon_size");
-                var iconPath = values.StringOrDefault("icon");
-                if (iconPath != null)
-                    return LoadModImage(iconPath, iconSize);
-            }
+            var iconSize = values.Int("icon_size");
+            var iconMipmaps = values.IntOrDefault("icon_mipmaps");
+
+            var iconPath = values.StringOrDefault("icon");
+            if (iconPath != null)
+                return LoadModImage(iconPath, iconSize, iconMipmaps);
 
             var icons = values.TableOrDefault("icons");
             if (icons != null) {
@@ -1037,7 +636,7 @@ namespace Foreman
             }
 
             if (!File.Exists(filePath)) {
-                filePath = Path.Combine(Application.StartupPath, filePath);
+                filePath = Path.Combine(System.Windows.Forms.Application.StartupPath, filePath);
                 if (!File.Exists(filePath))
                     return null;
             }
@@ -1069,7 +668,7 @@ namespace Foreman
                 return false;
 
             modName = filePath.Substring(2, idx - 4);
-            relativePath = filePath.Substring(idx + 1);
+            relativePath = filePath[(idx + 1)..];
             return true;
         }
 
@@ -1099,9 +698,10 @@ namespace Foreman
             if (string.IsNullOrEmpty(name) || Items.ContainsKey(name))
                 return;
 
-            var newItem = new Item(name);
-            newItem.LocalizedName = GetLocalizationInfo(values);
-            newItem.Icon = LoadModImage(values);
+            var newItem = new Item(name) {
+                LocalizedName = GetLocalizationInfo(values),
+                Icon = LoadModImage(values)
+            };
 
             Items.Add(name, newItem);
         }
@@ -1112,12 +712,11 @@ namespace Foreman
             if (localizedTable == null || localizedTable.Values.Count != 2)
                 return null;
 
-            var name = localizedTable[1] as string;
-            var placeholders = localizedTable[2] as LuaTable;
-            if (name == null || placeholders == null)
+            if (localizedTable[1] is not string key ||
+                localizedTable[2] is not LuaTable placeholders)
                 return null;
 
-            if (!SplitKey(name, out var section, out name))
+            if (!SplitKey(key, out var section, out string? name))
                 return null;
 
             if (placeholders.Values.Count == 1) {
@@ -1143,8 +742,8 @@ namespace Foreman
         {
             int idx = key.IndexOf('.');
             if (idx != -1) {
-                section = key.Substring(0, idx);
-                name = key.Substring(idx + 1);
+                section = key[..idx];
+                name = key[(idx + 1)..];
                 return true;
             }
 
@@ -1244,13 +843,13 @@ namespace Foreman
         private static Power ParsePower(string value)
         {
             if (value.EndsWith("GW", StringComparison.OrdinalIgnoreCase))
-                return Power.FromGigawatts(double.Parse(value.Substring(0, value.Length - 2)));
+                return Power.FromGigawatts(double.Parse(value[..^2]));
             if (value.EndsWith("MW", StringComparison.OrdinalIgnoreCase))
-                return Power.FromMegawatts(double.Parse(value.Substring(0, value.Length - 2)));
+                return Power.FromMegawatts(double.Parse(value[..^2]));
             if (value.EndsWith("kW", StringComparison.OrdinalIgnoreCase))
-                return Power.FromKilowatts(double.Parse(value.Substring(0, value.Length - 2)));
+                return Power.FromKilowatts(double.Parse(value[..^2]));
             if (value.EndsWith("W", StringComparison.OrdinalIgnoreCase))
-                return new Power(double.Parse(value.Substring(0, value.Length - 1)));
+                return new Power(double.Parse(value[..^1]));
 
             throw new ArgumentException($"Invalid power value '{value}'");
         }
@@ -1260,7 +859,7 @@ namespace Foreman
             try {
                 var newFurnace = new Assembler(name);
                 ReadAssemblerProperties(newFurnace, values);
-                newFurnace.MaxIngredients = 1;
+                //newFurnace.MaxIngredients = 1;
 
                 if (newFurnace.Speed == -1f) {
                     //In case we're still on Factorio 0.10
@@ -1597,100 +1196,6 @@ namespace Foreman
         {
             Table = table;
             Key = key;
-        }
-    }
-
-    public static class LuaExtensions
-    {
-        public static float Float(this LuaTable table, string key)
-        {
-            if (table[key] == null)
-                throw new MissingPrototypeValueException(table, key, "Key is missing");
-
-            try {
-                return Convert.ToSingle(table[key]);
-            } catch (FormatException) {
-                throw new MissingPrototypeValueException(table, key,
-                    $"Expected a float, but the value ('{table[key]}') isn't one");
-            }
-        }
-
-        public static float FloatOrDefault(this LuaTable table, string key, float defaultValue = 0f)
-        {
-            if (table[key] == null)
-                return defaultValue;
-
-            try {
-                return Convert.ToSingle(table[key]);
-            } catch (FormatException) {
-                throw new MissingPrototypeValueException(table, key,
-                    $"Expected a float, but the value ('{table[key]}') isn't one");
-            }
-        }
-
-        public static int IntOrDefault(this LuaTable table, string key, int defaultValue = 0)
-        {
-            if (table[key] == null)
-                return defaultValue;
-
-            try {
-                return Convert.ToInt32(table[key]);
-            } catch (FormatException) {
-                throw new MissingPrototypeValueException(table, key,
-                    $"Expected an Int32, but the value ('{table[key]}') isn't one");
-            }
-        }
-
-        public static int? Int(this LuaTable table, string key)
-        {
-            if (table[key] == null)
-                return null;
-
-            try {
-                return Convert.ToInt32(table[key]);
-            } catch (FormatException) {
-                throw new MissingPrototypeValueException(table, key,
-                    $"Expected an Int32, but the value ('{table[key]}') isn't one");
-            }
-        }
-
-        public static string String(this LuaTable table, string key)
-        {
-            if (table[key] != null)
-                return Convert.ToString(table[key])!;
-
-            throw new MissingPrototypeValueException(table, key, "Key is missing");
-        }
-
-        [return: NotNullIfNotNull("defaultValue")]
-        public static string? StringOrDefault(
-            this LuaTable table, string key, string? defaultValue = null)
-        {
-            if (table[key] != null)
-                return Convert.ToString(table[key]);
-            return defaultValue;
-        }
-
-        public static LuaTable Table(this LuaTable table, string key)
-        {
-            if (table[key] != null)
-                return (LuaTable)table[key];
-
-            throw new MissingPrototypeValueException(table, key, "Key is missing");
-        }
-
-        public static LuaTable? TableOrDefault(
-            this LuaTable table, string key, LuaTable? defaultValue = null)
-        {
-            if (table[key] != null)
-                return table[key] as LuaTable;
-            return defaultValue;
-        }
-
-        public static IEnumerable<KeyValuePair<object, object>> AsEnumerable(this LuaTable table)
-        {
-            foreach (KeyValuePair<object, object> entry in table)
-                yield return entry;
         }
     }
 }

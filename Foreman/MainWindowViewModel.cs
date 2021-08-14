@@ -454,7 +454,7 @@ namespace Foreman
         private Task ExportImage()
         {
             var dialog = new ImageExportDialog(GraphViewModel);
-            dialog.Show();
+            dialog.ShowDialog(view.Handle);
             return Task.CompletedTask;
         }
 

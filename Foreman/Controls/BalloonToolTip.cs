@@ -356,7 +356,7 @@ namespace Foreman.Controls
         {
             if (directlyOver != LastMouseDirectlyOver) {
                 LastMouseDirectlyOver = directlyOver;
-                if (directlyOver != LastMouseOverWithToolTip)
+                if (!ReferenceEquals(directlyOver, LastMouseOverWithToolTip))
                     InspectElementForToolTip(directlyOver as DependencyObject);
             }
         }

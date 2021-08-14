@@ -43,7 +43,7 @@ namespace Foreman.Infrastructure.Windows
                 return DoNothing;
 
             try {
-                double doubleValue = Convert.ToDouble(value);
+                double doubleValue = Convert.ToDouble(value, culture);
                 if (!string.IsNullOrEmpty(StringFormat))
                     return string.Format(culture, EffectiveStringFormat, value);
                 return doubleValue.ToString(StringFormat, culture);

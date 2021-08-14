@@ -56,7 +56,7 @@ namespace Foreman
                 if (SetProperty(ref filterText, value)) {
                     filteredChoices.Clear();
                     foreach (var choice in allChoices) {
-                        if (choice.FilterText.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0)
+                        if (choice.FilterText.Contains(value, StringComparison.OrdinalIgnoreCase))
                             filteredChoices.Add(choice);
                     }
                 }

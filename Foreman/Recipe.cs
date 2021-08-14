@@ -68,11 +68,7 @@ namespace Foreman
 
         public override bool Equals(object? obj)
         {
-            if (obj is not Recipe recipe) {
-                return false;
-            }
-
-            return recipe == this;
+            return obj is Recipe recipe && recipe == this;
         }
 
         public static bool operator ==(Recipe? recipe1, Recipe? recipe2)

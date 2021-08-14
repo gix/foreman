@@ -58,7 +58,7 @@ namespace Foreman.Views
                     break;
             }
 
-            Amount = amountToShow;
+            amount = amountToShow;
 
             var moduleBag = BaseNode.BeaconModules;
             if (moduleBag.OverrideSpeedBonus == null &&
@@ -77,8 +77,8 @@ namespace Foreman.Views
             foreach (var entry in moduleBag)
                 beaconModules.Add(new ModuleSlot(entry.Module, entry.Count));
 
-            if (GraphViewModel.ShowAssemblers && BaseNode is RecipeNode ||
-                GraphViewModel.ShowMiners && BaseNode is SupplyNode) {
+            if ((GraphViewModel.ShowAssemblers && BaseNode is RecipeNode) ||
+                (GraphViewModel.ShowMiners && BaseNode is SupplyNode)) {
                 CanEditAssembler = true;
                 UpdateAssemblerButtons();
             }

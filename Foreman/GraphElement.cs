@@ -7,10 +7,6 @@ namespace Foreman
     {
         private bool isSelected;
 
-        protected GraphElement()
-        {
-        }
-
         public bool IsSelected
         {
             get => isSelected;

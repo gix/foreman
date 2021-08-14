@@ -129,7 +129,7 @@ namespace Foreman
             switch (arch) {
                 case ProcessorArchitecture.Amd64:
                     offset = repAddr.ToInt64() - orgAddr.ToInt64() - 5;
-                    if (offset >= int.MinValue && offset <= int.MaxValue) {
+                    if (offset is >= int.MinValue and <= int.MaxValue) {
                         jumpInst = new byte[] {
                             0xE9, // JMP rel32
                             (byte)(offset & 0xFF),
@@ -343,15 +343,11 @@ namespace Foreman
             if (VirtualQuery(address, out MEMORY_BASIC_INFORMATION mbi) == UIntPtr.Zero)
                 throw new Win32Exception();
 
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try {
-            } finally {
-                if (!VirtualProtect(mbi.BaseAddress, mbi.RegionSize, PAGE_EXECUTE_READWRITE, out uint oldProtect))
-                    throw new Win32Exception();
-                Marshal.Copy(instructions, 0, address, instructions.Length);
-                FlushInstructionCache(GetCurrentProcess(), address, (UIntPtr)instructions.Length);
-                VirtualProtect(mbi.BaseAddress, mbi.RegionSize, oldProtect, out oldProtect);
-            }
+            if (!VirtualProtect(mbi.BaseAddress, mbi.RegionSize, PAGE_EXECUTE_READWRITE, out uint oldProtect))
+                throw new Win32Exception();
+            Marshal.Copy(instructions, 0, address, instructions.Length);
+            FlushInstructionCache(GetCurrentProcess(), address, (UIntPtr)instructions.Length);
+            VirtualProtect(mbi.BaseAddress, mbi.RegionSize, oldProtect, out oldProtect);
         }
 
         private static bool CompatibleSignatures(MethodInfo x, MethodInfo y)
