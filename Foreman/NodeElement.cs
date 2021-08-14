@@ -142,6 +142,16 @@ namespace Foreman
         public IEnumerable<Pin> Pins => Inputs.Union(Outputs);
         public IEnumerable<Connector> Connectors => Pins.SelectMany(x => x.Connectors);
 
+        public Pin? GetInputFor(Item item)
+        {
+            return Inputs.FirstOrDefault(x => x.Item == item);
+        }
+
+        public Pin? GetOutputFor(Item item)
+        {
+            return Outputs.FirstOrDefault(x => x.Item == item);
+        }
+
         private void Initialize(ProductionNode node)
         {
             foreach (var input in node.Inputs)

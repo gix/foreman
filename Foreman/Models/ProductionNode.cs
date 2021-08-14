@@ -347,6 +347,14 @@ namespace Foreman
             var assemblerBonus = GetAssemblers().Keys.Sum(x => x.GetAssemblerProductivity());
             return (float)(1.0 + BeaconModules.GetProductivityBonus() + assemblerBonus);
         }
+
+        public RecipeNode Clone(ProductionGraph graph)
+        {
+            var node = Create(BaseRecipe, graph);
+            node.RateType = RateType;
+            node.DesiredRate = DesiredRate;
+            return node;
+        }
     }
 
     [Serializable]
@@ -465,6 +473,14 @@ namespace Foreman
         {
             throw new ArgumentException("Supply node should not have any inputs!");
         }
+
+        public SupplyNode Clone(ProductionGraph graph)
+        {
+            var node = Create(SuppliedItem, graph);
+            node.RateType = RateType;
+            node.DesiredRate = DesiredRate;
+            return node;
+        }
     }
 
     [Serializable]
@@ -533,6 +549,14 @@ namespace Foreman
         internal override double InputRateFor(Item item)
         {
             return 1;
+        }
+
+        public ConsumerNode Clone(ProductionGraph graph)
+        {
+            var node = Create(ConsumedItem, graph);
+            node.RateType = RateType;
+            node.DesiredRate = DesiredRate;
+            return node;
         }
     }
 
@@ -611,6 +635,14 @@ namespace Foreman
         public override float ProductivityMultiplier()
         {
             return 1;
+        }
+
+        public PassthroughNode Clone(ProductionGraph graph)
+        {
+            var node = Create(PassedItem, graph);
+            node.RateType = RateType;
+            node.DesiredRate = DesiredRate;
+            return node;
         }
     }
 }

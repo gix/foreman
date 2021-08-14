@@ -318,6 +318,98 @@ namespace Foreman
             Delete(list);
         }
 
+        private Guid clipboardValidityToken;
+        private HashSet<GraphElement>? clipboardContent;
+
+        void IInteractiveCanvasViewModel.CopySelected()
+        {
+            var items = new HashSet<GraphElement>(SelectedItems);
+
+            foreach (var connector in SelectedItems.OfType<NodeElement>().SelectMany(x => x.Outputs).SelectMany(x => x.Connectors)) {
+                if (connector.Source == null ||
+                    connector.Destination == null)
+                    continue;
+
+                if (!items.Contains(connector.Source.Node) ||
+                    !items.Contains(connector.Destination.Node))
+                    continue;
+
+                items.Add(connector);
+            }
+
+            clipboardValidityToken = Guid.NewGuid();
+            clipboardContent = items;
+            Clipboard.SetData("Foreman.ProductionGraph.Elements", clipboardValidityToken);
+        }
+
+        List<object>? IInteractiveCanvasViewModel.Paste()
+        {
+            var token = Clipboard.GetData("Foreman.ProductionGraph.Elements") as Guid?;
+            var sourceElements = clipboardContent;
+            if (token != clipboardValidityToken ||
+                sourceElements == null || sourceElements.Count == 0)
+                return null;
+
+            var inputSet = sourceElements;
+            var elements = new List<GraphElement>();
+            var map = new Dictionary<NodeElement, NodeElement>();
+            var elementOffset = new Vector(20, 20);
+
+            foreach (var element in inputSet.OfType<NodeElement>()) {
+                var clonedNode = CloneNode(element.DisplayedNode);
+                var clonedElement = new NodeElement(clonedNode, element.Parent);
+                clonedElement.Position = element.Position + elementOffset;
+
+                elements.Add(clonedElement);
+                map.Add(element, clonedElement);
+            }
+
+            foreach (var sourceConnector in inputSet.OfType<Connector>()) {
+                if (sourceConnector.Source == null ||
+                    sourceConnector.Destination == null)
+                    continue;
+
+                // Skip connections to nodes not copied.
+                if (!inputSet.Contains(sourceConnector.Source.Node) ||
+                    !inputSet.Contains(sourceConnector.Destination.Node))
+                    continue;
+
+                NodeElement srcElement = map[sourceConnector.Source.Node];
+                NodeElement dstElement = map[sourceConnector.Destination.Node];
+
+                Item item = sourceConnector.Source.Item;
+
+                Pin? sourcePin = srcElement.GetOutputFor(item);
+                Pin? destinationPin = dstElement.GetInputFor(item);
+                if (sourcePin == null || destinationPin == null)
+                    continue;
+
+                var link = NodeLink.Create(sourcePin.Node.DisplayedNode, destinationPin.Node.DisplayedNode, item);
+                if (link == null)
+                    continue;
+
+                var connector = new Connector(link, sourcePin, destinationPin);
+                elements.Add(connector);
+            }
+
+            Elements.AddRange(elements);
+
+            Graph.UpdateNodeValues();
+
+            return elements.OfType<NodeElement>().ToList<object>();
+        }
+
+        private static ProductionNode CloneNode(ProductionNode node)
+        {
+            return node switch {
+                RecipeNode r => r.Clone(r.Graph),
+                SupplyNode s => s.Clone(s.Graph),
+                ConsumerNode c => c.Clone(c.Graph),
+                PassthroughNode p => p.Clone(p.Graph),
+                _ => throw new ArgumentOutOfRangeException(nameof(node), node, null)
+            };
+        }
+
         public void Delete(IEnumerable<GraphElement> elements)
         {
             foreach (var element in elements) {

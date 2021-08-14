@@ -2,8 +2,10 @@ namespace Foreman.Controls
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel.Design;
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Controls.Primitives;
     using System.Windows.Data;
     using System.Windows.Documents;
     using System.Windows.Input;
@@ -13,6 +15,7 @@ namespace Foreman.Controls
     public interface IInteractiveElement
     {
         bool IsSelectable { get; }
+        bool IsSelected { get; set; }
         bool IsDraggable { get; }
     }
 
@@ -34,6 +37,8 @@ namespace Foreman.Controls
         void Unselect(object item);
         void UnselectAll();
         void DeleteSelected();
+        void CopySelected();
+        List<object> Paste();
     }
 
     public class InteractiveCanvasView : ItemsControl
@@ -132,7 +137,9 @@ namespace Foreman.Controls
                 BindingOperations.SetBinding(
                     element,
                     CanvasService.PositionProperty,
-                    new Binding(nameof(IPlacedElement.Position)) { Mode = BindingMode.TwoWay });
+                    new Binding(nameof(IPlacedElement.Position)) {
+                        Mode = BindingMode.TwoWay
+                    });
 
                 var bindings = PushBindings.GetBindings(element);
                 bindings.Add(new PushBinding {
@@ -145,6 +152,15 @@ namespace Foreman.Controls
                     Path = new PropertyPath(nameof(IPlacedElement.RenderHeight)),
                     TargetDependencyProperty = ActualHeightProperty
                 });
+            }
+
+            if (item is IInteractiveElement) {
+                BindingOperations.SetBinding(
+                    element,
+                    Selector.IsSelectedProperty,
+                    new Binding(nameof(IInteractiveElement.IsSelected)) {
+                        Mode = BindingMode.TwoWay
+                    });
             }
         }
 
@@ -189,6 +205,31 @@ namespace Foreman.Controls
                 case Key.Delete:
                     ViewModel?.DeleteSelected();
                     break;
+
+                case Key.C:
+                    if (Keyboard.Modifiers == ModifierKeys.Control)
+                        ViewModel?.CopySelected();
+                    break;
+
+                case Key.V:
+                    if (Keyboard.Modifiers == ModifierKeys.Control)
+                        OnPaste();
+                    break;
+            }
+        }
+
+        private void OnPaste()
+        {
+            List<object>? itemsToSelect = ViewModel?.Paste();
+            if (itemsToSelect == null || itemsToSelect.Count == 0)
+                return;
+
+            UnselectAll();
+            foreach (var item in itemsToSelect) {
+                if (ItemContainerGenerator.ContainerFromItem(item) is InteractiveCanvasItem container) {
+                    Select(container);
+                    BringToFront(container);
+                }
             }
         }
 
@@ -240,7 +281,7 @@ namespace Foreman.Controls
                 }
             } else if (args.ChangedButton == MouseButton.Right) {
                 if (Keyboard.Modifiers == ModifierKeys.None) {
-                    if (item == null || !item.IsSelected) {
+                    if (item is not { IsSelected: true }) {
                         UnselectAll();
                         if (item != null)
                             Select(item);
