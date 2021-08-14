@@ -58,9 +58,9 @@ namespace Foreman
             ExportImageCommand = new AsyncDelegateCommand(ExportImage);
             ChangeFactorioDirectoryCommand = new AsyncDelegateCommand(ChangeFactorioDirectory);
             ChangeModDirectoryCommand = new AsyncDelegateCommand(ChangeModDirectory);
-            ReloadCommand = new AsyncDelegateCommand(Reload);
+            ReloadGraphCommand = new AsyncDelegateCommand(ReloadGraph);
             ReloadDataCommand = new AsyncDelegateCommand(ReloadData);
-            EnableDisableCommand = new AsyncDelegateCommand(EnableDisable);
+            EnableDisableCommand = new AsyncDelegateCommand(EnableDisableItems);
             AddItemsCommand = new AsyncDelegateCommand<UIElement>(AddItems, CanAddItems);
             AddRecipesCommand = new AsyncDelegateCommand(AddRecipes, CanAddRecipes);
             ShowLuaLogCommand = new AsyncDelegateCommand(ShowLuaLog);
@@ -82,7 +82,7 @@ namespace Foreman
         public AsyncDelegateCommand ExportImageCommand { get; }
         public AsyncDelegateCommand ChangeFactorioDirectoryCommand { get; }
         public AsyncDelegateCommand ChangeModDirectoryCommand { get; }
-        public AsyncDelegateCommand ReloadCommand { get; }
+        public AsyncDelegateCommand ReloadGraphCommand { get; }
         public AsyncDelegateCommand ReloadDataCommand { get; }
         public AsyncDelegateCommand EnableDisableCommand { get; }
         public AsyncDelegateCommand<UIElement> AddItemsCommand { get; }
@@ -458,7 +458,7 @@ namespace Foreman
             }
         }
 
-        private async Task Reload()
+        private async Task ReloadGraph()
         {
             await GraphViewModel.LoadFromJson(JObject.Parse(JsonConvert.SerializeObject(GraphViewModel)));
             UpdateControlValues();
@@ -555,7 +555,7 @@ namespace Foreman
             UpdateControlValues();
         }
 
-        private async Task EnableDisable()
+        private async Task EnableDisableItems()
         {
             var dialog = new EnableDisableItemsDialog();
             dialog.ShowDialog(view);

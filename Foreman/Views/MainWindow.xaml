@@ -1,4 +1,4 @@
-﻿<Window x:Class="Foreman.Views.MainWindow"
+<Window x:Class="Foreman.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -89,8 +89,18 @@
         <Separator/>
         <MenuItem Header="E_xit" Command="{Binding ExitCommand}" InputGestureText="Alt+F4"/>
       </MenuItem>
+      <MenuItem Header="_Graph">
+        <MenuItem Header="Automatically create _missing nodes" Command="{Binding CompleteGraphCommand}"/>
+        <MenuItem Header="Re_position nodes" Command="{Binding ArrangeNodesCommand}"/>
+        <MenuItem Header="_Export as Image" Command="{Binding ExportImageCommand}"/>
+        <Separator/>
+        <MenuItem Header="_Clear" Command="{Binding ClearGraphCommand}"/>
+        <MenuItem Header="_Reload" Command="{Binding ReloadGraphCommand}"/>
+      </MenuItem>
       <MenuItem Header="_Data">
         <MenuItem Header="_Reload" Command="{Binding ReloadDataCommand}"/>
+        <MenuItem Header="Set Factorio Directory…" Command="{Binding ChangeFactorioDirectoryCommand}"/>
+        <MenuItem Header="Set Mod Directory…" Command="{Binding ChangeModDirectoryCommand}"/>
       </MenuItem>
       <MenuItem Header="_Help">
         <MenuItem Header="Show Lua Log" Command="{Binding ShowLuaLogCommand}"/>
@@ -105,18 +115,16 @@
         <RowDefinition Height="Auto"/>
         <RowDefinition/>
       </Grid.RowDefinitions>
-      <Grid Grid.ColumnSpan="2" Margin="3" VerticalAlignment="Top">
+      <Grid Grid.Row="0" Grid.ColumnSpan="2" Margin="3" VerticalAlignment="Top">
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="Auto"/>
-          <ColumnDefinition Width="Auto"/>
-          <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <GroupBox Header="Show production amounts as…">
+        <GroupBox Grid.Column="0" Header="Show production amounts as…"
+                  Margin="3" VerticalAlignment="Stretch">
           <StackPanel>
             <RadioButton Margin="3" Content="Fixed Amount"
                          IsChecked="{f:EnumToBoolBinding Path=AmountType, EnumValue={x:Static f:AmountType.FixedAmount}}"
@@ -139,48 +147,14 @@
             </Grid>
           </StackPanel>
         </GroupBox>
-        <Grid Grid.Column="1" Margin="3">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition/>
-            <RowDefinition Height="Auto"/>
-          </Grid.RowDefinitions>
-          <Button Grid.Row="0" Content="Automatically create missing nodes"
-                  Command="{Binding CompleteGraphCommand}"/>
-          <Button Grid.Row="1" Content="Reposition nodes" Margin="0,3" VerticalAlignment="Center"
-                  Command="{Binding ArrangeNodesCommand}"/>
-          <Button Grid.Row="2" Content="Clear flowchart" Command="{Binding ClearGraphCommand}"/>
-        </Grid>
-        <Grid Grid.Column="2" Margin="3">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition/>
-            <RowDefinition Height="Auto"/>
-          </Grid.RowDefinitions>
-          <Button Grid.Row="0" Content="Save" Command="{Binding SaveGraphCommand}"/>
-          <Button Grid.Row="1" Content="Load" Margin="0,3" VerticalAlignment="Center"
-                  Command="{Binding OpenGraphCommand}"/>
-          <Button Grid.Row="2" Content="Export as Image" Command="{Binding ExportImageCommand}"/>
-        </Grid>
-        <GroupBox Grid.Column="3" Margin="3" Header="Assemblers" VerticalAlignment="Top">
+        <GroupBox Grid.Column="1" Margin="3" Header="Assemblers"
+                  VerticalAlignment="Stretch">
           <StackPanel>
             <CheckBox Margin="3" Content="Display Assemblers" IsChecked="{Binding ShowAssemblers}"/>
             <CheckBox Margin="3" Content="Display Miners/Pumpjacks" IsChecked="{Binding ShowMiners}"/>
           </StackPanel>
         </GroupBox>
-        <Grid Grid.Column="4" Margin="3">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition/>
-            <RowDefinition Height="Auto"/>
-          </Grid.RowDefinitions>
-          <Button Grid.Row="0" Content="Factorio Directory…"
-                  Command="{Binding ChangeFactorioDirectoryCommand}"/>
-          <Button Grid.Row="1" Content="Mod Directory…" Margin="0,3" VerticalAlignment="Center"
-                  Command="{Binding ChangeModDirectoryCommand}"/>
-          <Button Grid.Row="2" Content="Reload" Command="{Binding ReloadCommand}"/>
-        </Grid>
-        <Grid Grid.Column="5" Margin="3">
+        <Grid Grid.Column="2" Margin="3" VerticalAlignment="Stretch">
           <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="Auto"/>
@@ -194,7 +168,7 @@
           <Button Grid.Row="1" Margin="0,3,0,0" Content="Enable/disable loaded objects"
                   Command="{Binding EnableDisableCommand}"/>
         </Grid>
-        <GroupBox Grid.Column="6" Margin="3" Header="Difficulty" VerticalAlignment="Top">
+        <GroupBox Grid.Column="3" Margin="3" Header="Difficulty" VerticalAlignment="Stretch">
           <StackPanel>
             <RadioButton Margin="3" Content="Normal"
                          IsChecked="{f:EnumToBoolBinding Path=Difficulty, EnumValue={x:Static v:Difficulty.Normal}}"/>
