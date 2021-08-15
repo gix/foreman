@@ -2,8 +2,10 @@ namespace Foreman
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Media;
+    using Foreman.Extensions;
 
     public enum PinKind
     {
@@ -65,6 +67,8 @@ namespace Foreman
 
         public IReadOnlyCollection<Connector> Connectors => connectors;
 
+        public bool IsConnected => connectors.Count != 0;
+
         public Point Hotspot
         {
             get => hotspot;
@@ -91,6 +95,25 @@ namespace Foreman
         {
             get => isHighlighted;
             set => SetProperty(ref isHighlighted, value);
+        }
+
+        public NodeElement? GetConnectedNode()
+        {
+            if (Connectors.Count == 0)
+                return null;
+
+            if (Kind == PinKind.Input)
+                return Connectors.First().Source?.Node;
+            else
+                return Connectors.First().Destination?.Node;
+        }
+
+        public IEnumerable<NodeElement> GetConnectedNodes()
+        {
+            if (Kind == PinKind.Input)
+                return Connectors.Select(x => x.Source?.Node).NotNull();
+            else
+                return Connectors.Select(x => x.Destination?.Node).NotNull();
         }
 
         protected override GraphElement CreateInstanceCore()

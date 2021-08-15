@@ -160,16 +160,20 @@ namespace Foreman
                 Outputs.Add(new Pin(PinKind.Output, output, this));
 
             foreach (var pin in Pins)
-                pin.ConnectionChanged += (s, e) => UpdatePinOrder();
+                pin.ConnectionChanged += (_, _) => UpdatePinOrder();
         }
 
         private void OnPositionChanged()
         {
             UpdatePinOrder();
             foreach (var pin in Pins) {
-                var node = GetConnectedNode(pin);
-                if (node != this)
-                    node?.UpdatePinOrder();
+                PinKind connectedKind = pin.Kind == PinKind.Input ? PinKind.Output : PinKind.Input;
+
+                foreach (var node in pin.GetConnectedNodes()) {
+                    if (node != this) {
+                        node.UpdatePinOrder(connectedKind);
+                    }
+                }
             }
         }
 
@@ -332,33 +336,85 @@ namespace Foreman
             return enough;
         }
 
-        private void UpdatePinOrder()
+        private void UpdatePinOrder(PinKind? kind = null)
         {
-            Inputs.StableSortBy(GetPinXHeuristic);
-            Outputs.StableSortBy(GetPinXHeuristic);
-        }
-
-        private static NodeElement? GetConnectedNode(Pin pin)
-        {
-            if (pin.Kind == PinKind.Input)
-                return pin.Connectors.FirstOrDefault()?.Source?.Node;
-            else
-                return pin.Connectors.FirstOrDefault()?.Destination?.Node;
+            if (kind is null or PinKind.Input)
+                Inputs.StableSortBy(GetPinXHeuristic);
+            if (kind is null or PinKind.Output)
+                Outputs.StableSortBy(GetPinXHeuristic);
         }
 
         private int GetPinXHeuristic(Pin pin)
         {
-            NodeElement? node = GetConnectedNode(pin);
-            if (node == null)
-                return 0;
+            // This simple heuristic orders the pins on a node relative to the
+            // position of their connected node. There is no attempt to prevent
+            // overlap of connector lines.
+            //
+            // A pin connected to a node further to the left should come before
+            // a pin connected to a node further to the right:
+            //
+            // |   +---+   |                |   +---+   |
+            // +===|   |===+                +===|   |===+
+            //     +-+-+                        +-+-+
+            //       |                            |
+            //       +-----+               +------+
+            //             |               |
+            //           +-+-+   +---+   +-+-+
+            //       +===|   |===|   |===|   |===+
+            //       |   +---+   +---+   +---+   |
+            //       |                           |
+            //
+            // A pin connected to a node further up should come before a pin
+            // connected to a node further down:
+            //
+            //                              |   +---+   |
+            //                              +===|   |===+
+            //                                  +-+-+
+            //                     +--------------+
+            //                     |
+            //                     |        |   +---+   |
+            //                     |        +===|   |===+
+            //                     |            +-+-+
+            //                     |       +------+
+            //           +---+   +-+-+   +-+-+
+            //       +===|   |===|   |===|   |===+
+            //       |   +---+   +---+   +---+   |
+            //       |                           |
+            //
+            // So just looking at the X coordinate is not enough.
+
+            if (!pin.IsConnected)
+                return 0; // Keep unconnected pins neutral.
+
+            var nodes = pin.GetConnectedNodes();
+
+            Point center1 = Position + ((Vector)RenderSize / 2);
+            Point center2 = ComputeCentroid(nodes.Select(x => x.Position + ((Vector)x.RenderSize / 2)));
 
             double factorY = pin.Kind == PinKind.Input ? 1 : -1;
 
-            var p1 = node.Position + (Vector)node.RenderSize / 2;
-            var p2 = Position + (Vector)RenderSize / 2;
-            Vector diff = p1 - p2;
+            Vector diff = center2 - center1;
             diff.Y = Math.Max(0, factorY * diff.Y);
+
             return Convert.ToInt32(Math.Atan2(diff.X, diff.Y) * 1000);
+        }
+
+        private static Point ComputeCentroid(IEnumerable<Point> points)
+        {
+            Point p;
+            int count = 0;
+            foreach (Point point in points) {
+                p.X += point.X;
+                p.Y += point.Y;
+                ++count;
+            }
+
+            if (count != 0) {
+                p.X /= count;
+                p.Y /= count;
+            }
+
+            return p;
         }
 
         void IContextElement.HandleRightClick(UIElement container)
