@@ -490,7 +490,7 @@ namespace Foreman
                 var permutation = kvp.Key;
 
                 var assembler = permutation.Assembler;
-                buffer.AppendFormat("\n  {0} ({1})", assembler.FriendlyName, kvp.Value);
+                buffer.AppendFormat("\n  {0} ({1:F4})", assembler.FriendlyName, kvp.Value);
                 foreach (var module in permutation.Modules.NotNull())
                     buffer.AppendFormat("\n    {0}", module.FriendlyName);
 
