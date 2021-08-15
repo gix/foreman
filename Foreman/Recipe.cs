@@ -71,6 +71,11 @@ namespace Foreman
             return obj is Recipe recipe && recipe == this;
         }
 
+        public override string ToString()
+        {
+            return $"Recipe: {Name}";
+        }
+
         public static bool operator ==(Recipe? recipe1, Recipe? recipe2)
         {
             if (ReferenceEquals(recipe1, recipe2)) {

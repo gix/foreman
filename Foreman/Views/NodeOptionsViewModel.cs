@@ -27,7 +27,7 @@ namespace Foreman.Views
         private double consumptionBonus;
         private bool canOverrideBonus;
         private object? assembler;
-        private object? moduleStrategy;
+        private string? moduleStrategy;
 
         public NodeOptionsViewModel(
             ProductionNode baseNode, ProductionGraphViewModel graphViewModel)
@@ -189,7 +189,7 @@ namespace Foreman.Views
             set => SetProperty(ref assembler, value);
         }
 
-        public object? ModuleStrategy
+        public string? ModuleStrategy
         {
             get => moduleStrategy;
             set => SetProperty(ref moduleStrategy, value);
