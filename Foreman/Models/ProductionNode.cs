@@ -461,7 +461,7 @@ namespace Foreman
                 Trace.Fail(
                     $"{SuppliedItem.FriendlyName} supplier does not supply {item.FriendlyName}, nothing should be asking for the rate!");
 
-            return (float)Math.Round(ActualRate, RoundingDP);
+            return (float)Math.Round(ActualRate * ProductivityMultiplier(), RoundingDP);
         }
 
         internal override double OutputRateFor(Item item)
@@ -472,6 +472,12 @@ namespace Foreman
         internal override double InputRateFor(Item item)
         {
             throw new ArgumentException("Supply node should not have any inputs!");
+        }
+
+        public override float ProductivityMultiplier()
+        {
+            var assemblerBonus = GetMinimumMiners().Keys.Sum(x => x.GetAssemblerProductivity());
+            return (float)(1.0 + BeaconModules.GetProductivityBonus() + assemblerBonus);
         }
 
         public SupplyNode Clone(ProductionGraph graph)
