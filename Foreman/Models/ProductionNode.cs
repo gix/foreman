@@ -10,7 +10,8 @@ namespace Foreman
     public enum RateType
     {
         Auto,
-        Manual
+        Manual,
+        Count
     }
 
     public class ModuleBag : IReadOnlyCollection<(Module Module, int Count)>
@@ -102,8 +103,17 @@ namespace Foreman
         // The rate the solver calculated is appropriate for this node.
         public float ActualRate { get; protected set; }
 
-        // If the rateType is manual, this field contains the rate the user desires.
+        /// <summary>
+        ///   If the <see cref="RateType"/> is <see cref="F:RateType.Manual"/>,
+        ///   this field contains the rate the user desires.
+        /// </summary>
         public float DesiredRate { get; set; }
+
+        /// <summary>
+        ///   If the <see cref="RateType"/> is <see cref="F:RateType.Count"/>,
+        ///   this field contains the rate the user desires.
+        /// </summary>
+        public float DesiredCount { get; set; }
 
         // The calculated rate at which the given item is consumed by this node. This may not match
         // the desired amount!
@@ -138,17 +148,16 @@ namespace Foreman
 
             while (Q.Any()) {
                 ProductionNode t = Q.Dequeue();
-                if (t == node) {
+                if (t == node)
                     return true;
-                }
+
                 foreach (NodeLink e in t.InputLinks) {
                     ProductionNode u = e.Supplier;
-                    if (!V.Contains(u)) {
-                        V.Add(u);
+                    if (V.Add(u))
                         Q.Enqueue(u);
-                    }
                 }
             }
+
             return false;
         }
 
@@ -161,7 +170,19 @@ namespace Foreman
             Graph.InvalidateCaches();
         }
 
-        public abstract void GetObjectData(SerializationInfo info, StreamingContext context);
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("RateType", RateType);
+            info.AddValue("ActualRate", ActualRate);
+            switch (RateType) {
+                case RateType.Manual:
+                    info.AddValue("DesiredRate", DesiredRate);
+                    break;
+                case RateType.Count:
+                    info.AddValue("DesiredCount", DesiredCount);
+                    break;
+            }
+        }
 
         public virtual float ProductivityMultiplier()
         {
@@ -175,7 +196,7 @@ namespace Foreman
 
         internal bool OverSupplied(Item item)
         {
-            return (Math.Round(GetConsumeRate(item), 2) < Math.Round(GetSuppliedRate(item), 2));
+            return Math.Round(GetConsumeRate(item), 2) < Math.Round(GetSuppliedRate(item), 2);
         }
 
         internal bool ManualRateNotMet()
@@ -196,6 +217,7 @@ namespace Foreman
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            base.GetObjectData(info, context);
             Modules.GetObjectData(info, context);
         }
 
@@ -203,6 +225,8 @@ namespace Foreman
 
         public abstract IEnumerable<ProductionEntity> GetAllowedProductionEntities();
         public abstract ProductionEntity? ProductionEntity { get; set; }
+
+        public abstract override double GetEffectiveProductionRate();
     }
 
     [Serializable]
@@ -222,12 +246,28 @@ namespace Foreman
                 .Where(a => a.MaxIngredients >= BaseRecipe.Ingredients.Count);
         }
 
-        internal Dictionary<MachinePermutation, double> GetAssemblers()
+        public Assembler? GetEffectiveAssembler()
         {
-            var assembler = Assembler ?? GetAllowedAssemblers()
+            return Assembler ?? GetAllowedAssemblers()
                 .OrderByDescending(a => a.Speed)
                 .ThenByDescending(a => a.ModuleSlots)
                 .FirstOrDefault();
+        }
+
+        public override double GetEffectiveProductionRate()
+        {
+            Assembler? assembler = GetEffectiveAssembler();
+            if (assembler == null)
+                return 0;
+
+            var modules = Modules.For(assembler, BaseRecipe, assembler.ModuleSlots).ToList();
+            return assembler.GetRate(
+                BaseRecipe.Time, BeaconModules.GetSpeedBonus(), modules);
+        }
+
+        internal Dictionary<MachinePermutation, double> GetAssemblers()
+        {
+            Assembler? assembler = GetEffectiveAssembler();
 
             var results = new Dictionary<MachinePermutation, double>();
 
@@ -279,18 +319,13 @@ namespace Foreman
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            base.GetObjectData(info, context);
             info.AddValue("NodeType", "Recipe");
             info.AddValue("RecipeName", BaseRecipe.Name);
+            base.GetObjectData(info, context);
             info.AddValue("BeaconModules", BeaconModules.ToDictionary(x => x.Module, x => x.Count));
             info.AddValue("SpeedBonus", BeaconModules.OverrideSpeedBonus);
             info.AddValue("ProductivityBonus", BeaconModules.OverrideProductivityBonus);
             info.AddValue("ConsumptionBonus", BeaconModules.OverrideConsumptionBonus);
-            info.AddValue("RateType", RateType);
-            info.AddValue("ActualRate", ActualRate);
-            if (RateType == RateType.Manual) {
-                info.AddValue("DesiredRate", DesiredRate);
-            }
             if (Assembler != null) {
                 info.AddValue("Assembler", Assembler.Name);
             }
@@ -353,6 +388,7 @@ namespace Foreman
             var node = Create(BaseRecipe, graph);
             node.RateType = RateType;
             node.DesiredRate = DesiredRate;
+            node.DesiredCount = DesiredCount;
             return node;
         }
     }
@@ -405,9 +441,33 @@ namespace Foreman
 
         public IEnumerable<Miner> GetAllowedAssemblers()
         {
+            if (Resource == null)
+                return Enumerable.Empty<Miner>();
+
             return DataCache.Current.Miners.Values
                 .Where(a => a.Enabled)
-                .Where(a => a.ResourceCategories.Contains(Resource!.Category));
+                .Where(a => a.ResourceCategories.Contains(Resource.Category));
+        }
+
+        public Miner? GetEffectiveMiner()
+        {
+            return Miner ?? GetAllowedAssemblers()
+                .OrderByDescending(a => a.Speed)
+                .ThenByDescending(a => a.ModuleSlots)
+                .FirstOrDefault();
+        }
+
+        public override double GetEffectiveProductionRate()
+        {
+            if (Resource == null)
+                return 0;
+
+            Miner? miner = GetEffectiveMiner();
+            if (miner == null)
+                return 0;
+
+            var modules = Modules.For(miner, Resource, miner.ModuleSlots).ToList();
+            return miner.GetRate(Resource, BeaconModules.GetSpeedBonus(), modules);
         }
 
         public Dictionary<MachinePermutation, double> GetMinimumMiners()
@@ -416,10 +476,7 @@ namespace Foreman
             if (Resource == null)
                 return results;
 
-            var miner = Miner ?? GetAllowedAssemblers()
-                .OrderByDescending(a => a.Speed)
-                .ThenByDescending(a => a.ModuleSlots)
-                .FirstOrDefault();
+            Miner? miner = GetEffectiveMiner();
 
             if (miner != null) {
                 var modules = Modules.For(miner, Resource, miner.ModuleSlots).ToList();
@@ -433,14 +490,9 @@ namespace Foreman
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            base.GetObjectData(info, context);
             info.AddValue("NodeType", "Supply");
             info.AddValue("ItemName", SuppliedItem.Name);
-            info.AddValue("RateType", RateType);
-            info.AddValue("ActualRate", ActualRate);
-            if (RateType == RateType.Manual) {
-                info.AddValue("DesiredRate", DesiredRate);
-            }
+            base.GetObjectData(info, context);
         }
 
         public override bool IsEffectableBy(Module module)
@@ -485,6 +537,7 @@ namespace Foreman
             var node = Create(SuppliedItem, graph);
             node.RateType = RateType;
             node.DesiredRate = DesiredRate;
+            node.DesiredCount = DesiredCount;
             return node;
         }
     }
@@ -523,11 +576,7 @@ namespace Foreman
         {
             info.AddValue("NodeType", "Consumer");
             info.AddValue("ItemName", ConsumedItem.Name);
-            info.AddValue("RateType", RateType);
-            info.AddValue("ActualRate", ActualRate);
-            if (RateType == RateType.Manual) {
-                info.AddValue("DesiredRate", DesiredRate);
-            }
+            base.GetObjectData(info, context);
         }
 
         public override float GetConsumeRate(Item item)
@@ -562,6 +611,7 @@ namespace Foreman
             var node = Create(ConsumedItem, graph);
             node.RateType = RateType;
             node.DesiredRate = DesiredRate;
+            node.DesiredCount = DesiredCount;
             return node;
         }
     }
@@ -611,11 +661,7 @@ namespace Foreman
         {
             info.AddValue("NodeType", "PassThrough");
             info.AddValue("ItemName", PassedItem.Name);
-            info.AddValue("RateType", RateType);
-            info.AddValue("ActualRate", ActualRate);
-            if (RateType == RateType.Manual) {
-                info.AddValue("DesiredRate", DesiredRate);
-            }
+            base.GetObjectData(info, context);
         }
 
         public override float GetConsumeRate(Item item)
@@ -648,6 +694,7 @@ namespace Foreman
             var node = Create(PassedItem, graph);
             node.RateType = RateType;
             node.DesiredRate = DesiredRate;
+            node.DesiredCount = DesiredCount;
             return node;
         }
     }

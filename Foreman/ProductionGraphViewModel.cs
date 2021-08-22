@@ -710,6 +710,10 @@ namespace Foreman
                             // Legacy data format stored desired rate in actual
                             newNode.DesiredRate = (float)node["ActualRate"]!;
                         }
+                    } else if (newNode.RateType == RateType.Count) {
+                        if (node["DesiredCount"] != null) {
+                            newNode.DesiredCount = (float)node["DesiredCount"]!;
+                        }
                     }
                     if (node["BeaconModules"] != null) {
                         foreach (var entry in node["BeaconModules"]!.ToObject<Dictionary<string, int>>()!) {

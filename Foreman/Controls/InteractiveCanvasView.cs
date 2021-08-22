@@ -38,7 +38,7 @@ namespace Foreman.Controls
         void UnselectAll();
         void DeleteSelected();
         void CopySelected();
-        List<object> Paste();
+        List<object>? Paste();
     }
 
     public class InteractiveCanvasView : ItemsControl

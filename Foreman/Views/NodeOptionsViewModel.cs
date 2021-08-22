@@ -21,6 +21,7 @@ namespace Foreman.Views
         private RateType rateType;
         private double amount;
         private string? amountUnit;
+        private double desiredCount;
 
         private double speedBonus;
         private double productivityBonus;
@@ -59,6 +60,7 @@ namespace Foreman.Views
             }
 
             amount = amountToShow;
+            desiredCount = BaseNode.DesiredCount;
 
             var moduleBag = BaseNode.BeaconModules;
             if (moduleBag.OverrideSpeedBonus == null &&
@@ -78,7 +80,7 @@ namespace Foreman.Views
                 beaconModules.Add(new ModuleSlot(entry.Module, entry.Count));
 
             if ((GraphViewModel.ShowAssemblers && BaseNode is RecipeNode) ||
-                (GraphViewModel.ShowMiners && BaseNode is SupplyNode)) {
+                (GraphViewModel.ShowMiners && BaseNode is SupplyNode { Resource: { } })) {
                 CanEditAssembler = true;
                 UpdateAssemblerButtons();
             }
@@ -133,6 +135,21 @@ namespace Foreman.Views
         {
             get => amountUnit;
             set => SetProperty(ref amountUnit, value);
+        }
+
+        public double DesiredCount
+        {
+            get => desiredCount;
+            set
+            {
+                if (value < 0)
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Count must be positive.");
+
+                if (SetProperty(ref desiredCount, value)) {
+                    BaseNode.DesiredCount = (float)desiredCount;
+                    Graph.UpdateNodeValues(BaseNode);
+                }
+            }
         }
 
         public double SpeedBonus
