@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="256"
+   height="256"
+   viewBox="0 0 67.733331 67.733331"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   sodipodi:docname="ForemanLogo.svg"
+   inkscape:export-filename="E:\dev\foreman\Foreman\Resources\ForemanLogo_256.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="px"
+     showgrid="true"
+     width="256mm"
+     units="px"
+     inkscape:zoom="3.2842761"
+     inkscape:cx="159.39585"
+     inkscape:cy="120.57451"
+     inkscape:window-width="1920"
+     inkscape:window-height="1178"
+     inkscape:window-x="-5"
+     inkscape:window-y="-5"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer3"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     guidetolerance="10000">
+    <inkscape:grid
+       type="xygrid"
+       id="grid9"
+       empspacing="8" />
+    <sodipodi:guide
+       position="16.933333,50.799998"
+       orientation="1,0"
+       id="guide675" />
+    <sodipodi:guide
+       position="50.799998,44.449998"
+       orientation="1,0"
+       id="guide677" />
+    <sodipodi:guide
+       position="40.216665,50.799998"
+       orientation="0,-1"
+       id="guide679" />
+    <sodipodi:guide
+       position="38.099999,16.933333"
+       orientation="0,-1"
+       id="guide681" />
+    <sodipodi:guide
+       position="25.399999,27.516666"
+       orientation="1,0"
+       id="guide1934" />
+    <sodipodi:guide
+       position="35.983332,42.333332"
+       orientation="0,-1"
+       id="guide1936" />
+    <sodipodi:guide
+       position="42.333332,25.399999"
+       orientation="1,0"
+       id="guide1938" />
+    <sodipodi:guide
+       position="46.566665,25.399999"
+       orientation="0,-1"
+       id="guide1940" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2" />
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="Edges">
+    <path
+       id="rect2216"
+       style="fill:#bbbbbb;fill-opacity:1;stroke-width:0.999999"
+       d="m 16,40 4e-6,88 h 64 v -16 h -48 L 32,40 Z m 208,0 0,72 h -48 v 16 h 64 l 0,-88 z M 120,176 v 40 h 16 v -40 z"
+       transform="scale(0.26458332)"
+       sodipodi:nodetypes="ccccccccccccccccccc" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Nodes"
+     style="display:inline">
+    <rect
+       style="fill:#cccccc;fill-opacity:1;stroke-width:2.11666659;stroke:#666666;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect1965"
+       width="8.4666662"
+       height="8.4666662"
+       x="2.1166666"
+       y="2.1166666" />
+    <rect
+       style="fill:#cccccc;fill-opacity:1;stroke:#666666;stroke-width:2.11666659;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect1967"
+       width="8.4666662"
+       height="8.4666662"
+       x="57.149998"
+       y="2.1166668" />
+    <rect
+       style="fill:#cccccc;fill-opacity:1;stroke-width:2.11666659;stroke:#666666;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-linecap:butt;paint-order:normal"
+       id="rect1969"
+       width="8.4666662"
+       height="8.4666662"
+       x="29.633333"
+       y="57.149998" />
+  </g>
+  <g
+     inkscape:label="Gear Wheel"
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="display:inline">
+    <path
+       id="path705"
+       style="fill:#dd8024;fill-opacity:1;fill-rule:evenodd;stroke-width:0.264583"
+       d="M 33.866665,14.816665 A 16.933332,16.933332 0 0 0 16.933332,31.749997 16.933332,16.933332 0 0 0 33.866665,48.68333 16.933332,16.933332 0 0 0 50.799997,31.749997 16.933332,16.933332 0 0 0 33.866665,14.816665 Z m 0,8.466666 a 8.466666,8.466666 0 0 1 8.466666,8.466666 8.466666,8.466666 0 0 1 -8.466666,8.466667 8.466666,8.466666 0 0 1 -8.466666,-8.466667 8.466666,8.466666 0 0 1 8.466666,-8.466666 z" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer4"
+     inkscape:label="Gear Wheel 1"
+     style="display:inline">
+    <path
+       style="fill:#dd8024;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 29.633332,16.933331 2.116666,-6.35 h 4.233334 l 2.116666,6.35 z"
+       id="path3438" />
+    <path
+       style="display:inline;fill:#dd8024;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 29.633333,46.566663 2.116666,6.35 h 4.233334 l 2.116666,-6.35 z"
+       id="path3438-9" />
+    <path
+       style="display:inline;fill:#dd8024;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 19.05,27.516664 12.7,29.63333 v 4.233334 l 6.35,2.116666 z"
+       id="path3438-9-2" />
+    <path
+       style="display:inline;fill:#dd8024;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 48.683331,27.516665 6.35,2.116665 v 4.233334 l -6.35,2.116666 z"
+       id="path3438-9-2-2" />
+    <path
+       style="display:inline;fill:#dd8024;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 41.350211,18.279614 5.986837,-2.993419 2.993419,2.993419 -2.993419,5.986837 z"
+       id="path3438-1" />
+    <path
+       style="display:inline;fill:#dd8024;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 20.396281,39.233545 -2.993419,5.986837 2.993419,2.993419 5.986837,-2.993419 z"
+       id="path3438-9-1" />
+    <path
+       style="display:inline;fill:#dd8024;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 26.383118,18.279615 -5.986837,-2.993419 -2.993419,2.993419 2.993419,5.986837 z"
+       id="path3438-9-2-8" />
+    <path
+       style="display:inline;fill:#dd8024;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 47.337047,39.233545 2.99342,5.986836 -2.993419,2.993419 -5.986837,-2.993419 z"
+       id="path3438-9-2-2-0" />
+  </g>
+</svg>
