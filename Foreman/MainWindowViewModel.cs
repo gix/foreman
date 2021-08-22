@@ -316,6 +316,13 @@ namespace Foreman
             ShowMiners = GraphViewModel.ShowMiners = Settings.Default.ShowMiners;
             SelectedModuleStrategy = ModuleSelector.FromName(Settings.Default.DefaultModuleStrategy);
 
+            Settings.Default.RecentGraphs ??= new StringCollection();
+
+            foreach (var recentGraph in Settings.Default.RecentGraphs) {
+                if (recentGraph != null)
+                    RecentGraphs.Add(recentGraph);
+            }
+
             using (var progress = CreateProgress())
                 await Task.Run(() => DataCache.Reload(progress));
 
@@ -324,13 +331,6 @@ namespace Foreman
             SelectedLanguage = languages.FirstOrDefault(l => l.Name == Settings.Default.Language) ??
                                languages.FirstOrDefault(l => l.Name == "en") ??
                                languages.First();
-
-            Settings.Default.RecentGraphs ??= new StringCollection();
-
-            foreach (var recentGraph in Settings.Default.RecentGraphs) {
-                if (recentGraph != null)
-                    RecentGraphs.Add(recentGraph);
-            }
 
             UpdateControlValues();
         }
@@ -541,9 +541,9 @@ namespace Foreman
             if (dialog.ShowDialog(view) != true)
                 return Task.CompletedTask;
 
-            SaveGraphToFile(dialog.FileName);
             currentGraphFile = dialog.FileName;
             UpdateTitle();
+            SaveGraphToFile(currentGraphFile);
             return Task.CompletedTask;
         }
 
@@ -557,6 +557,7 @@ namespace Foreman
             var writer = new JsonTextWriter(new StreamWriter(filePath));
             try {
                 serializer.Serialize(writer, GraphViewModel);
+                RecentGraphs.Add(filePath);
             } catch (Exception exception) {
                 MessageBox.Show("Could not save this file. See log for more details");
                 ErrorLogging.LogLine($"Error saving file '{filePath}'. Error: '{exception.Message}'");
