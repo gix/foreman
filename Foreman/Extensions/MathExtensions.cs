@@ -1,7 +1,9 @@
 namespace Foreman.Extensions
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Windows;
 
     public static class MathExtensions
     {
@@ -768,5 +770,23 @@ namespace Foreman.Extensions
         }
 
         #endregion
+
+        public static Point ComputeCentroid(this IEnumerable<Point> points)
+        {
+            Point p;
+            int count = 0;
+            foreach (Point point in points) {
+                p.X += point.X;
+                p.Y += point.Y;
+                ++count;
+            }
+
+            if (count != 0) {
+                p.X /= count;
+                p.Y /= count;
+            }
+
+            return p;
+        }
     }
 }

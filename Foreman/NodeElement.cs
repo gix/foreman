@@ -3,10 +3,12 @@ namespace Foreman
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using System.Windows;
     using System.Windows.Controls.Primitives;
+    using System.Windows.Documents;
     using System.Windows.Media;
     using Controls;
     using Foreman.Extensions;
@@ -336,85 +338,42 @@ namespace Foreman
             return enough;
         }
 
+        private sealed class PinComparer : IComparer<Pin>
+        {
+            public int Compare(Pin? x, Pin? y)
+            {
+                if (ReferenceEquals(x, y))
+                    return 0;
+                if (y is null)
+                    return +1;
+                if (x is null)
+                    return -1;
+
+                int lhsXOrder = x.GetPinXOrder();
+                int rhsXOrder = y.GetPinXOrder();
+                int cmp = lhsXOrder.CompareTo(rhsXOrder);
+                if (cmp != 0)
+                    return cmp;
+
+                return string.Compare(x.Item.Name, y.Item.Name, StringComparison.Ordinal);
+            }
+        }
+
+        private static readonly PinComparer Comparer = new();
+
         private void UpdatePinOrder(PinKind? kind = null)
         {
-            if (kind is null or PinKind.Input)
-                Inputs.StableSortBy(GetPinXHeuristic);
-            if (kind is null or PinKind.Output)
-                Outputs.StableSortBy(GetPinXHeuristic);
-        }
-
-        private int GetPinXHeuristic(Pin pin)
-        {
-            // This simple heuristic orders the pins on a node relative to the
-            // position of their connected node. There is no attempt to prevent
-            // overlap of connector lines.
-            //
-            // A pin connected to a node further to the left should come before
-            // a pin connected to a node further to the right:
-            //
-            // |   +---+   |                |   +---+   |
-            // +===|   |===+                +===|   |===+
-            //     +-+-+                        +-+-+
-            //       |                            |
-            //       +-----+               +------+
-            //             |               |
-            //           +-+-+   +---+   +-+-+
-            //       +===|   |===|   |===|   |===+
-            //       |   +---+   +---+   +---+   |
-            //       |                           |
-            //
-            // A pin connected to a node further up should come before a pin
-            // connected to a node further down:
-            //
-            //                              |   +---+   |
-            //                              +===|   |===+
-            //                                  +-+-+
-            //                     +--------------+
-            //                     |
-            //                     |        |   +---+   |
-            //                     |        +===|   |===+
-            //                     |            +-+-+
-            //                     |       +------+
-            //           +---+   +-+-+   +-+-+
-            //       +===|   |===|   |===|   |===+
-            //       |   +---+   +---+   +---+   |
-            //       |                           |
-            //
-            // So just looking at the X coordinate is not enough.
-
-            if (!pin.IsConnected)
-                return 0; // Keep unconnected pins neutral.
-
-            var nodes = pin.GetConnectedNodes();
-
-            Point center1 = Position + ((Vector)RenderSize / 2);
-            Point center2 = ComputeCentroid(nodes.Select(x => x.Position + ((Vector)x.RenderSize / 2)));
-
-            double factorY = pin.Kind == PinKind.Input ? 1 : -1;
-
-            Vector diff = center2 - center1;
-            diff.Y = Math.Max(0, factorY * diff.Y);
-
-            return Convert.ToInt32(Math.Atan2(diff.X, diff.Y) * 1000);
-        }
-
-        private static Point ComputeCentroid(IEnumerable<Point> points)
-        {
-            Point p;
-            int count = 0;
-            foreach (Point point in points) {
-                p.X += point.X;
-                p.Y += point.Y;
-                ++count;
+            if (kind is null or PinKind.Input) {
+                foreach (var pin in Inputs)
+                    pin.ClearXOrder();
+                Inputs.StableSort(Comparer);
             }
-
-            if (count != 0) {
-                p.X /= count;
-                p.Y /= count;
+            if (kind is null or PinKind.Output) {
+                foreach (var pin in Outputs)
+                    pin.ClearXOrder();
+                Outputs.StableSort(Comparer);
+                new List<int>().Sort();
             }
-
-            return p;
         }
 
         void IContextElement.HandleRightClick(UIElement container)
