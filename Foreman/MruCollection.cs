@@ -4,6 +4,8 @@ namespace Foreman
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Linq;
+    using Foreman.Extensions;
 
     public class MruCollection<T> : IReadOnlyList<T>, INotifyCollectionChanged
     {
@@ -50,6 +52,12 @@ namespace Foreman
             if (items.Count == Capacity)
                 items.RemoveAt(items.Count - 1);
             items.Insert(0, item);
+        }
+
+        public void SetAll(IEnumerable<T> newItems)
+        {
+            items.Clear();
+            items.AddRange(newItems.Take(Capacity));
         }
     }
 }

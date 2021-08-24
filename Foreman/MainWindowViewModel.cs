@@ -317,11 +317,7 @@ namespace Foreman
             SelectedModuleStrategy = ModuleSelector.FromName(Settings.Default.DefaultModuleStrategy);
 
             Settings.Default.RecentGraphs ??= new StringCollection();
-
-            foreach (var recentGraph in Settings.Default.RecentGraphs) {
-                if (recentGraph != null)
-                    RecentGraphs.Add(recentGraph);
-            }
+            RecentGraphs.SetAll(Settings.Default.RecentGraphs.OfType<string>());
 
             using (var progress = CreateProgress())
                 await Task.Run(() => DataCache.Reload(progress));
