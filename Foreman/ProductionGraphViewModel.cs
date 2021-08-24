@@ -366,7 +366,7 @@ namespace Foreman
             var elementOffset = new Vector(20, 20);
 
             foreach (var element in inputSet.OfType<NodeElement>()) {
-                var clonedNode = CloneNode(element.DisplayedNode);
+                var clonedNode = element.DisplayedNode.Clone(element.DisplayedNode.Graph);
                 var clonedElement = new NodeElement(clonedNode, element.Parent);
                 clonedElement.Position = element.Position + elementOffset;
 

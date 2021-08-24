@@ -96,13 +96,15 @@ namespace Foreman
                 .SelectMany(x => x);
         }
 
+        public abstract ModuleSelector Clone();
+
         public static ModuleSelector Specific(Module module)
         {
             return new ModuleSpecificFilter(module);
         }
 
         [Serializable]
-        private class ModuleSpecificFilter : ModuleSelector
+        private sealed class ModuleSpecificFilter : ModuleSelector
         {
             public Module Module { get; }
 
@@ -123,10 +125,15 @@ namespace Foreman
             {
                 return Enumerable.Repeat(Module, 1);
             }
+
+            public override ModuleSelector Clone()
+            {
+                return new ModuleSpecificFilter(Module);
+            }
         }
 
         [Serializable]
-        public class DefaultModuleSelector : ModuleSelector
+        public sealed class DefaultModuleSelector : ModuleSelector
         {
             private ModuleSelector? strategy;
 
@@ -148,10 +155,15 @@ namespace Foreman
             {
                 return Strategy.AvailableModules();
             }
+
+            public override ModuleSelector Clone()
+            {
+                return this;
+            }
         }
 
         [Serializable]
-        private class ModuleSelectorNone : ModuleSelector
+        private sealed class ModuleSelectorNone : ModuleSelector
         {
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
@@ -163,6 +175,11 @@ namespace Foreman
             protected override IEnumerable<Module> AvailableModules()
             {
                 return Enumerable.Empty<Module>();
+            }
+
+            public override ModuleSelector Clone()
+            {
+                return this;
             }
         }
 
@@ -180,6 +197,11 @@ namespace Foreman
             {
                 return DataCache.Current.Modules.Values.OrderBy(m => -m.SpeedBonus);
             }
+
+            public override ModuleSelector Clone()
+            {
+                return this;
+            }
         }
 
         [Serializable]
@@ -196,6 +218,11 @@ namespace Foreman
             {
                 return DataCache.Current.Modules.Values.OrderBy(m => -m.ProductivityBonus);
             }
+
+            public override ModuleSelector Clone()
+            {
+                return this;
+            }
         }
 
         [Serializable]
@@ -211,6 +238,11 @@ namespace Foreman
             protected override IEnumerable<Module> AvailableModules()
             {
                 return DataCache.Current.Modules.Values.OrderBy(m => m.ConsumptionBonus);
+            }
+
+            public override ModuleSelector Clone()
+            {
+                return this;
             }
         }
     }
@@ -236,6 +268,11 @@ namespace Foreman
         {
             info.AddValue("ModuleFilterType", "Custom");
             info.AddValue("Modules", modules.Select(x => x?.Name).ToArray());
+        }
+
+        public override ModuleSelector Clone()
+        {
+            return new ModuleSet(modules);
         }
 
         protected override IEnumerable<Module> AvailableModules()

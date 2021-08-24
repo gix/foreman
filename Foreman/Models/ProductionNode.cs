@@ -228,6 +228,15 @@ namespace Foreman
 
             return Math.Round(GetDesiredConsumeRate(item), 2) > Math.Round(GetSuppliedRate(item), 2);
         }
+
+        public abstract ProductionNode Clone(ProductionGraph graph);
+
+        protected virtual void CloneCore(ProductionNode clone)
+        {
+            clone.RateType = RateType;
+            clone.DesiredRate = DesiredRate;
+            clone.DesiredCount = DesiredCount;
+        }
     }
 
     public abstract class EffectableNode : ProductionNode
@@ -251,6 +260,13 @@ namespace Foreman
         public abstract ProductionEntity? ProductionEntity { get; set; }
 
         public abstract override double GetEffectiveProductionRate();
+
+        protected override void CloneCore(ProductionNode clone)
+        {
+            base.CloneCore(clone);
+            var c = (EffectableNode)clone;
+            c.Modules = Modules.Clone();
+        }
     }
 
     [Serializable]
@@ -421,12 +437,10 @@ namespace Foreman
             return (float)(1.0 + BeaconModules.GetProductivityBonus() + assemblerBonus);
         }
 
-        public RecipeNode Clone(ProductionGraph graph)
+        public override RecipeNode Clone(ProductionGraph graph)
         {
             var node = Create(BaseRecipe, graph);
-            node.RateType = RateType;
-            node.DesiredRate = DesiredRate;
-            node.DesiredCount = DesiredCount;
+            CloneCore(node);
             return node;
         }
     }
@@ -570,12 +584,10 @@ namespace Foreman
             return (float)(1.0 + BeaconModules.GetProductivityBonus() + assemblerBonus);
         }
 
-        public SupplyNode Clone(ProductionGraph graph)
+        public override SupplyNode Clone(ProductionGraph graph)
         {
             var node = Create(SuppliedItem, graph);
-            node.RateType = RateType;
-            node.DesiredRate = DesiredRate;
-            node.DesiredCount = DesiredCount;
+            CloneCore(node);
             return node;
         }
     }
@@ -649,12 +661,10 @@ namespace Foreman
             return 1;
         }
 
-        public ConsumerNode Clone(ProductionGraph graph)
+        public override ConsumerNode Clone(ProductionGraph graph)
         {
             var node = Create(ConsumedItem, graph);
-            node.RateType = RateType;
-            node.DesiredRate = DesiredRate;
-            node.DesiredCount = DesiredCount;
+            CloneCore(node);
             return node;
         }
     }
@@ -737,12 +747,10 @@ namespace Foreman
             return 1;
         }
 
-        public PassthroughNode Clone(ProductionGraph graph)
+        public override PassthroughNode Clone(ProductionGraph graph)
         {
             var node = Create(PassedItem, graph);
-            node.RateType = RateType;
-            node.DesiredRate = DesiredRate;
-            node.DesiredCount = DesiredCount;
+            CloneCore(node);
             return node;
         }
     }
