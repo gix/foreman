@@ -46,6 +46,7 @@ namespace Foreman
                     source.HotspotUpdated -= OnSourceHotspotUpdated;
                 }
 
+                Pin? oldSource = source;
                 source = value;
 
                 if (source != null) {
@@ -54,6 +55,7 @@ namespace Foreman
                     SourceHotspot = source.Hotspot;
                 }
 
+                oldSource?.RaiseConnectionChanged();
                 RaisePropertyChanged();
                 OnConnectionChanged();
             }
@@ -72,6 +74,7 @@ namespace Foreman
                     destination.HotspotUpdated -= OnDestinationHotspotUpdated;
                 }
 
+                Pin? oldDestination = destination;
                 destination = value;
 
                 if (destination != null) {
@@ -80,6 +83,7 @@ namespace Foreman
                     DestinationHotspot = destination.Hotspot;
                 }
 
+                oldDestination?.RaiseConnectionChanged();
                 RaisePropertyChanged();
                 OnConnectionChanged();
             }
