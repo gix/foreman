@@ -89,7 +89,7 @@
           </c:BalloonToolTip>
         </c:BalloonToolTipService.BalloonToolTip>
         <Border x:Name="Border"
-                Background="White"
+                Background="{Binding FillColor, Converter={StaticResource ColorToBrushConverter}}"
                 BorderBrush="#FF808080"
                 BorderThickness="3"
                 CornerRadius="4">
@@ -101,6 +101,8 @@
             <TextBlock x:Name="Text"
                        Grid.Row="0"
                        Text="{Binding Label}"
+                       Foreground="{Binding TextColor, Converter={StaticResource ColorToBrushConverter}, FallbackValue={x:Static Brushes.Black}}"
+                       TextAlignment="Center"
                        FontFamily="Microsoft Sans Serif"
                        FontSize="7pt"
                        HorizontalAlignment="Center"

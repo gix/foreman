@@ -21,7 +21,7 @@ namespace Foreman
         public LocalizationInfo? LocalizedName { get; set; }
         public string FriendlyName => DataCache.Current.GetLocalizedString(Name, LocalizedName);
 
-        public bool IsMissingItem { get; set; }
+        public bool IsMissingItem { get; init; }
 
         public Item(string name)
         {

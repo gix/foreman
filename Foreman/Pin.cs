@@ -20,6 +20,7 @@ namespace Foreman
         private string label;
         private ImageSource? icon;
         private Point hotspot;
+        private Color? textColor;
         private Color fillColor;
         private string balloonText;
         private bool isHighlighted;
@@ -78,6 +79,12 @@ namespace Foreman
                 if (SetProperty(ref hotspot, value))
                     HotspotUpdated?.Invoke(this, EventArgs.Empty);
             }
+        }
+
+        public Color? TextColor
+        {
+            get => textColor;
+            set => SetProperty(ref textColor, value);
         }
 
         public Color FillColor

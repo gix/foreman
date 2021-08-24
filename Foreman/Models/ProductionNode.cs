@@ -194,6 +194,19 @@ namespace Foreman
             return (float)InputLinks.Where(x => x.Item == item).Sum(x => x.Throughput);
         }
 
+        public virtual float GetDesiredConsumeRate(Item item) => 0;
+
+        public virtual double GetEffectiveProductionRate() => 1;
+
+        public double? GetActualDesiredRate()
+        {
+            return RateType switch {
+                RateType.Manual => DesiredRate,
+                RateType.Count => DesiredCount * GetEffectiveProductionRate(),
+                _ => null
+            };
+        }
+
         internal bool OverSupplied(Item item)
         {
             return Math.Round(GetConsumeRate(item), 2) < Math.Round(GetSuppliedRate(item), 2);
@@ -201,8 +214,19 @@ namespace Foreman
 
         internal bool ManualRateNotMet()
         {
+            double? rate = GetActualDesiredRate();
+
             // TODO: Hard-coded epsilon is gross :(
-            return RateType == RateType.Manual && Math.Abs(ActualRate - DesiredRate) > 0.0001;
+            return rate != null && Math.Abs(ActualRate - rate.Value) > 0.0001;
+        }
+
+        internal bool ManualRateNotMet(Item item)
+        {
+            // Ignore unconnected inputs here. They always have enough input.
+            if (!InputLinks.Any(x => x.Item == item))
+                return false;
+
+            return Math.Round(GetDesiredConsumeRate(item), 2) > Math.Round(GetSuppliedRate(item), 2);
         }
     }
 
@@ -355,6 +379,20 @@ namespace Foreman
             }
 
             return (float)Math.Round(BaseRecipe.Ingredients[item] * ActualRate, RoundingDP);
+        }
+
+        public override float GetDesiredConsumeRate(Item item)
+        {
+            if (BaseRecipe.IsMissingRecipe
+                || !BaseRecipe.Ingredients.ContainsKey(item)) {
+                return 0f;
+            }
+
+            double? rate = GetActualDesiredRate();
+            if (rate == null)
+                return 0f;
+
+            return (float)Math.Round(BaseRecipe.Ingredients[item] * rate.Value, RoundingDP);
         }
 
         public override float GetSupplyRate(Item item)
@@ -596,6 +634,11 @@ namespace Foreman
             return 0;
         }
 
+        public override float GetDesiredConsumeRate(Item item)
+        {
+            return (float)Math.Round(DesiredRate, RoundingDP);
+        }
+
         internal override double OutputRateFor(Item item)
         {
             throw new ArgumentException("Consumer should not have outputs!");
@@ -672,6 +715,11 @@ namespace Foreman
         public override float GetSupplyRate(Item item)
         {
             return (float)Math.Round(ActualRate, RoundingDP);
+        }
+
+        public override float GetDesiredConsumeRate(Item item)
+        {
+            return (float)Math.Round(DesiredRate, RoundingDP);
         }
 
         internal override double OutputRateFor(Item item)

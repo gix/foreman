@@ -79,12 +79,9 @@ namespace Foreman
         {
             solver.AddNode(this);
 
-            if (RateType == RateType.Manual) {
-                solver.AddTarget(this, DesiredRate);
-            } else if (RateType == RateType.Count) {
-                double rate = DesiredCount * GetEffectiveProductionRate();
-                solver.AddTarget(this, (float)rate);
-            }
+            double? rate = GetActualDesiredRate();
+            if (rate != null)
+                solver.AddTarget(this, (float)rate.Value);
 
             foreach (var itemInputs in InputLinks.GroupBy(x => x.Item)) {
                 var item = itemInputs.Key;
@@ -104,7 +101,5 @@ namespace Foreman
 
         internal abstract double OutputRateFor(Item item);
         internal abstract double InputRateFor(Item item);
-
-        public virtual double GetEffectiveProductionRate() => 1;
     }
 }

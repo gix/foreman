@@ -664,8 +664,9 @@ namespace Foreman
                             Item item = DataCache.Current.Items[itemName];
                             newNode = ConsumerNode.Create(item, Graph);
                         } else {
-                            var missingItem = new Item(itemName);
-                            missingItem.IsMissingItem = true;
+                            var missingItem = new Item(itemName) {
+                                IsMissingItem = true
+                            };
                             newNode = ConsumerNode.Create(missingItem, Graph);
                         }
                         break;
@@ -676,8 +677,9 @@ namespace Foreman
                             Item item = DataCache.Current.Items[itemName];
                             newNode = SupplyNode.Create(item, Graph);
                         } else {
-                            var missingItem = new Item(itemName);
-                            missingItem.IsMissingItem = true;
+                            var missingItem = new Item(itemName) {
+                                IsMissingItem = true
+                            };
                             DataCache.Current.Items.Add(itemName, missingItem);
                             newNode = SupplyNode.Create(missingItem, Graph);
                         }
@@ -689,8 +691,9 @@ namespace Foreman
                             Item item = DataCache.Current.Items[itemName];
                             newNode = PassthroughNode.Create(item, Graph);
                         } else {
-                            var missingItem = new Item(itemName);
-                            missingItem.IsMissingItem = true;
+                            var missingItem = new Item(itemName) {
+                                IsMissingItem = true
+                            };
                             DataCache.Current.Items.Add(itemName, missingItem);
                             newNode = PassthroughNode.Create(missingItem, Graph);
                         }
@@ -763,8 +766,9 @@ namespace Foreman
 
                 string itemName = (string)nodeLink["Item"]!;
                 if (!DataCache.Current.Items.ContainsKey(itemName)) {
-                    var missingItem = new Item(itemName);
-                    missingItem.IsMissingItem = true;
+                    var missingItem = new Item(itemName) {
+                        IsMissingItem = true
+                    };
                     DataCache.Current.Items.Add(itemName, missingItem);
                 }
                 Item item = DataCache.Current.Items[itemName];

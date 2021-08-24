@@ -2,6 +2,7 @@ namespace Foreman
 {
     using System;
     using System.Globalization;
+    using System.Windows;
     using System.Windows.Data;
     using System.Windows.Media;
 
@@ -12,7 +13,7 @@ namespace Foreman
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is not Color color || !targetType.IsAssignableFrom(typeof(SolidColorBrush)))
-                return Binding.DoNothing;
+                return DependencyProperty.UnsetValue;
 
             if (IgnoreAlpha)
                 color.A = 255;
@@ -21,8 +22,7 @@ namespace Foreman
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var brush = value as SolidColorBrush;
-            if (brush == null || targetType != typeof(Color))
+            if (value is not SolidColorBrush brush || targetType != typeof(Color))
                 return Binding.DoNothing;
 
             return brush.Color;

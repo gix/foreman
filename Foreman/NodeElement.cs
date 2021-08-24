@@ -3,12 +3,10 @@ namespace Foreman
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using System.Windows;
     using System.Windows.Controls.Primitives;
-    using System.Windows.Documents;
     using System.Windows.Media;
     using Controls;
     using Foreman.Extensions;
@@ -43,16 +41,15 @@ namespace Foreman
             DisplayedNode = displayedNode;
             Initialize(displayedNode);
 
-            if (DisplayedNode is ConsumerNode consumer)
-                BackgroundColor = consumer.ConsumedItem.IsMissingItem ? MissingColor : SupplyColor;
-            else if (DisplayedNode is SupplyNode supplier)
-                BackgroundColor = supplier.SuppliedItem.IsMissingItem ? MissingColor : ConsumerColor;
-            else if (DisplayedNode is RecipeNode recipe)
-                BackgroundColor = recipe.BaseRecipe.IsMissingRecipe ? MissingColor : RecipeColor;
-            else if (DisplayedNode is PassthroughNode passthrough)
-                BackgroundColor = passthrough.PassedItem.IsMissingItem ? MissingColor : PassthroughColor;
-            else
-                throw new ArgumentException("No branch for node: " + DisplayedNode);
+            BackgroundColor = DisplayedNode switch {
+                ConsumerNode consumer => consumer.ConsumedItem.IsMissingItem ? MissingColor : SupplyColor,
+                SupplyNode supplier => supplier.SuppliedItem.IsMissingItem ? MissingColor : ConsumerColor,
+                RecipeNode recipe => recipe.BaseRecipe.IsMissingRecipe ? MissingColor : RecipeColor,
+                PassthroughNode passthrough => passthrough.PassedItem.IsMissingItem
+                    ? MissingColor
+                    : PassthroughColor,
+                _ => throw new ArgumentException("No branch for node: " + DisplayedNode)
+            };
         }
 
         public ProductionGraphViewModel Parent { get; }
@@ -245,7 +242,8 @@ namespace Foreman
 
             foreach (Pin pin in Pins) {
                 pin.Label = GetPinLabel(pin.Item, pin.Kind);
-                pin.FillColor = ChoosePinColor(pin.Item, pin.Kind);
+                pin.TextColor = ChoosePinTextColor(pin.Item, pin.Kind);
+                pin.FillColor = ChoosePinFillColor(pin.Item, pin.Kind);
             }
         }
 
@@ -291,6 +289,7 @@ namespace Foreman
         {
             string line1Format = "{0:0.####}{1}";
             string line2Format = "\n({0:0.####}{1})";
+            string line0Format = "[{0:0.####}{1}]\n";
             string finalString;
 
             string unit = "";
@@ -317,6 +316,9 @@ namespace Foreman
                 finalString = string.Format(line1Format, actualAmount, unit);
                 if (DisplayedNode.OverSupplied(item)) {
                     finalString += string.Format(line2Format, suppliedAmount, unit);
+                } else if (DisplayedNode.ManualRateNotMet(item)) {
+                    float desiredAmount = DisplayedNode.GetDesiredConsumeRate(item);
+                    finalString = string.Format(line0Format, desiredAmount, unit) + finalString;
                 }
             } else {
                 finalString = string.Format(line1Format, actualAmount, unit);
@@ -325,14 +327,38 @@ namespace Foreman
             return finalString;
         }
 
-        private Color ChoosePinColor(Item item, PinKind linkType)
+        private Color? ChoosePinTextColor(Item item, PinKind linkType)
+        {
+            Color? defaultColor = null;
+
+            if (DisplayedNode.RateType == RateType.Auto)
+                return defaultColor;
+
+            PinKind? expectedLinkType = DisplayedNode switch {
+                ConsumerNode => PinKind.Input,
+                RecipeNode => PinKind.Input,
+                PassthroughNode => PinKind.Input,
+                SupplyNode => PinKind.Output,
+                _ => null
+            };
+
+            if (expectedLinkType == null || linkType != expectedLinkType)
+                return defaultColor;
+
+            return Color.FromArgb(255, 0, 0, 255);
+        }
+
+        private Color ChoosePinFillColor(Item item, PinKind linkType)
         {
             var enough = Colors.White;
-            var tooMuch = Color.FromArgb(255, 214, 226, 230);
+            var tooMuch = Color.FromArgb(255, 214, 255, 214);
+            var notEnough = Color.FromArgb(255, 255, 226, 214);
 
             if (linkType == PinKind.Input) {
                 if (DisplayedNode.OverSupplied(item))
                     return tooMuch;
+                if (DisplayedNode.ManualRateNotMet(item))
+                    return notEnough;
             }
 
             return enough;
