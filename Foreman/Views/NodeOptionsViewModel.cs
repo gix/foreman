@@ -36,7 +36,7 @@ namespace Foreman.Views
             BaseNode = baseNode;
             GraphViewModel = graphViewModel;
             Graph = graphViewModel.Graph;
-            RateType = BaseNode.RateType;
+            rateType = BaseNode.RateType;
 
             modules.ItemPropertyChanged += OnModuleSlotPropertyChanged;
             beaconModules.ItemPropertyChanged += OnModuleSlotPropertyChanged;
@@ -105,7 +105,7 @@ namespace Foreman.Views
             {
                 if (SetProperty(ref rateType, value)) {
                     BaseNode.RateType = value;
-                    Graph.UpdateNodeValues();
+                    Graph.UpdateNodeValues(BaseNode);
                 }
             }
         }
@@ -160,7 +160,7 @@ namespace Foreman.Views
                 if (SetProperty(ref speedBonus, value)) {
                     if (CanOverrideBonus) {
                         BaseNode.BeaconModules.OverrideSpeedBonus = value;
-                        Graph.UpdateNodeValues();
+                        Graph.UpdateNodeValues(BaseNode);
                     }
                 }
             }
@@ -174,7 +174,7 @@ namespace Foreman.Views
                 if (SetProperty(ref productivityBonus, value)) {
                     if (CanOverrideBonus) {
                         BaseNode.BeaconModules.OverrideProductivityBonus = value;
-                        Graph.UpdateNodeValues();
+                        Graph.UpdateNodeValues(BaseNode);
                     }
                 }
             }
@@ -188,7 +188,7 @@ namespace Foreman.Views
                 if (SetProperty(ref consumptionBonus, value)) {
                     if (CanOverrideBonus) {
                         BaseNode.BeaconModules.OverrideConsumptionBonus = value;
-                        Graph.UpdateNodeValues();
+                        Graph.UpdateNodeValues(BaseNode);
                     }
                 }
             }
@@ -250,7 +250,7 @@ namespace Foreman.Views
             SpeedBonus = nodeBeaconModules.GetSpeedBonus();
             ProductivityBonus = nodeBeaconModules.GetProductivityBonus();
             ConsumptionBonus = nodeBeaconModules.GetConsumptionBonus();
-            Graph.UpdateNodeValues();
+            Graph.UpdateNodeValues(BaseNode);
         }
 
         private class BeaconModuleList : BindableCollection<ModuleSlot>
@@ -328,7 +328,7 @@ namespace Foreman.Views
                     node.ProductionEntity = (ProductionEntity)c.Value;
 
                 UpdateAssemblerButtons();
-                Graph.UpdateNodeValues();
+                Graph.UpdateNodeValues(BaseNode);
             }
         }
 
@@ -379,7 +379,7 @@ namespace Foreman.Views
                     node.Modules = ModuleSelector.Specific((Module)c.Value);
 
                 UpdateAssemblerButtons();
-                Graph.UpdateNodeValues();
+                Graph.UpdateNodeValues(BaseNode);
             }
         }
 

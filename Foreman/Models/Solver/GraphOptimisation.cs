@@ -21,7 +21,7 @@ namespace Foreman
         }
 
         public static void FindOptimalGraphToSatisfyFixedNodes(
-            this ProductionGraph graph, ISet<ProductionNode> nodeGroup)
+            this ProductionGraph graph, IReadOnlyCollection<ProductionNode> nodeGroup)
         {
             foreach (ProductionNode node in nodeGroup.Where(n => n.RateType == RateType.Auto)) {
                 node.ResetSolvedRate();
@@ -32,8 +32,11 @@ namespace Foreman
             graph.UpdateLinkThroughputs();
         }
 
-        public static void OptimiseNodeGroup(IEnumerable<ProductionNode> nodeGroup)
+        public static void OptimiseNodeGroup(IReadOnlyCollection<ProductionNode> nodeGroup)
         {
+            if (nodeGroup.Count == 0)
+                return;
+
             var solver = new ProductionSolver();
 
             foreach (var node in nodeGroup) {

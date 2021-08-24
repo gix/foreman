@@ -21,13 +21,6 @@ namespace Foreman.Views
             viewModel = (NodeOptionsViewModel)args.NewValue;
         }
 
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
-            if (e.Key == Key.Enter)
-                viewModel.Graph.UpdateNodeValues();
-        }
-
         private async void OnAssemblerButtonClicked(object sender, EventArgs e)
         {
             await viewModel.ChooseAssembler(assemblerButton);

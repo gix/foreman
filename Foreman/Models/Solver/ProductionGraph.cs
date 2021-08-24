@@ -145,7 +145,7 @@ namespace Foreman
             */
         }
 
-        public event EventHandler<ISet<ProductionNode>?>? NodeValuesUpdated;
+        public event EventHandler<IReadOnlyCollection<ProductionNode>?>? NodeValuesUpdated;
 
         private void UpdateModuleStrategy()
         {
@@ -164,17 +164,22 @@ namespace Foreman
             NodeValuesUpdated?.Invoke(this, null);
         }
 
-        public void UpdateNodeValues(ProductionNode affectedNode)
+        public void UpdateNodeValues(ProductionNode node)
         {
-            var nodeGroup = GetConnectedComponent(affectedNode);
+            var nodeGroup = GetConnectedComponent(node);
+            UpdateNodeValues(nodeGroup);
+        }
+
+        public void UpdateNodeValues(IReadOnlyCollection<ProductionNode> nodes)
+        {
             try {
-                this.FindOptimalGraphToSatisfyFixedNodes(nodeGroup);
+                this.FindOptimalGraphToSatisfyFixedNodes(nodes);
             } catch (OverflowException) {
                 //If the numbers here are so big they're causing an overflow, there's not much I can do about it. It's already pretty clear in the UI that the values are unusable.
                 //At least this way it doesn't crash...
             }
             UpdateLinkThroughputs();
-            NodeValuesUpdated?.Invoke(this, nodeGroup);
+            NodeValuesUpdated?.Invoke(this, nodes);
         }
 
         public void CreateAllPossibleInputLinks()
@@ -297,30 +302,46 @@ namespace Foreman
             return strongList;
         }
 
-        public ISet<ProductionNode> GetConnectedComponent(ProductionNode node)
+        public HashSet<ProductionNode> GetConnectedNodes(IEnumerable<ProductionNode> nodes)
         {
-            var component = new HashSet<ProductionNode>();
-            var visited = new HashSet<ProductionNode>();
-            var toVisitNext = new Stack<ProductionNode>();
-            toVisitNext.Push(node);
+            var connected = new HashSet<ProductionNode>();
+            var toVisitNext = new Stack<ProductionNode>(nodes);
 
             while (toVisitNext.Any()) {
                 ProductionNode currentNode = toVisitNext.Pop();
-                if (!visited.Add(currentNode))
+                if (!connected.Add(currentNode))
                     continue;
 
                 foreach (NodeLink link in currentNode.InputLinks)
                     toVisitNext.Push(link.Supplier);
                 foreach (NodeLink link in currentNode.OutputLinks)
                     toVisitNext.Push(link.Consumer);
+            }
 
-                component.Add(currentNode);
+            return connected;
+        }
+
+        public HashSet<ProductionNode> GetConnectedComponent(ProductionNode node)
+        {
+            var component = new HashSet<ProductionNode>();
+            var toVisitNext = new Stack<ProductionNode>();
+            toVisitNext.Push(node);
+
+            while (toVisitNext.Any()) {
+                ProductionNode currentNode = toVisitNext.Pop();
+                if (!component.Add(currentNode))
+                    continue;
+
+                foreach (NodeLink link in currentNode.InputLinks)
+                    toVisitNext.Push(link.Supplier);
+                foreach (NodeLink link in currentNode.OutputLinks)
+                    toVisitNext.Push(link.Consumer);
             }
 
             return component;
         }
 
-        public IEnumerable<IEnumerable<ProductionNode>> GetConnectedComponents()
+        public IEnumerable<IReadOnlyCollection<ProductionNode>> GetConnectedComponents()
         {
             var unvisitedNodes = new HashSet<ProductionNode>(Nodes);
 

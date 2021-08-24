@@ -396,10 +396,9 @@ namespace Foreman
                     newElement.Position = GraphViewModel.ActualViewbox.GetCenter();
 
                     GraphViewModel.Elements.Add(newElement);
+                    GraphViewModel.Graph.UpdateNodeValues(newElement.DisplayedNode);
                 }
             }
-
-            GraphViewModel.Graph.UpdateNodeValues();
         }
 
         private void OnAmountTypeChanged()
@@ -725,9 +724,9 @@ namespace Foreman
                 newElement.Update();
                 newElement.Position = position;
                 GraphViewModel.Elements.Add(newElement);
+                GraphViewModel.Graph.UpdateNodeValues(newElement.DisplayedNode);
             }
 
-            GraphViewModel.Graph.UpdateNodeValues();
             return Task.CompletedTask;
         }
 

@@ -116,7 +116,7 @@ namespace Foreman
             }
         }
 
-        private void OnGraphNodeValuesUpdated(object? sender, ISet<ProductionNode>? nodes)
+        private void OnGraphNodeValuesUpdated(object? sender, IReadOnlyCollection<ProductionNode>? nodes)
         {
             UpdateNodes(nodes);
         }
@@ -198,7 +198,7 @@ namespace Foreman
             UpdateNodes();
         }
 
-        public void UpdateNodes(ISet<ProductionNode>? nodes = null)
+        public void UpdateNodes(IReadOnlyCollection<ProductionNode>? nodes = null)
         {
             var nodeElements = Elements.OfType<NodeElement>();
             if (nodes != null)
@@ -287,7 +287,7 @@ namespace Foreman
                         newElement.Update();
                         newElement.Position = position;
                         Elements.Add(newElement);
-                        Graph.UpdateNodeValues();
+                        Graph.UpdateNodeValues(newElement.DisplayedNode);
                         position += new Vector(75, 75);
                     }
                 }
@@ -298,8 +298,8 @@ namespace Foreman
                     newElement.Position = position;
                     Elements.Add(newElement);
                     position += new Vector(75, 75);
+                    Graph.UpdateNodeValues(newElement.DisplayedNode);
                 }
-                Graph.UpdateNodeValues();
             }
         }
 
@@ -360,7 +360,8 @@ namespace Foreman
                 return null;
 
             var inputSet = sourceElements;
-            var elements = new List<GraphElement>();
+            var newNodes = new List<ProductionNode>();
+            var newElements = new List<GraphElement>();
             var map = new Dictionary<NodeElement, NodeElement>();
             var elementOffset = new Vector(20, 20);
 
@@ -369,7 +370,8 @@ namespace Foreman
                 var clonedElement = new NodeElement(clonedNode, element.Parent);
                 clonedElement.Position = element.Position + elementOffset;
 
-                elements.Add(clonedElement);
+                newNodes.Add(clonedNode);
+                newElements.Add(clonedElement);
                 map.Add(element, clonedElement);
             }
 
@@ -398,14 +400,14 @@ namespace Foreman
                     continue;
 
                 var connector = new Connector(link, sourcePin, destinationPin);
-                elements.Add(connector);
+                newElements.Add(connector);
             }
 
-            Elements.AddRange(elements);
+            Elements.AddRange(newElements);
 
-            Graph.UpdateNodeValues();
+            Graph.UpdateNodeValues(newNodes);
 
-            return elements.OfType<NodeElement>().ToList<object>();
+            return newElements.OfType<NodeElement>().ToList<object>();
         }
 
         private static ProductionNode CloneNode(ProductionNode node)
@@ -419,8 +421,30 @@ namespace Foreman
             };
         }
 
-        public void Delete(IEnumerable<GraphElement> elements)
+        public void Delete(IReadOnlyCollection<GraphElement> elements)
         {
+            var affectedNodes = new HashSet<ProductionNode>();
+            foreach (var element in elements) {
+                switch (element) {
+                    case NodeElement node:
+                        affectedNodes.Add(node.DisplayedNode);
+                        break;
+                    case Connector connector:
+                        affectedNodes.Add(connector.DisplayedLink.Supplier);
+                        affectedNodes.Add(connector.DisplayedLink.Consumer);
+                        break;
+                }
+            }
+
+            affectedNodes = Graph.GetConnectedNodes(affectedNodes);
+            foreach (var element in elements) {
+                switch (element) {
+                    case NodeElement node:
+                        affectedNodes.Remove(node.DisplayedNode);
+                        break;
+                }
+            }
+
             foreach (var element in elements) {
                 switch (element) {
                     case NodeElement node:
@@ -432,7 +456,7 @@ namespace Foreman
                 }
             }
 
-            Graph.UpdateNodeValues();
+            Graph.UpdateNodeValues(affectedNodes);
         }
 
         private void Delete(NodeElement node)
@@ -468,7 +492,7 @@ namespace Foreman
 
             var connector = new Connector(link, output, input);
             Elements.Add(connector);
-            Graph.UpdateNodeValues();
+            Graph.UpdateNodeValues(output.Node.DisplayedNode);
         }
 
         public async Task SuggestConnect(Pin pin, Point canvasPosition, Point screenPosition)
@@ -520,9 +544,9 @@ namespace Foreman
                     var connector = new Connector(link, source, destination);
                     Elements.Add(newElement);
                     Elements.Add(connector);
-                }
 
-                Graph.UpdateNodeValues();
+                    Graph.UpdateNodeValues(newElement.DisplayedNode);
+                }
             } else if (startConnectionType == PinKind.Input) {
                 NodeElement consumerElement = pin.Node;
 
@@ -565,9 +589,9 @@ namespace Foreman
                     var connector = new Connector(link, source, destination);
                     Elements.Add(newElement);
                     Elements.Add(connector);
-                }
 
-                Graph.UpdateNodeValues();
+                    Graph.UpdateNodeValues(newElement.DisplayedNode);
+                }
             }
         }
 
