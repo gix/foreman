@@ -354,7 +354,7 @@ namespace Foreman
 
         public override string ToString()
         {
-            return $"Recipe Tree Node: {BaseRecipe.Name}";
+            return $"Recipe Node: {BaseRecipe.Name}";
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -540,6 +540,11 @@ namespace Foreman
             return results;
         }
 
+        public override string ToString()
+        {
+            return $"Supply Node: {SuppliedItem.Name}";
+        }
+
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue("NodeType", "Supply");
@@ -620,6 +625,11 @@ namespace Foreman
             node.Graph.Nodes.Add(node);
             node.Graph.InvalidateCaches();
             return node;
+        }
+
+        public override string ToString()
+        {
+            return $"Consumer Node: {ConsumedItem.Name}";
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -707,7 +717,7 @@ namespace Foreman
 
         public override string ToString()
         {
-            return $"Pass-through Tree Node: {PassedItem.Name}";
+            return $"Pass-through Node: {PassedItem.Name}";
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)

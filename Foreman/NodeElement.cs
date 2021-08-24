@@ -398,7 +398,6 @@ namespace Foreman
                 foreach (var pin in Outputs)
                     pin.ClearXOrder();
                 Outputs.StableSort(Comparer);
-                new List<int>().Sort();
             }
         }
 
